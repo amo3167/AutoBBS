@@ -120,6 +120,9 @@ extern "C" {
 		//Ichikomo output
 		double daily_baseline;
 		double daily_baseline_short;
+
+		//Risk reward 
+		double riskCap;
 		
 	} Indicators;
 	

@@ -517,6 +517,7 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
 	AsirikuyReturnCode returnCode = SUCCESS;
+	double originEquity = 0.0;
 
 	pIndicators->primaryATR = iAtr(B_PRIMARY_RATES, (int)parameter(ATR_AVERAGING_PERIOD), 1);
 
@@ -571,7 +572,12 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 	{
 		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, top up equity %lf ",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], pIndicators->virtualBalanceTopup);
+		//update totalOpenTradeRiskPercent
+		originEquity = pParams->accountInfo.equity;
 		pParams->accountInfo.equity += pIndicators->virtualBalanceTopup;
+
+		pParams->accountInfo.totalOpenTradeRiskPercent = pParams->accountInfo.totalOpenTradeRiskPercent / (pParams->accountInfo.equity / originEquity);
+
 	}
 	workoutExecutionTrend(pParams, pIndicators, pBase_Indicators);
 

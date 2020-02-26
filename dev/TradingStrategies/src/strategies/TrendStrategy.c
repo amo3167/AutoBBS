@@ -571,11 +571,12 @@ void splitSellOrders_Ichimoko_Daily(StrategyParams* pParams, Indicators* pIndica
 void splitBuyOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss)
 {
 	double takePrice;
-	double lots;
+	double lots;	
 	
 	if (pIndicators->tradeMode == 1)
 	{
-		takePrice = 0;
+		//takePrice = 0;
+		takePrice = pIndicators->riskCap * 1.5* pBase_Indicators->dailyATR;
 		lots = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, 1.5* pBase_Indicators->dailyATR) * pIndicators->risk;
 	}
 	else
@@ -585,11 +586,13 @@ void splitBuyOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators, 
 		stopLoss = abs(pParams->orderInfo[0].stopLoss - pIndicators->entryPrice);
 	}
 
-	//takePrice = 0;
+	//takePrice = 1 * 1.5*  pBase_Indicators->dailyATR;
 	//openSingleLongEasy(takePrice, stopLoss, lots / 2, 0);
-	//takePrice = pBase_Indicators->dailyATR;
+	//takePrice = 2 * 1.5*  pBase_Indicators->dailyATR;
 	//openSingleLongEasy(takePrice, stopLoss, lots / 2, 0);
+	
 	openSingleLongEasy(takePrice, stopLoss, lots, 0);
+
 	//openSingleLongEasy(takePrice, stopLoss, 0, pIndicators->risk);
 }
 void splitSellOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss)
@@ -598,7 +601,8 @@ void splitSellOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators,
 	double lots;
 	if (pIndicators->tradeMode == 1)
 	{
-		takePrice = 0;
+		//takePrice = 0;
+		takePrice = pIndicators->riskCap * 1.5* pBase_Indicators->dailyATR;
 		lots = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, 1.5* pBase_Indicators->dailyATR) * pIndicators->risk;
 	}
 	else
@@ -608,11 +612,13 @@ void splitSellOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators,
 		stopLoss = abs(pParams->orderInfo[0].stopLoss - pIndicators->entryPrice);
 	}
 	
-	//takePrice = 0;
+	//takePrice = 1 * 1.5* pBase_Indicators->dailyATR;;
 	//openSingleShortEasy(takePrice, stopLoss, lots/2, 0);
-	//takePrice = pBase_Indicators->dailyATR;
+	//takePrice = 2 * 1.5* pBase_Indicators->dailyATR;
 	//openSingleShortEasy(takePrice, stopLoss, lots/2, 0);
+	
 	openSingleShortEasy(takePrice, stopLoss, lots, 0);
+
 	//openSingleShortEasy(takePrice, stopLoss, 0, pIndicators->risk);
 	
 }
@@ -3176,6 +3182,9 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	preDailyClose = iClose(B_DAILY_RATES, startShift);
 
 	dailyBaseLine = ma20Daily;
+
+	pIndicators->riskCap = 0.0;
+
 	if (strstr(pParams->tradeSymbol, "XTIUSD") != NULL)
 	{
 
@@ -3208,6 +3217,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		pIndicators->stopMovingBackSL = FALSE;
 
 		isEnableEntryEOD = TRUE;
+
+		//pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
 	{
@@ -3244,6 +3255,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		//isEnableASI = TRUE;
 
 		dailyBaseLine = iMA(3, B_DAILY_RATES, 50, startShift);
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 				
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUEUR") != NULL)
@@ -3295,6 +3308,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		isEnableLate = FALSE;
 
 		isEnableNextdayBar = TRUE;
+				
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 				
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPCHF") != NULL)
@@ -3434,6 +3449,9 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		isEnableEntryEOD = FALSE;
 
 		isEnableNextdayBar = TRUE;
+
+		//pIndicators->riskCap = 1.9;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDNZD") != NULL)
 	{
@@ -3823,6 +3841,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 	//if (fast < maxLevel * -1)
 	//	pIndicators->exitSignal = EXIT_SELL;
+
+	//If average = 2.3, max = 3
 
 
 	return SUCCESS;
