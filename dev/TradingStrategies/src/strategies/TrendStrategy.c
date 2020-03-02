@@ -3446,7 +3446,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		isEnableSlow = FALSE;
 		isEnableATR = FALSE;
 		isEnableCMFVolume = FALSE;
-		isEnableCMFVolumeGap = TRUE;
+		isEnableCMFVolumeGap = FALSE;
 
 		isEnableMaxLevel = TRUE;
 
@@ -3731,7 +3731,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				&& (isEnableATR == FALSE || atr5 > pIndicators->entryPrice * 0.01 * 0.55)
 				&& (isVolumeControl == FALSE || pIndicators->volume1 > pIndicators->volume2)
 				&& (isEnableCMFVolume == FALSE || pIndicators->cmfVolume < 0)
-				&& (isEnableCMFVolumeGap == FALSE || pIndicators->CMFVolumeGap > 0)
+				&& (isEnableCMFVolumeGap == FALSE || pIndicators->CMFVolumeGap < 0)
 				&& (isWeeklyBaseLine == FALSE ||
 				(preWeeklyClose < weekly_baseline
 				&& (weekly_baseline_short < weekly_baseline || pre3KTrend == DOWN))
