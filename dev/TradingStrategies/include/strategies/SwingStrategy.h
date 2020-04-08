@@ -82,7 +82,9 @@ AsirikuyReturnCode workoutExecutionTrend_Weekly_Swing(StrategyParams* pParams, I
 //空间极限回归交易
 AsirikuyReturnCode workoutExecutionTrend_ATR_Hedge(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
+AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
+AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI_Daily_Regression(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
 
 #ifdef __cplusplus

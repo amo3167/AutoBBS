@@ -605,6 +605,11 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 	shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 
+	if ((int)parameter(AUTOBBS_TREND_MODE) == 33) //MACD BEILI, need to move take profit price
+	{
+		takePrice = fabs(pIndicators->entryPrice - pIndicators->takeProfitPrice);
+	}
+	
 	if ((int)parameter(AUTOBBS_TREND_MODE) == 15)
 	{
 
@@ -630,7 +635,7 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 					modifyTradeEasy_DayTrading(BUY, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, pIndicators->stopMovingBackSL);
 				}
 				else
-					modifyTradeEasy_new(BUY, -1, stopLoss, -1, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
+					modifyTradeEasy_new(BUY, -1, stopLoss, takePrice, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
 			}
 		}
 
@@ -649,7 +654,7 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 				//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode);
 				//}
 				else if ((int)parameter(AUTOBBS_TREND_MODE) != 15)
-					modifyTradeEasy_new(SELL, -1, stopLoss, -1, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
+					modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
 			}
 		}
 	}

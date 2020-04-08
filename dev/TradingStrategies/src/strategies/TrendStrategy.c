@@ -3369,6 +3369,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 		isEnableMaxLevel = FALSE;
 
+		isDailyOnly = FALSE;
 
 		fastMAPeriod = 5;
 		slowMAPeriod = 10;

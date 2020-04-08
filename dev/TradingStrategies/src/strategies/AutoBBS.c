@@ -92,6 +92,9 @@ static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Bas
 		case 27:
 			splitBuyOrders_4HSwing_Shellington(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 			break;
+		case 28:
+			splitBuyOrders_MACD_BEILI(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+			break;
 	}
 	
 }
@@ -171,6 +174,9 @@ static void splitSellOrders(StrategyParams* pParams, Indicators* pIndicators, Ba
 		break;
 	case 27:
 		splitSellOrders_4HSwing_Shellington(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		break;
+	case 28:
+		splitSellOrders_MACD_BEILI(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	}
 }
@@ -278,6 +284,9 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	case 32:
 		workoutExecutionTrend_MACD_Daily_New(pParams, pIndicators, pBase_Indicators);
 		break;
+	case 33:
+		workoutExecutionTrend_MACD_BEILI(pParams, pIndicators, pBase_Indicators);
+		break;
 	case 100:
 		workoutExecutionTrend_MACD_Daily_Chart_RegressionTest(pParams, pIndicators, pBase_Indicators);
 		break;
@@ -286,6 +295,9 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 		break;
 	case 102:
 		workoutExecutionTrend_ASI(pParams, pIndicators, pBase_Indicators);
+		break;
+	case 103:
+		workoutExecutionTrend_MACD_BEILI_Daily_Regression(pParams, pIndicators, pBase_Indicators);
 		break;
 	}
 

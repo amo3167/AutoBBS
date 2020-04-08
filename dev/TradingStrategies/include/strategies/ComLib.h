@@ -72,6 +72,7 @@ extern "C" {
 
 		double entryPrice;
 		double stopLossPrice;
+		double takeProfitPrice;
 		double risk;
 
 		double primaryATR;
