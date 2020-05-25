@@ -3204,7 +3204,46 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 	dailyBaseLine = ma20Daily;
 
-	if (strstr(pParams->tradeSymbol, "XTIUSD") != NULL)
+	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
+	{
+
+		level = 0.005 * pParams->bidAsk.ask[0];
+		maxLevel = 0.05 * pParams->bidAsk.ask[0];
+		histLevel = 0.01;
+		isVolumeControl = FALSE;
+		isEnableBeiLi = TRUE;
+
+		isEnableSlow = FALSE;
+		isEnableATR = FALSE;
+		isEnableCMFVolume = FALSE;
+		isEnableCMFVolumeGap = FALSE;
+
+		isEnableMaxLevel = FALSE;
+		isWeeklyBaseLine = TRUE;
+
+		fastMAPeriod = 5;
+		slowMAPeriod = 10;
+		signalMAPeriod = 5;
+
+		//stopLoss = pBase_Indicators->dailyATR * 1.8;
+
+		maxRisk = 1.5;
+
+		isDailyOnly = FALSE;
+
+		shiftPreDayBar = shift1Index;
+
+		pIndicators->stopMovingBackSL = TRUE;
+
+		isEnableEntryEOD = TRUE;
+
+		isEnableLate = FALSE;
+
+		dailyBaseLine = iMA(3, B_DAILY_RATES, 50, startShift);
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
+	}
+	else if (strstr(pParams->tradeSymbol, "XTIUSD") != NULL)
 	{
 
 		level = 0.35;
@@ -3364,8 +3403,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 		isEnableSlow = FALSE;
 		isEnableATR = FALSE;
-		isEnableCMFVolume = FALSE;
-		isEnableCMFVolumeGap = TRUE;
+		isEnableCMFVolume = TRUE;
+		isEnableCMFVolumeGap = FALSE;
 
 		isEnableMaxLevel = FALSE;
 
@@ -5817,6 +5856,33 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 		pIndicators->daily_baseline = iMA(3, B_DAILY_RATES, 50, 1);
 
 		shiftPreDayBar = shift1Index;
+	}
+	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
+	{
+		//level = 0.0008;
+		isEnableRange = FALSE;
+		range = 30;
+
+		orderCount = 3;
+		isProfitManaged = TRUE;
+		isWeeklyBaseLine = FALSE;
+		isExitFromShortBaseLine = FALSE;
+
+		isEnableCMFVolume = TRUE;
+		isMACDBeiLi = TRUE;
+
+		fastMAPeriod = 5;
+		slowMAPeriod = 10;
+		signalMAPeriod = 5;
+
+		exitBaseLine = pIndicators->daily_baseline_short;
+
+		is3KBreak = FALSE;
+
+		//pIndicators->daily_baseline = iMA(3, B_DAILY_RATES, 50, 1);
+
+		isDailyOnly = TRUE;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "USDSGD") != NULL)
 	{

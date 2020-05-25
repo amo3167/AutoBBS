@@ -3750,6 +3750,24 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI_Daily_Regression(StrategyPar
 		//isEnableFlatBars = TRUE;
 
 	}	
+	else if (strstr(pParams->tradeSymbol, "AUDJPY") != NULL)
+	{
+		level = 0.7; //GBPJPY						
+
+		fastMAPeriod = 5;
+		slowMAPeriod = 10;
+		signalMAPeriod = 5;
+
+		isDailyOnly = FALSE;
+		pIndicators->stopMovingBackSL = TRUE;
+
+		isEnableEntryEOD = TRUE;
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
+
+		//isEnableFlatBars = TRUE;
+
+	}
 	else
 	{
 		level = 0; //EURUSD		
@@ -4039,6 +4057,24 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI(StrategyParams* pParams, Ind
 	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
 		level = 1.0; //GBPJPY						
+
+		fastMAPeriod = 5;
+		slowMAPeriod = 10;
+		signalMAPeriod = 5;
+
+		isDailyOnly = FALSE;
+		pIndicators->stopMovingBackSL = TRUE;
+
+		isEnableEntryEOD = TRUE;
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
+
+		//isEnableFlatBars = TRUE;
+
+	}
+	else if (strstr(pParams->tradeSymbol, "AUDJPY") != NULL)
+	{
+		level = 0.7; //GBPJPY						
 
 		fastMAPeriod = 5;
 		slowMAPeriod = 10;
