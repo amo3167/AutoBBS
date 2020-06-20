@@ -2440,12 +2440,6 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading_Ver2(StrategyParams* 
 	intradayHigh = max(close_prev1, intradayHigh);
 	ATR0 = fabs(intradayHigh - intradayLow);
 
-	//euro_index_rate = shift1Index_primary - ((timeInfo1.tm_hour - 9) * 60 + timeInfo1.tm_min);
-	//count = (timeInfo1.tm_hour - 9) * 60 + timeInfo1.tm_min - 1;
-	////count must > 1, otherwise, cause TA_MIN error 
-	//iSRLevels(pParams, pBase_Indicators, B_PRIMARY_RATES, euro_index_rate, count, &(pIndicators->euro_high), &(pIndicators->euro_low));
-	//ATREuroPeriod = fabs(pIndicators->euro_high - pIndicators->euro_low);
-
 	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %lf,IntraDaily High = %lf, Low=%lf, Close=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, ATR0, intradayHigh, intradayLow, intradayClose);
 
@@ -2461,20 +2455,16 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading_Ver2(StrategyParams* 
 	}	
 
 
-	//if (pIndicators->risk > 1)
-	//	maxTradeTime = 2;
-
 	// secondary rate is 5M , priarmy rate is 1M
 	if (hasSameDayOrderEasy(currentTime, &isOpen) == FALSE)
-	//if (hasSameDayOrderExcludeBreakeventOrdersEasy(currentTime, &isOpen,0.1) == FALSE)
 	{
 		//在80点内，必须入场，如果放弃了，就放弃当日交易。
-		//if (ATR0 > 1.0)
-		//	return SUCCESS;
+		if (ATR0 >= 1.0)
+			return SUCCESS;
 
 		//加入5M均线的支持
 		if (pParams->bidAsk.ask[0] - intradayLow >= Range 
-			&& intradayHigh - pParams->bidAsk.bid[0] < 0.3
+			&& intradayHigh - pParams->bidAsk.bid[0] < Range
 			//&& pBase_Indicators->maTrend > 0
 			&& (pIndicators->executionTrend > 0 || (pIndicators->executionTrend == 0 && pBase_Indicators->maTrend > 0))
 			&& timeInfo1.tm_hour <= 15		
@@ -2487,7 +2477,7 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading_Ver2(StrategyParams* 
 		}
 
 		if (intradayHigh - pParams->bidAsk.bid[0] >= Range 
-			&& pParams->bidAsk.ask[0] - intradayLow < 0.3
+			&& pParams->bidAsk.ask[0] - intradayLow < Range
 			//&& pBase_Indicators->maTrend < 0
 			&& (pIndicators->executionTrend < 0 || (pIndicators->executionTrend == 0 && pBase_Indicators->maTrend < 0))
 			&& timeInfo1.tm_hour <= 15
