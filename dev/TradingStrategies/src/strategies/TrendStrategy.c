@@ -3148,9 +3148,9 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double ma20Daily, preDailyClose;
-	double preHist1, preHist2, preHist3, preHist4, preHist5;
-	double fast1, fast2, fast3, fast4, fast5;
-	double slow1, slow2, slow3, slow4, slow5;
+	double preHist1, preHist2, preHist3, preHist4, preHist5,preHistTurning;
+	double fast1, fast2, fast3, fast4, fast5, fastTurning;
+	double slow1, slow2, slow3, slow4, slow5,slowTurning;
 	double dailyBaseLine;
 
 	//double cmfVolume = 0.0;
@@ -3306,6 +3306,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 
 		pIndicators->volumeStep = 0.5;
+
+		range = 10;
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
 	{
@@ -3760,14 +3762,18 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0 
 						//&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == BUY
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex) //&& iClose(B_DAILY_RATES,1) < rangeHigh
-						&& truningPointIndex - 1 <= range
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex) //&& iClose(B_DAILY_RATES,1) < rangeHigh						
 						)
 					{
-						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
-							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+						if (truningPointIndex > 0 ) 
+							iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, truningPointIndex, &fastTurning, &slowTurning, &preHistTurning);
+						if (fastTurning >= level || truningPointIndex - 1 <= range)
+						{
+							pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
+								(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
 
-						pIndicators->entrySignal = 0;
+							pIndicators->entrySignal = 0;
+						}
 					}
 
 					//如果方向改变的第一个trade,离baseline 超过1 ATR(20),不做。
@@ -3884,14 +3890,19 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0
 						&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == SELL
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex) //&& iClose(B_DAILY_RATES, 1) > rangeLow
-						&& truningPointIndex - 1 <= range
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex) //&& iClose(B_DAILY_RATES, 1) > rangeLow						
 						)
 					{
-						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
-							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+						
+						if (truningPointIndex > 0)
+							iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, truningPointIndex, &fastTurning, &slowTurning, &preHistTurning);
+						if (fastTurning <= -1 *level || truningPointIndex - 1 <= range)
+						{
+							pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
+								(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
 
-						pIndicators->entrySignal = 0;
+							pIndicators->entrySignal = 0;
+						}
 					}
 
 					//如果方向改变的第一个trade,离baseline 超过1 ATR(20),不做。
@@ -6975,7 +6986,8 @@ AsirikuyReturnCode workoutExecutionTrend_4H_ShellingtonVer1(StrategyParams* pPar
 			}
 		}
 
-		if (trend_MA > 0 || trend_KeyK == 1)
+		if (trend_MA > 0 || trend_KeyK == 1
+			)
 			trend_4H = 1;
 		if (trend_MA < 0 || trend_KeyK == -1)
 			trend_4H = -1;

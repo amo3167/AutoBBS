@@ -281,9 +281,9 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	//case 30:
 	//	workoutExecutionTrend_Ichimoko_Daily_Index_V2(pParams, pIndicators, pBase_Indicators);		
 	//	break;
-	case 30:
-		workoutExecutionTrend_4H_Shellington(pParams, pIndicators, pBase_Indicators);
+	case 30:		
 		//workoutExecutionTrend_4H_ShellingtonVer1(pParams, pIndicators, pBase_Indicators);
+		workoutExecutionTrend_4H_Shellington(pParams, pIndicators, pBase_Indicators);		
 		break;
 	case 31:
 		workoutExecutionTrend_Ichimoko_Daily_New(pParams, pIndicators, pBase_Indicators);
