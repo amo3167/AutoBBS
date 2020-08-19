@@ -952,7 +952,7 @@ int getOrderCountTodayExcludeBreakeventOrdersEasy(time_t currentTime, double poi
 int getOrderCountTodayEasy(time_t currentTime);
 int getOrderCountEasy();
 
-int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType);
+int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex);
 
 double adjustTakePrice_Weekly_Swing_Easy(int ratesArrayIndex, double init_takePrice);
 /**

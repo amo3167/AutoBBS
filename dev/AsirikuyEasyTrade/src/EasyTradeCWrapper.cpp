@@ -711,9 +711,9 @@ AsirikuyReturnCode getHighLowEasy(int ratesArrayIndex, int shfitIndex, int shift
 	return easyTradePtr->getHighLow(ratesArrayIndex, shfitIndex, shift, pHigh, pLow);
 }
 
-int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType)
+int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex)
 {
-	return easyTradePtr->iMACDTrendBeiLi(ratesArrayIndex, fastPeriod, slowPeriod, signalPeriod, startShift, macdLimit, orderType);
+	return easyTradePtr->iMACDTrendBeiLi(ratesArrayIndex, fastPeriod, slowPeriod, signalPeriod, startShift, macdLimit, orderType, pTruningPointIndex);
 }
 
 double iASIEasy(int ratesArrayIndex, int mode, int length, int smooth, double * outBull, double *outBear)

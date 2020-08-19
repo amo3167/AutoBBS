@@ -1613,7 +1613,7 @@ double EasyTrade::iSTO(int ratesArrayIndex, int period, int k, int d, int signal
 /*
 Look back 100 days, try to find the last two tops or downs in the MACD fast trend. 
 */
-int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType)
+int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex)
 {	
 	double	  fast[300] = {}, slow[300] = {}, preHist[300] = {};	
 	//int start = 1;
@@ -1622,7 +1622,8 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 	int trend = 0;
 
 	double  turningPoint;
-	int     truningPointIndex = -1;	
+	//int     truningPointIndex = -1;	
+	*pTruningPointIndex = -1;
 
 	//startShift = 1;
 		
@@ -1656,12 +1657,12 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 			)
 		{
 			turningPoint= fast[i];
-			truningPointIndex = i;
+			*pTruningPointIndex = i;
 			break;
 		}
 	}
 
-	if (truningPointIndex >= 0)
+	if (*pTruningPointIndex >= 0)
 	{
 
 		if (fast[startShift] - turningPoint > macdLimit)
@@ -1671,7 +1672,7 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 		else
 			macdTrend = 0;
 
-		if (iClose(ratesArrayIndex, startShift) > iClose(ratesArrayIndex, truningPointIndex))
+		if (iClose(ratesArrayIndex, startShift) > iClose(ratesArrayIndex, *pTruningPointIndex))
 			priceTrend = 1;
 		else
 			priceTrend = -1;
