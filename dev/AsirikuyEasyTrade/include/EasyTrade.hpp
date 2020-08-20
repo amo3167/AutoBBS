@@ -1094,8 +1094,8 @@ AsirikuyReturnCode openSingleSellLimitEasy(double entryPrice, double takeProfit,
   AsirikuyReturnCode validateCurrentTime(StrategyParams* pParams, int primary_rate);
   void printBarInfo(StrategyParams* pParams, int rate, char * currentTimeString);
 
-  int iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex);
-
+  int iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex, double *pTurningPoint, int * pMinPointIndex, double *pMinPoint);
+  
   double iASI(int ratesArrayIndex, int mode, int length, int smooth, double * outBull, double *outBear);
 
 protected:

@@ -1613,7 +1613,7 @@ double EasyTrade::iSTO(int ratesArrayIndex, int period, int k, int d, int signal
 /*
 Look back 100 days, try to find the last two tops or downs in the MACD fast trend. 
 */
-int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex)
+int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex, double *pTurningPoint, int * pMinPointIndex, double *pMinPoint)
 {	
 	double	  fast[300] = {}, slow[300] = {}, preHist[300] = {};	
 	//int start = 1;
@@ -1621,7 +1621,9 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 	int priceTrend = 0;
 	int trend = 0;
 
-	double  turningPoint;
+	//double  turningPoint;
+	//double  minPoint;
+	
 	//int     truningPointIndex = -1;	
 	*pTruningPointIndex = -1;
 
@@ -1651,12 +1653,22 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 			break;
 				
 		if( 
-			(trend > 0 &&  fast[i] > fast[i - 1] && fast[i] > fast[i + 1])
+			(trend > 0 &&  fast[i] < fast[i - 1] && fast[i] < fast[i + 1])
+			||
+			(trend < 0 && fast[i] > fast[i - 1] && fast[i] > fast[i + 1])
+			)
+		{
+			*pMinPoint = fast[i];
+			*pMinPointIndex = i;			
+		}
+		
+		if (
+			(trend > 0 && fast[i] > fast[i - 1] && fast[i] > fast[i + 1])
 			||
 			(trend < 0 && fast[i] < fast[i - 1] && fast[i] < fast[i + 1])
 			)
 		{
-			turningPoint= fast[i];
+			*pTurningPoint = fast[i];
 			*pTruningPointIndex = i;
 			break;
 		}
@@ -1665,9 +1677,9 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 	if (*pTruningPointIndex >= 0)
 	{
 
-		if (fast[startShift] - turningPoint > macdLimit)
+		if (fast[startShift] - *pTurningPoint > macdLimit)
 			macdTrend = 1;
-		else if (turningPoint - fast[startShift] > macdLimit)
+		else if (*pTurningPoint - fast[startShift] > macdLimit)
 			macdTrend = -1;
 		else
 			macdTrend = 0;

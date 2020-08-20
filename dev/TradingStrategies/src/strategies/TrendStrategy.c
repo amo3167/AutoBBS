@@ -2467,7 +2467,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 	int startShift = 1;
 	double macdLimit = 0.0;
 
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;	
+	double turningPoint, minPoint;
 
 	//double atr5Limit = pParams->bidAsk.ask[0] * 0.01 *0.55;
 
@@ -2933,7 +2934,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0
 						&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == BUY
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex))
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex, &turningPoint,&minPointIndex,&minPoint))
 					{
 						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -3046,7 +3047,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0
 						&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == SELL
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL,&truningPointIndex))
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 					{
 						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -3193,7 +3194,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	int startShift = 1;
 	double macdLimit = 0.0;
 	double asiBull, asiBear;
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;
+	double turningPoint, minPoint;
 
 	//double rangeHigh, rangeLow;
 	int range = 10000;
@@ -3762,12 +3764,10 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0 
 						//&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == BUY
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex) //&& iClose(B_DAILY_RATES,1) < rangeHigh						
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint) //&& iClose(B_DAILY_RATES,1) < rangeHigh						
 						)
 					{
-						if (truningPointIndex > 0 ) 
-							iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, truningPointIndex, &fastTurning, &slowTurning, &preHistTurning);
-						if (fastTurning >= level || truningPointIndex - 1 <= range)
+						if (minPoint >= level || truningPointIndex - 1 <= range)
 						{
 							pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 								(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -3890,13 +3890,11 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 					if (isEnableBeiLi == TRUE
 						&& pIndicators->entrySignal != 0
 						&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == SELL
-						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex) //&& iClose(B_DAILY_RATES, 1) > rangeLow						
+						&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint) //&& iClose(B_DAILY_RATES, 1) > rangeLow						
 						)
 					{
-						
-						if (truningPointIndex > 0)
-							iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, truningPointIndex, &fastTurning, &slowTurning, &preHistTurning);
-						if (fastTurning <= -1 *level || truningPointIndex - 1 <= range)
+
+						if (minPoint <= -1 * level || truningPointIndex - 1 <= range)
 						{
 							pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 								(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -4137,7 +4135,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_Chart_RegressionTest(Strateg
 	int startShift = 1;
 
 	double asiBull, asiBear;
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;
+	double turningPoint, minPoint;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -4576,7 +4575,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_Chart_RegressionTest(Strateg
 				if (isEnableBeiLi == TRUE
 					&& pIndicators->entrySignal != 0
 					&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == BUY
-					&& iMACDTrendBeiLiEasy(B_PRIMARY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex))
+					&& iMACDTrendBeiLiEasy(B_PRIMARY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 				{
 					pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -4653,7 +4652,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_Chart_RegressionTest(Strateg
 			if (isEnableBeiLi == TRUE
 				&& pIndicators->entrySignal != 0
 				&& orderIndex >= 0 && pParams->orderInfo[orderIndex].type == SELL
-				&& iMACDTrendBeiLiEasy(B_PRIMARY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex))
+				&& iMACDTrendBeiLiEasy(B_PRIMARY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 			{
 				pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -5814,7 +5813,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 
 	BOOL isDailyOnly = TRUE;
 	BOOL isEnableEntryEOD = FALSE;
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;
+	double turningPoint, minPoint;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -6101,7 +6101,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 
 			if (isMACDBeiLi == TRUE
 				&& pIndicators->entrySignal != 0
-				&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex))
+				&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 			{
 				pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -6148,7 +6148,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 
 			if (isMACDBeiLi == TRUE
 				&& pIndicators->entrySignal != 0
-				&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex))
+				&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 			{
 				pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -6293,7 +6293,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 
 	double level = 0.0;
 
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;
+	double turningPoint, minPoint;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -6529,7 +6530,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 		if (isMACDBeiLi == TRUE
 			&& pIndicators->entrySignal != 0
 			//&& latestOrderIndex >= 0 && pParams->orderInfo[latestOrderIndex].type == BUY
-			&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex))
+			&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 		{
 			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -6584,7 +6585,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 
 		if (isMACDBeiLi == TRUE
 			&& pIndicators->entrySignal != 0			
-			&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex))
+			&& iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint))
 		{
 			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MACD BeiLi",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
@@ -6861,7 +6862,8 @@ AsirikuyReturnCode workoutExecutionTrend_4H_ShellingtonVer1(StrategyParams* pPar
 
 	int startHour = 0;
 
-	int truningPointIndex = -1;
+	int truningPointIndex = -1, minPointIndex = -1;
+	double turningPoint, minPoint;
 
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double volume1, volume2;
@@ -7035,7 +7037,7 @@ AsirikuyReturnCode workoutExecutionTrend_4H_ShellingtonVer1(StrategyParams* pPar
 					&& (isEnableATR == FALSE || atr5 > pIndicators->entryPrice * 0.01 * 0.55)
 					&& (isVolumeControl == FALSE || volume1 > volume2)
 					&& (isEnableBeiLi == FALSE						
-					|| iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex) == FALSE)
+					|| iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0.0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint) == FALSE)
 					)
 				{
 
@@ -7070,7 +7072,7 @@ AsirikuyReturnCode workoutExecutionTrend_4H_ShellingtonVer1(StrategyParams* pPar
 					&& (isEnableATR == FALSE || atr5 > pIndicators->entryPrice * 0.01 * 0.55)
 					&& (isVolumeControl == FALSE || volume1 > volume2)
 					&& (isEnableBeiLi == FALSE
-					|| iMACDTrendBeiLiEasy(B_DAILY_RATES, 5, 10, 5, 1, 0.0, SELL, &truningPointIndex) == FALSE)
+					|| iMACDTrendBeiLiEasy(B_DAILY_RATES, 5, 10, 5, 1, 0.0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint) == FALSE)
 					)
 				{
 					pIndicators->entrySignal = -1;					
