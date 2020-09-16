@@ -1887,12 +1887,11 @@ AsirikuyReturnCode workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(StrategyParam
 			//side = getLastestOrderTypeXAUUSDEasy(B_PRIMARY_RATES, &openOrderHigh, &openOrderLow, &isOpen);
 			orderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
 			
-			if( (orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].type != BUY) )
-				&& fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR
-				)
+			if( (orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].type != BUY) ))
 			{
 				pIndicators->entrySignal = 1;
 			}
+	
 			pIndicators->exitSignal = EXIT_SELL;
 
 		}
@@ -1907,15 +1906,26 @@ AsirikuyReturnCode workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(StrategyParam
 
 			//side = getLastestOrderTypeXAUUSDEasy(B_PRIMARY_RATES, &openOrderHigh, &openOrderLow, &isOpen);
 			orderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
-			if ( (orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].type != SELL) )
-				&& fabs(iHigh(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR
-				)
+			if ( (orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].type != SELL) ))
 			{
 				pIndicators->entrySignal = -1;
 			}
 
 			pIndicators->exitSignal = EXIT_BUY;
 
+		}
+
+		if (pIndicators->entrySignal != 0 &&
+			fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) > pBase_Indicators->pWeeklyPredictATR
+			)
+		{
+			sprintf(pIndicators->status, "current weekly price gap %lf is greater than pWeeklyPredictATR %lf",
+				fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice), pBase_Indicators->pWeeklyPredictATR);
+
+			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+			pIndicators->entrySignal = 0;
 		}
 
 		//profitManagement_base(pParams, pIndicators, pBase_Indicators);
@@ -3233,14 +3243,23 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
 	{
+		//if (pParams->bidAsk.ask[0] < 10000)
+		//	level = 0.005 * pParams->bidAsk.ask[0];		
+		//else if (pParams->bidAsk.ask[0] < 20000)
+		//	level = max(50, 0.0035 * pParams->bidAsk.ask[0]);
+		//else if (pParams->bidAsk.ask[0] < 30000)
+		//	level = max(75, 0.003 * pParams->bidAsk.ask[0]);
+		//else
+		//	level = max(90, 0.0025 * pParams->bidAsk.ask[0]);	
 
 		level = 0.005 * pParams->bidAsk.ask[0];
+
 		maxLevel = 0.05 * pParams->bidAsk.ask[0];
 		histLevel = 0.01;
 		isVolumeControl = FALSE;
 		isEnableBeiLi = TRUE;
 
-		isEnableSlow = FALSE;
+		isEnableSlow = TRUE;
 		isEnableATR = FALSE;
 		isEnableCMFVolume = FALSE;
 		isEnableCMFVolumeGap = FALSE;
@@ -3670,9 +3689,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		pIndicators->stopLoss = stopLoss;
 				
 
-		if (pIndicators->fast > 0
-			&& (isEnableSlow == FALSE || pIndicators->slow > 0)
-			//&& dailyTrend > 0 			
+		if (pIndicators->fast > 0						
 			&& preDailyClose > dailyBaseLine
 			&& pIndicators->fast - pIndicators->slow > macdLimit
 			) // Buy
@@ -3721,7 +3738,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				//(preWeeklyClose > weekly_baseline && (weekly_baseline_short > weekly_baseline || pre3KTrend == UP))
 				//)
 				//&& pIndicators->entryPrice - iClose(B_DAILY_RATES, startShift) <= 0.2 * pBase_Indicators->dailyATR
-				&& (isEnableASI == FALSE|| asiBull > asiBear)				
+				//&& (isEnableASI == FALSE|| asiBull > asiBear)				
 				)
 			{
 				
@@ -3739,8 +3756,19 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 						|| (isCMFVolumeRisk == TRUE && pIndicators->cmfVolume > 0)
 						|| (isAllVolumeRisk == TRUE && pIndicators->CMFVolumeGap > 0 && pIndicators->cmfVolume >  0 && pIndicators->volume1 > pIndicators->volume2)
 						)
-						pIndicators->risk = maxRisk;
-					
+						pIndicators->risk = maxRisk;					
+
+					if (isEnableSlow == TRUE &&
+						pIndicators->entrySignal != 0 &&
+						pIndicators->slow <= 0)
+					{
+						sprintf(pIndicators->status, "slow %lf is not greater than level 0.",
+							pIndicators->slow);
+
+						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+						pIndicators->entrySignal = 0;
+					}
 
 					if (pIndicators->entrySignal != 0 &&
 						pIndicators->fast <= level)
@@ -3881,12 +3909,9 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 		}
 
-		if (pIndicators->fast < 0
-			&& (isEnableSlow == FALSE || pIndicators->slow < 0)
-			//&& dailyTrend < 0			
+		if (pIndicators->fast < 0			
 			&& preDailyClose < dailyBaseLine
 			&& pIndicators->slow - pIndicators->fast > macdLimit
-//			&& fast < preFast			
 			) // Sell
 		{
 			pIndicators->executionTrend = -1;
@@ -3931,7 +3956,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				//&& (weekly_baseline_short < weekly_baseline || pre3KTrend == DOWN))
 				//)
 				//&& iClose(B_DAILY_RATES, startShift) - pIndicators->entryPrice <= 0.2 * pBase_Indicators->dailyATR
-				&& (isEnableASI == FALSE || asiBull < asiBear)				
+				//&& (isEnableASI == FALSE || asiBull < asiBear)				
 				)
 			{
 				safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].closeTime);
@@ -3950,6 +3975,18 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 						|| (isAllVolumeRisk == TRUE && pIndicators->CMFVolumeGap < 0 && pIndicators->cmfVolume <  0 && pIndicators->volume1 < pIndicators->volume2)
 						)
 						pIndicators->risk = maxRisk;
+
+					if (isEnableSlow == TRUE &&
+						pIndicators->entrySignal != 0 &&
+						pIndicators->slow >= 0)
+					{
+						sprintf(pIndicators->status, "slow %lf is not less than level 0.",
+							pIndicators->slow);
+
+						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+						pIndicators->entrySignal = 0;
+					}
 
 					if (pIndicators->entrySignal != 0 &&
 						pIndicators->fast >= -1 * level)
@@ -7336,6 +7373,8 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 
 	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
 
+	int sameSideWonTradesInCurrentTrend;
+
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
 	safe_timeString(timeString, currentTime);
@@ -7465,7 +7504,7 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, diff4Hours, diffDays, diffWeeks, orderIndex, close_index_rate, pIndicators->bbsIndex_4H);
 		}
 
-
+		
 		if (trend_4H == 1 //&& pBase_Indicators->weekly3RulesTrend == UP
 			)
 		{
@@ -7476,7 +7515,9 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 
 				pIndicators->stopLossPrice = min(pIndicators->bbsStopPrice_4H, iMA(3, B_FOURHOURLY_RATES, 200, 1) - pBase_Indicators->pDailyATR * 0.5);
 				//pIndicators->stopLossPrice = min(pIndicators->stopLossPrice, pIndicators->entryPrice - pBase_Indicators->pDailyATR * 1.5);
-							
+
+				pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,stopLossPrice=%lf,bbsStopPrice_4H=%lf,MA200 = %lf",
+					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->stopLossPrice, pIndicators->bbsStopPrice_4H, iMA(3, B_FOURHOURLY_RATES, 200, 1) - pBase_Indicators->pDailyATR * 0.5);
 
 				//if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE)
 				//{
@@ -7488,15 +7529,30 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 
 				//orderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
 
+				sameSideWonTradesInCurrentTrend = getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, BUY);
+
 				if ((orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == FALSE))
-					&& (isEnableWeeklyATRControl == FALSE || fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR)
-					&& (pParams->orderInfo[orderIndex].type == SELL || pIndicators->bbsIndex_4H >= close_index_rate)
-					&& getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, BUY) < buyWonTimes
-					&& (isEnableWeeklyTrend == FALSE || pBase_Indicators->weeklyTrend_Phase != RANGE)
+					//&& (isEnableWeeklyATRControl == FALSE || fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR)
+					&& ((orderIndex >= 0 && pParams->orderInfo[orderIndex].type == SELL) || pIndicators->bbsIndex_4H >= close_index_rate)
+					//&& getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, BUY) < buyWonTimes
+					//&& (isEnableWeeklyTrend == FALSE || pBase_Indicators->weeklyTrend_Phase != RANGE)
 					)
 				{
 
 					pIndicators->entrySignal = 1;
+
+					if (pIndicators->entrySignal != 0 &&
+						sameSideWonTradesInCurrentTrend >= buyWonTimes
+						)
+					{
+						sprintf(pIndicators->status, "sameSideWonTradesInCurrentTrend %lf is greater than buyWonTimes %lf",
+							sameSideWonTradesInCurrentTrend, buyWonTimes);
+
+						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+						pIndicators->entrySignal = 0;
+					}
 
 				}				
 				
@@ -7510,6 +7566,7 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 		if (trend_4H == -1 //&& pBase_Indicators->weekly3RulesTrend == DOWN
 			)
 		{
+			
 			if (pIndicators->bbsTrend_4H == -1)
 			{
 				pIndicators->executionTrend = -1;
@@ -7528,14 +7585,31 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 
 				//}
 
+				sameSideWonTradesInCurrentTrend = getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, SELL);
+
 				if ((orderIndex < 0 || (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == FALSE))
-					&& (isEnableWeeklyATRControl == FALSE || fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR)
-					&& (pParams->orderInfo[orderIndex].type == BUY || pIndicators->bbsIndex_4H >= close_index_rate)
-					&& getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, SELL) < sellWonTimes
-					&& (isEnableWeeklyTrend == FALSE || pBase_Indicators->weeklyTrend_Phase != RANGE)
+					//&& (isEnableWeeklyATRControl == FALSE || fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) <= pBase_Indicators->pWeeklyPredictATR)
+					&& ((orderIndex >= 0 && pParams->orderInfo[orderIndex].type == BUY) || pIndicators->bbsIndex_4H >= close_index_rate)
+					//&& getSameSideWonTradesInCurrentTrendEasy(B_PRIMARY_RATES, SELL) < sellWonTimes
+					//&& (isEnableWeeklyTrend == FALSE || pBase_Indicators->weeklyTrend_Phase != RANGE)
 					)
 				{
-					pIndicators->entrySignal = -1;					
+					pIndicators->entrySignal = -1;	
+										
+
+					if (pIndicators->entrySignal != 0 &&
+						sameSideWonTradesInCurrentTrend >= sellWonTimes
+						)
+					{
+						sprintf(pIndicators->status, "sameSideWonTradesInCurrentTrend %lf is greater than sellWonTimes %lf",
+							sameSideWonTradesInCurrentTrend, sellWonTimes);
+
+						pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+							(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+						pIndicators->entrySignal = 0;
+					}
+
 				}
 				
 			}
@@ -7545,6 +7619,33 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 		//else
 		//	pIndicators->exitSignal = EXIT_SELL;
 
+		if (pIndicators->entrySignal != 0 &&
+			isEnableWeeklyATRControl == TRUE &&
+			fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice) > pBase_Indicators->pWeeklyPredictATR
+			)
+		{
+			sprintf(pIndicators->status, "current week movement %lf is greater than pWeeklyPredictATR %lf",
+				fabs(iLow(B_WEEKLY_RATES, 0) - pIndicators->entryPrice), pBase_Indicators->pWeeklyPredictATR);
+
+			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+			pIndicators->entrySignal = 0;
+		}
+
+		if (pIndicators->entrySignal != 0 &&
+			isEnableWeeklyTrend == TRUE &&
+			pBase_Indicators->weeklyTrend_Phase == RANGE
+			)
+		{
+			sprintf(pIndicators->status, "pBase_Indicators->weeklyTrend_Phase %lf is in Range",
+				pBase_Indicators->weeklyTrend_Phase);
+
+			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+			pIndicators->entrySignal = 0;
+		}
 	}
 	return SUCCESS;
 }

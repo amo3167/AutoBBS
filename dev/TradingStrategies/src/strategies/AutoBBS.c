@@ -476,6 +476,34 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 		addValueToUI("weeklyMaxATR", pBase_Indicators->pWeeklyPredictMaxATR);	
 		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
 		break;
+	case 18:
+	case 20:
+		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
+		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
+		addValueToUI("entrySignal", pIndicators->entrySignal);
+		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
+		addValueToUI("atr_euro_range", pIndicators->atr_euro_range);
+		addValueToUI("pWeeklyPredictATR", pBase_Indicators->pWeeklyPredictATR);
+		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_excution);
+		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
+		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
+		addValueToUI("strategyRisk", pIndicators->strategyRisk);
+		addValueToUI(pIndicators->status, 0);
+		break;
+	case 21: //Multday. Inking	
+	case 22: //Multday. Inking		
+		addValueToUI("entrySignal", pIndicators->entrySignal);		
+		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
+		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
+		addValueToUI("atr_euro_range", pIndicators->atr_euro_range);
+		addValueToUI("stopLoss", pIndicators->stopLoss);
+		addValueToUI("takePrice", pIndicators->takePrice);		
+		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
+		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
+		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
+		addValueToUI("strategyRisk", pIndicators->strategyRisk);
+		addValueToUI(pIndicators->status, 0);
+		break;
 	case 23: //MACD		
 		addValueToUI("entrySignal", pIndicators->entrySignal);		
 		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);		
@@ -491,6 +519,15 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 		addValueToUI("preSlow", pIndicators->preSlow);
 		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
 		addValueToUI("strategyRisk", pIndicators->strategyRisk);	
+		addValueToUI(pIndicators->status, 0);
+		break;
+	case 30: //Shellington low risk	
+		addValueToUI("entrySignal", pIndicators->entrySignal);
+		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
+		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
+		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);						
+		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
+		addValueToUI("strategyRisk", pIndicators->strategyRisk);
 		addValueToUI(pIndicators->status, 0);
 		break;
 	case 31: //Ichikomo
