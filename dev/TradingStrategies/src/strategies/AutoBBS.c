@@ -195,7 +195,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	int        shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	int   startHour = 0;
 
-	if (strstr(pParams->tradeSymbol, "XAU") != NULL || strstr(pParams->tradeSymbol, "XTI") != NULL)
+	if (strstr(pParams->tradeSymbol, "XAU") != NULL || strstr(pParams->tradeSymbol, "XTI") != NULL || strstr(pParams->tradeSymbol, "XAG") != NULL || strstr(pParams->tradeSymbol, "XPD") != NULL)
 		startHour = 1;
 
 	safe_gmtime(&timeInfo, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
@@ -734,7 +734,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 
-	if (strcmp(timeString, "18/08/20 23:00") == 0)
+	if (strcmp(timeString, "28/01/21 08:00") == 0)
 		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
 
 	if (strcmp(timeString, "22/01/20 23:00") == 0)

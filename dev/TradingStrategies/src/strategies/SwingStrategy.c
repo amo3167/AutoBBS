@@ -2042,9 +2042,27 @@ static BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicato
 		return FALSE;	
 	}
 
+	//filter christmas eve and new year eve
+	if (timeInfo1.tm_mon == 11 && (timeInfo1.tm_mday == 24 || timeInfo1.tm_mday == 31))
+	{
+		strcpy(pIndicators->status, "Filter Christmas and New Year Eve.");
+
+		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+		return FALSE;
+	}
+
 	////filter US rate day
 	//if (XAUUSD_IsKeyDate(pParams, pIndicators, pBase_Indicators))
+	//{
+	//	strcpy(pIndicators->status, "Filter out US market close ealier.");
+
+	//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+	//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
 	//	return FALSE;
+	//}
 
 	if (timeInfo1.tm_hour < startTradingTime)
 		return FALSE;
@@ -3766,7 +3784,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 	double daily_baseline = 0.0, dailyHigh = 0.0, dailyLow = 0.0, preDailyClose;	
 	int executionTrend;
 
-	BOOL isSameDayOrder = FALSE, isSameDayClosedOrder = FALSE;
+	BOOL isSameDayOrder = FALSE, isSameDayClosedOrder = FALSE,isLastOrderProfit = FALSE;
 	BOOL isPreviousDayOrder = FALSE;
 	BOOL shouldFilter = TRUE;
 	int takeProfitMode = 0;
@@ -3853,6 +3871,11 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		if (timeInfo1.tm_year == timeInfo2.tm_year &&  timeInfo1.tm_mon == timeInfo2.tm_mon && timeInfo1.tm_mday == timeInfo2.tm_mday)
 		{
 			isSameDayClosedOrder = TRUE;			
+		}
+
+		if (pParams->orderInfo[latestOrderIndex].profit >= 0)
+		{
+			isLastOrderProfit = TRUE;
 		}
 	}
 
@@ -4348,6 +4371,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 				pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
 				
 				//if (pIndicators->winTimes == 0 && pIndicators->lossTimes < maxTradeTime && (side == SELL || side == NONE))
+				//if ((isSameDayOrder == FALSE && isLastOrderProfit == FALSE) || isSameDayClosedOrder == FALSE)
 				if (isSameDayClosedOrder == FALSE)
 					pIndicators->entrySignal = 1;
 
@@ -4371,7 +4395,8 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 				pIndicators->entryPrice = pParams->bidAsk.bid[0];
 				pIndicators->stopLossPrice = pIndicators->entryPrice + pIndicators->stopLoss;
 				//if (pIndicators->winTimes == 0 && pIndicators->lossTimes < maxTradeTime && (side == BUY || side == NONE))				
-				if ( isSameDayClosedOrder == FALSE )
+				//if ((isSameDayOrder == FALSE && isLastOrderProfit == FALSE) || isSameDayClosedOrder == FALSE)
+				if ( isSameDayClosedOrder == FALSE)
 					pIndicators->entrySignal = -1;
 
 				pIndicators->exitSignal = EXIT_BUY;
@@ -4400,7 +4425,8 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 					&& (takeProfitMode == 0 || iClose(B_PRIMARY_RATES, 1) > iOpen(B_PRIMARY_RATES, 1) )
 					)
 				{					
-					closeShortEasy(pParams->orderInfo[latestOrderIndex].ticket);
+					//closeShortEasy(pParams->orderInfo[latestOrderIndex].ticket);
+					pIndicators->exitSignal = EXIT_SELL;
 					pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, closing sell order: entryPrice =%lf, openOrderLow=%lf",
 						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, entryPrice, openOrderLow);
 					return SUCCESS;
@@ -4435,7 +4461,8 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 					)
 				{
 					//closeAllWithNegativeEasy(5, currentTime, 3);//close them intraday on break event
-					closeLongEasy(pParams->orderInfo[latestOrderIndex].ticket);
+					//closeLongEasy(pParams->orderInfo[latestOrderIndex].ticket);
+					pIndicators->exitSignal = EXIT_BUY;
 					pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, closing buy order: entryPrice =%lf, openOrderHigh=%lf",
 						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, entryPrice, openOrderHigh);
 					return SUCCESS;

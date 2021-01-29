@@ -3307,7 +3307,7 @@ int EasyTrade::getLastestOrderIndexExcept(int rateIndex, int exceptIndexs[])
 	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
 	{
 		isFound = FALSE;
-		for (j = 0; j < 3; j++)
+		for (j = 0; j < 7; j++)
 		{
 			if (i == exceptIndexs[j])
 			{
@@ -3403,8 +3403,8 @@ int EasyTrade::getSameSideWonTradesInCurrentTrend(int rateIndex, OrderType type)
 {
 	int sameSideTimes = 0;
 	struct tm timeInfo1;
-	int index1, index2, index3, index4,index5,index6;
-	int	exceptIndexs[5] = {};
+	int index1, index2, index3, index4, index5, index6, index7, index8;
+	int	exceptIndexs[7] = {};
 		
 	index1 = getLastestOrderIndex(rateIndex);
 	if (index1 >= 0)
@@ -3490,6 +3490,36 @@ int EasyTrade::getSameSideWonTradesInCurrentTrend(int rateIndex, OrderType type)
 		if (pParams->orderInfo[index6].type == type)
 		{
 			if (pParams->orderInfo[index6].profit > 0)
+				sameSideTimes++;
+		}
+		else
+			return sameSideTimes;
+	}
+	else
+		return sameSideTimes;
+
+	exceptIndexs[5] = index6;
+	index7 = getLastestOrderIndexExcept(rateIndex, exceptIndexs);
+	if (index7 >= 0)
+	{
+		if (pParams->orderInfo[index7].type == type)
+		{
+			if (pParams->orderInfo[index7].profit > 0)
+				sameSideTimes++;
+		}
+		else
+			return sameSideTimes;
+	}
+	else
+		return sameSideTimes;
+
+	exceptIndexs[6] = index7;
+	index8 = getLastestOrderIndexExcept(rateIndex, exceptIndexs);
+	if (index8 >= 0)
+	{
+		if (pParams->orderInfo[index8].type == type)
+		{
+			if (pParams->orderInfo[index8].profit > 0)
 				sameSideTimes++;
 		}
 		else
@@ -4864,11 +4894,15 @@ AsirikuyReturnCode EasyTrade::validateDailyBars(StrategyParams* pParams, int pri
 
 	if (strstr(pParams->tradeSymbol, "XAU") != NULL)
 		startHour = 1;
+	if (strstr(pParams->tradeSymbol, "XAG") != NULL)
+		startHour = 1;
+	if (strstr(pParams->tradeSymbol, "XPD") != NULL)
+		startHour = 1;
 
 	if (strstr(pParams->tradeSymbol, "XTI") != NULL)
 		startHour = 1;
 	if (strcmp(pParams->accountInfo.brokerName, "International Capital Markets Pty Ltd.") == 0
-		&& strstr(pParams->tradeSymbol, "US500USD") != NULL)
+		&& (strstr(pParams->tradeSymbol, "US500USD") != NULL || strstr(pParams->tradeSymbol, "USTECUSD") != NULL))
 		startHour = 1;
 
 
@@ -5051,13 +5085,17 @@ AsirikuyReturnCode EasyTrade::validateSecondaryBars(StrategyParams* pParams, int
 
 	if (strstr(pParams->tradeSymbol, "XAU") != NULL)	
 		startHour = 1;
+	if (strstr(pParams->tradeSymbol, "XAG") != NULL)
+		startHour = 1;
+	if (strstr(pParams->tradeSymbol, "XPD") != NULL)
+		startHour = 1;
 
 	if (strstr(pParams->tradeSymbol, "XTI") != NULL)
 		startHour = 1;
 
 	
 	if (strcmp(pParams->accountInfo.brokerName, "International Capital Markets Pty Ltd.") == 0
-		&& strstr(pParams->tradeSymbol, "US500USD") != NULL)
+		&& (strstr(pParams->tradeSymbol, "US500USD") != NULL || strstr(pParams->tradeSymbol, "USTECUSD") != NULL))
 		startHour = 1;
 		
 	//if (primary_tf != secondary_tf)

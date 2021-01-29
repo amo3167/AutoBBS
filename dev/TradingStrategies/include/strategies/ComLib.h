@@ -166,6 +166,8 @@ extern "C" {
 	BOOL isNextdayMACDPostiveBar2(StrategyParams* pParams,int orderIndex,int startShift);
 	double roundUp(double lots, double volumeStep);
 
+	AsirikuyReturnCode getHighestCloseHourlyPrice(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex,int * highPrice, int * lowPrice);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

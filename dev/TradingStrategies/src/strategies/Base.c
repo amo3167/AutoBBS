@@ -719,6 +719,29 @@ AsirikuyReturnCode iTrend_MA(double iATR,int ratesArrayIndex,int *trend)
 	return SUCCESS;
 }
 
+int iTrendMA_LookBack(StrategyParams* pParams, Base_Indicators* pIndicators, int ratesArrayIndex,int signal)
+{
+	int trend[100] = { 0 };
+	int i = 0;
+	double ma50M, ma200M;	
+	int truningIndex = 100;
+
+	for (i = 1; i < 100; i++)
+	{
+		trend[i] = getMATrend(iAtr(ratesArrayIndex, 20, 1), ratesArrayIndex, i);
+		if ( (signal > 0 && trend[i] != UP_NORMAL) ||
+			(signal < 0 && trend[i] != DOWN_NORMAL))
+		{
+			truningIndex = i;
+			break;
+		}
+	}
+
+	return truningIndex;
+
+}
+
+
 AsirikuyReturnCode iTrend_MA_WeeklyBar_For4H(double iATR, int *trend)
 {
 	double ma50M, ma200M;

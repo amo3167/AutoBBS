@@ -184,7 +184,7 @@ static BOOL reWorkoutPivotFromPrimaryRate(StrategyParams* pParams, Indicators* p
 	safe_timeString(timeString, currentTime);
 
 	// If XAU missing 0:00 hourly bar
-	if (strstr(pParams->tradeSymbol, "XAU") != NULL || strstr(pParams->tradeSymbol, "XTI") != NULL)
+	if (strstr(pParams->tradeSymbol, "XAU") != NULL || strstr(pParams->tradeSymbol, "XTI") != NULL || strstr(pParams->tradeSymbol, "XAG") != NULL || strstr(pParams->tradeSymbol, "XPD") != NULL)
 		missingbarAdjust = 1;
 
 	timeFrame = (int)pParams->settings[TIMEFRAME];
