@@ -46,21 +46,20 @@ void splitBuyOrders_ShortTerm(StrategyParams* pParams, Indicators* pIndicators, 
 			orderCountToday = getOrderCountTodayEasy(currentTime);
 			if (orderCountToday == 0)
 			{
-				takePrice = gap - pIndicators->adjust;
+				takePrice = gap /3;
 				
 				lots = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, takePrice) * pIndicators->risk;
 
 				// Cap to 2 % risk
 				//這裏使用估計止損50點，然後最大風險是2%
 				//Cap the max risk
-				//lots_max = calculateOrderSizeWithSpecificRisk(pParams, BUY, pIndicators->entryPrice, stopLoss, pParams->settings[ACCOUNT_RISK_PERCENT] * 7);
-				//lots = min(lots_max, lots);
+				lots_max = calculateOrderSizeWithSpecificRisk(pParams, BUY, pIndicators->entryPrice, stopLoss, pParams->settings[ACCOUNT_RISK_PERCENT] * 7);
+				lots = min(lots_max, lots);
 
-				//if (takePrice >= 1.5) //XAUUSD		
-				//	openSingleLongEasy(takePrice, stopLoss, lots, 0);
+				if (takePrice >= 1.5) //XAUUSD		
+					openSingleLongEasy(takePrice, stopLoss, lots, 0);
 				
-				//1:1 
-				openSingleLongEasy(takePrice, takePrice, lots, 0);
+
 
 				if (pIndicators->entrySignal == 1 && pIndicators->bbsIndex_excution != shift0Index_Primary - 1)
 				{
@@ -123,19 +122,19 @@ void splitSellOrders_ShortTerm(StrategyParams* pParams, Indicators* pIndicators,
 			if (orderCountToday == 0)
 			{
 
-				takePrice = gap - pIndicators->adjust;
+				takePrice = gap /3;
 				lots = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, takePrice) * pIndicators->risk;
 
 				// Cap to 2 % risk
 				//這裏使用估計止損50點，然後最大風險是2%
 				//Cap the max risk
-				//lots_max = calculateOrderSizeWithSpecificRisk(pParams, SELL, pIndicators->entryPrice, stopLoss, pParams->settings[ACCOUNT_RISK_PERCENT] * 7);
-				//lots = min(lots_max, lots);
+				lots_max = calculateOrderSizeWithSpecificRisk(pParams, SELL, pIndicators->entryPrice, stopLoss, pParams->settings[ACCOUNT_RISK_PERCENT] * 7);
+				lots = min(lots_max, lots);
 
-				//if (takePrice >= 1.5) //XAUUSD
-				//	openSingleShortEasy(takePrice, stopLoss, lots, 0);
+				if (takePrice >= 1.5) //XAUUSD
+					openSingleShortEasy(takePrice, stopLoss, lots, 0);
 
-				openSingleShortEasy(takePrice, takePrice, lots, 0);
+
 
 				if (pIndicators->entrySignal == 1 && pIndicators->bbsIndex_excution != shift0Index_Primary - 1)
 				{
@@ -951,6 +950,12 @@ AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams* pParams, Indicator
 		break;
 	}
 
+	if (pIndicators->entrySignal == 1 && iClose(B_DAILY_RATES, 1) < iMA(3, B_DAILY_RATES, 50, 1))
+		pIndicators->entrySignal = 0;
+
+	if (pIndicators->entrySignal == -1 && iClose(B_DAILY_RATES, 1) > iMA(3, B_DAILY_RATES, 50, 1))
+		pIndicators->entrySignal = 0;
+
 	//Asia hours
 	//if (timeInfo1.tm_hour < 8 )
 	//{
@@ -1208,6 +1213,8 @@ AsirikuyReturnCode workoutExecutionTrend_BBS_BreakOut(StrategyParams* pParams, I
 	double breakingHigh, breakingLow;
 	double intraHigh = 99999, intraLow  = -99999;
 	int count = 0;
+
+	double baseline = 0;
 	
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_Primary];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -1242,7 +1249,7 @@ AsirikuyReturnCode workoutExecutionTrend_BBS_BreakOut(StrategyParams* pParams, I
 	if (count >= 2)
 		iSRLevels(pParams, pBase_Indicators, B_PRIMARY_RATES, shift1Index, count, &intraHigh, &intraLow);
 
-
+	baseline = iMA(3, B_DAILY_RATES, 50, 1);
 	
 	if (pBase_Indicators->dailyTrend_Phase == BEGINNING_UP_PHASE || (ignored && pBase_Indicators->dailyTrend_Phase > 0))
 	{
@@ -1252,6 +1259,7 @@ AsirikuyReturnCode workoutExecutionTrend_BBS_BreakOut(StrategyParams* pParams, I
 		pIndicators->stopLossPrice = min(pIndicators->stopLossPrice, pIndicators->entryPrice - pBase_Indicators->dailyATR);
 
 		if (pIndicators->bbsTrend_excution == 1
+			&& iClose(B_DAILY_RATES,1) > baseline
 			&& (
 			pIndicators->bbsIndex_excution == shift1Index
 			|| (intraHigh < breakingHigh && intraLow > breakingLow)
@@ -1284,6 +1292,7 @@ AsirikuyReturnCode workoutExecutionTrend_BBS_BreakOut(StrategyParams* pParams, I
 		pIndicators->stopLossPrice = max(pIndicators->stopLossPrice, pIndicators->entryPrice + pBase_Indicators->dailyATR);
 
 		if (pIndicators->bbsTrend_excution == -1
+			&& iClose(B_DAILY_RATES, 1) < baseline
 			&& (
 			pIndicators->bbsIndex_excution == shift1Index
 			|| (intraHigh < breakingHigh && intraLow > breakingLow)
@@ -4327,6 +4336,8 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	//	pIndicators->exitSignal = EXIT_SELL;
 
 	//If average = 2.3, max = 3
+
+	//If the open order number is 2, and try to keep adding position.
 
 
 	return SUCCESS;
