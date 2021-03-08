@@ -1095,6 +1095,8 @@ double caculateStrategyWeeklyPNLEasy(time_t currentTime);
 
 double iASIEasy(int ratesArrayIndex, int mode, int length, int smooth, double * outBull, double *outBear);
 
+int getOldestOpenOrderIndexEasy(int rateIndex);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

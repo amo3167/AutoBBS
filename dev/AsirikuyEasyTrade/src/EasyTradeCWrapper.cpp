@@ -691,6 +691,11 @@ int getLastestOrderIndexEasy(int rateIndex)
 	return easyTradePtr->getLastestOrderIndex(rateIndex);
 }
 
+int getOldestOpenOrderIndexEasy(int rateIndex)
+{
+	return easyTradePtr->getOldestOpenOrderIndex(rateIndex);
+}
+
 double caculateStrategyWeeklyPNLEasy(time_t currentTime)
 {
 	return easyTradePtr->caculateStrategyWeeklyPNL(currentTime);

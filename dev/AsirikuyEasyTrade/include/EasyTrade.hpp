@@ -1098,6 +1098,8 @@ AsirikuyReturnCode openSingleSellLimitEasy(double entryPrice, double takeProfit,
   
   double iASI(int ratesArrayIndex, int mode, int length, int smooth, double * outBull, double *outBear);
 
+  int getOldestOpenOrderIndex(int rateIndex);
+
 protected:
 
 private:

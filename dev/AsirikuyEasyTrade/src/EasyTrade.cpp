@@ -2661,6 +2661,35 @@ AsirikuyReturnCode EasyTrade::getHighLow( int ratesArrayIndex, int shfitIndex, i
 	return SUCCESS;
 }
 
+int EasyTrade::getOldestOpenOrderIndex(int rateIndex)
+{
+	int i;
+	int    shift0Index = pParams->ratesBuffers->rates[rateIndex].info.arraySize - 1, shift1Index = pParams->ratesBuffers->rates[rateIndex].info.arraySize - 2;
+	time_t openTime, maxTime = LLONG_MAX;
+	struct tm timeInfo1;
+	int  execution_tf = (int)pParams->settings[TIMEFRAME];
+	int index = -1;
+
+	time_t currentTime = pParams->ratesBuffers->rates[rateIndex].time[shift0Index];
+	safe_gmtime(&timeInfo1, currentTime);
+
+	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+	{
+		if (pParams->orderInfo[i].ticket != 0 && pParams->orderInfo[i].isOpen == TRUE)
+		{
+			openTime = pParams->orderInfo[i].openTime;
+
+			if (openTime < maxTime)
+			{
+				maxTime = openTime;
+				index = i;
+			}
+		}
+	}
+
+	return index;
+}
+
 int EasyTrade::getLastestOrderIndex(int rateIndex)
 {
 	int i;
