@@ -19,7 +19,8 @@ typedef enum trend_t
 	DOWN = -3,
 	DOWN_NORMAL = -2,
 	DOWN_WEAK = -1,
-	RANGE = 0
+	RANGE = 0,
+	UNKNOWN = -100
 }trend;
 
 typedef enum trend_phase_t

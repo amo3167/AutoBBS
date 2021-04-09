@@ -745,7 +745,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 	if (strcmp(timeString, "07/09/15 18:25") == 0)
 		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
 
-	if (strcmp(timeString, "26/03/21 02:00") == 0)
+	if (strcmp(timeString, "04/04/21 01:05") == 0)
 		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
 
 	if ((int)parameter(AUTOBBS_TREND_MODE) == 16) // GBPJPY Daily Swing strategy, 这策略只需要日内的指标	

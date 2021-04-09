@@ -1000,7 +1000,7 @@ AsirikuyReturnCode EasyTrade::openSingleSellLimitEasy(double entryPrice, double 
   pParams->results[resultIndex].brokerTP   = takeProfit;
   pParams->results[resultIndex].internalTP = 0;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Sell Limit Signal, TP =%lf, SL=%lf, lots=%lf", takeProfit, stopLoss, pParams->results[resultIndex].lots);
+  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Sell Limit Signal, EntryPrice =%lf,TP =%lf, SL=%lf, lots=%lf", pParams->results[resultIndex].entryPrice,takeProfit, stopLoss, pParams->results[resultIndex].lots);
   addTradingSignal(SIGNAL_OPEN_SELLLIMIT, &tradingSignals);
   pParams->results[resultIndex].tradingSignals = tradingSignals;
 
@@ -1046,7 +1046,7 @@ AsirikuyReturnCode EasyTrade::openSingleSellStopEasy(double entryPrice, double t
   pParams->results[resultIndex].brokerTP   = takeProfit;
   pParams->results[resultIndex].internalTP = 0;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Sell Stop Signal, TP =%lf, SL=%lf, lots=%lf", takeProfit, stopLoss, pParams->results[0].lots);
+  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Sell Stop Signal, EntryPrice =%lf,TP =%lf, SL=%lf, lots=%lf", pParams->results[resultIndex].entryPrice,takeProfit, stopLoss, pParams->results[resultIndex].lots);
   addTradingSignal(SIGNAL_OPEN_SELLSTOP, &tradingSignals);
   pParams->results[resultIndex].tradingSignals = tradingSignals;
 
@@ -1092,7 +1092,7 @@ AsirikuyReturnCode EasyTrade::openSingleBuyStopEasy(double entryPrice, double ta
   pParams->results[resultIndex].brokerTP   = takeProfit;
   pParams->results[resultIndex].internalTP = 0;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Buy Stop Signal, TP =%lf, SL=%lf, lots=%lf", takeProfit, stopLoss, pParams->results[0].lots);
+  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Buy Stop Signal, EntryPrice =%lf,TP =%lf, SL=%lf, lots=%lf", pParams->results[resultIndex].entryPrice, takeProfit, stopLoss, pParams->results[resultIndex].lots);
   addTradingSignal(SIGNAL_OPEN_BUYSTOP, &tradingSignals);
   pParams->results[resultIndex].tradingSignals = tradingSignals;
 
@@ -1138,7 +1138,7 @@ AsirikuyReturnCode EasyTrade::openSingleBuyLimitEasy(double entryPrice, double t
   pParams->results[resultIndex].brokerTP   = takeProfit;
   pParams->results[resultIndex].internalTP = 0;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"%d Buy Limit Signal, TP =%lf, SL=%lf, lots=%lf", resultIndex, takeProfit, stopLoss, pParams->results[resultIndex].lots);
+  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"%d Buy Limit Signal, EntryPrice = %lf,TP =%lf, SL=%lf, lots=%lf", resultIndex, pParams->results[resultIndex].entryPrice, takeProfit, stopLoss, pParams->results[resultIndex].lots);
   addTradingSignal(SIGNAL_OPEN_BUYLIMIT, &tradingSignals);
   pParams->results[resultIndex].tradingSignals = tradingSignals;
 
@@ -4968,7 +4968,7 @@ AsirikuyReturnCode EasyTrade::closeBuyLimitEasy(int orderTicket)
 
 	tradingSignals = (int)pParams->results[resultIndex].tradingSignals;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Exit criteria) : Close BUY. InstanceID = %d, Ticket = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID], orderTicket);
+	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Exit criteria) : Close BUY Limit. InstanceID = %d, Ticket = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID], orderTicket);
 	addTradingSignal(SIGNAL_CLOSE_BUYLIMIT, &tradingSignals);
 
 	pParams->results[resultIndex].ticketNumber = orderTicket;

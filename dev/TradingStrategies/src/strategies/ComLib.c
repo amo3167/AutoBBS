@@ -682,7 +682,7 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 
 }
 
-AsirikuyReturnCode getHighestCloseHourlyPrice(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex,double * highPrice, double * lowPrice)
+AsirikuyReturnCode getHighestClosePrice(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int rate_index, int orderIndex, double * highPrice, double * lowPrice)
 {
 	
 	int  shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
@@ -706,7 +706,41 @@ AsirikuyReturnCode getHighestCloseHourlyPrice(StrategyParams* pParams, Indicator
 		openBar = shift1Index - count;
 
 		if (count >= 1)
-			iSRLevels_close(pParams, pBase_Indicators, B_HOURLY_RATES, shift1Index, 2*count, highPrice, lowPrice);
+			iSRLevels_close(pParams, pBase_Indicators, rate_index, shift1Index, 2 * count, highPrice, lowPrice);
+		else
+			return FALSE;
+	}
+	else
+		return FALSE;
+
+	return TRUE;
+}
+
+AsirikuyReturnCode getHighLowPrice(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int rate_index, int orderIndex, double * highPrice, double * lowPrice)
+{
+
+	int  shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
+	int  openBar = 0;
+	int count;
+	time_t currentTime;
+	struct tm timeInfo1;
+	char   timeString[MAX_TIME_STRING_SIZE] = "";
+
+	*highPrice = -999999.0;
+	*lowPrice = 999999.0;
+
+	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
+	safe_gmtime(&timeInfo1, currentTime);
+	safe_timeString(timeString, currentTime);
+
+	if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE)
+	{
+		count = (int)difftime(currentTime, pParams->orderInfo[orderIndex].openTime) / (60 * 60);
+
+		openBar = shift1Index - count;
+
+		if (count >= 1)
+			iSRLevels(pParams, pBase_Indicators, rate_index, shift1Index, 2 * count, highPrice, lowPrice);
 		else
 			return FALSE;
 	}

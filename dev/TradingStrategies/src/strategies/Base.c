@@ -1003,12 +1003,14 @@ void predictDailyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	//pUpATR = (pIndicators->dailyR2 - min(lastDailyClose, intradayLow));
 	//pDownATR = (max(lastDailyClose, intradayHigh) - pIndicators->dailyR2);
 
-	pLow = max(lastDailyClose,intradayHigh) - pATR;
-	pHigh = min(lastDailyClose,intradayLow) + pATR;
+	
+	pLow = max(lastDailyClose, intradayHigh) - pMaxATR;
+	pHigh = min(lastDailyClose, intradayLow) + pMaxATR;
 
 
 	if (pLow < pIndicators->dailyS2)
 		pLow = pIndicators->dailyS2;
+
 
 	if (pHigh > pIndicators->dailyR2)
 		pHigh = pIndicators->dailyR2;
@@ -1034,9 +1036,13 @@ void predictDailyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 
 	if (pIndicators->pDailyLow > pIndicators->dailyS2)
 		pMaxLow = pIndicators->dailyS2;
+	else
+		pMaxLow = max(lastDailyClose, intradayHigh) - pATR;
 
 	if (pIndicators->pDailyHigh < pIndicators->dailyR2)
 		pMaxHigh = pIndicators->dailyR2;
+	else
+		pMaxHigh = min(lastDailyClose, intradayLow) + pATR;
 
 	pIndicators->pMaxDailyHigh = pMaxHigh;
 	pIndicators->pMaxDailyLow = pMaxLow;
