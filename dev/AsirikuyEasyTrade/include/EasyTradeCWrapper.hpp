@@ -952,6 +952,7 @@ int getWinTimesInWeekEasy(time_t currentTime);
 int getLossTimesInDayExcludeBreakeventOrdersEasy(time_t currentTime, double * total_lost_pips, double points);
 int getLossTimesInDayEasy(time_t currentTime, double * total_lost_pips);
 int getWinTimesInDayEasy(time_t currentTime);
+int getLossTimesInDayCloseOrderEasy(time_t currentTime, double * total_lost_pips);
 
 int getOrderCountTodayExcludeBreakeventOrdersEasy(time_t currentTime, double points);
 int getOrderCountTodayEasy(time_t currentTime);

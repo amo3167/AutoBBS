@@ -666,6 +666,11 @@ int getLossTimesInDayEasy( time_t currentTime, double * total_lost_pips)
 {
 	return easyTradePtr->getLossTimesInDay(currentTime,total_lost_pips);
 }
+int getLossTimesInDayCloseOrderEasy(time_t currentTime, double * total_lost_pips)
+{
+	return easyTradePtr->getLossTimesInDayCloseOrder(currentTime, total_lost_pips);
+}
+
 int getWinTimesInDayEasy(time_t currentTime)
 {
 	return easyTradePtr->getWinTimesInDay(currentTime);

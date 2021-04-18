@@ -625,7 +625,10 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 
 	if ((int)parameter(AUTOBBS_TREND_MODE) == 33 || (int)parameter(AUTOBBS_TREND_MODE) == 2 || (int)parameter(AUTOBBS_TREND_MODE) == 34) //MACD BEILI, need to move take profit price
 	{
-		takePrice = fabs(pIndicators->entryPrice - pIndicators->takeProfitPrice);
+		takePrice = pIndicators->takePrice;
+
+		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"ModifyOrders: takePrice = %lf,takePrice=%lf", takePrice, pIndicators->takePrice);
+
 	}
 	
 

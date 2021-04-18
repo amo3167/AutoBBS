@@ -3818,7 +3818,7 @@ int EasyTrade::getOrderCountToday(time_t currentTime)
 
 	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
 	{
-		if (pParams->orderInfo[i].ticket != 0)
+		if (pParams->orderInfo[i].ticket != 0 && (pParams->orderInfo[i].type == BUY || pParams->orderInfo[i].type == SELL))
 		{
 			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
 
@@ -3873,6 +3873,39 @@ int EasyTrade::getLossTimesInDayExcludeBreakeventOrders(time_t currentTime, doub
 						lossTimes++;
 						*total_lost_pips += fabs(pParams->bidAsk.bid[0] - pParams->orderInfo[i].openPrice)* pParams->orderInfo[i].lots;
 					}
+				}
+
+			}
+
+
+		}
+
+	}
+
+	return lossTimes;
+}
+
+int EasyTrade::getLossTimesInDayCloseOrder(time_t currentTime, double * total_lost_pips)
+{
+	int i;
+	int lossTimes = 0;
+	struct tm timeInfo1, timeInfo2;
+	*total_lost_pips = 0;
+
+	safe_gmtime(&timeInfo1, currentTime);
+
+	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+	{
+		if (pParams->orderInfo[i].ticket != 0)
+		{
+			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
+
+			if (timeInfo1.tm_year == timeInfo2.tm_year && timeInfo1.tm_yday == timeInfo2.tm_yday)
+			{
+				if (pParams->orderInfo[i].isOpen == FALSE && pParams->orderInfo[i].profit < 0)
+				{
+					lossTimes++;
+					*total_lost_pips += fabs(pParams->orderInfo[i].closePrice - pParams->orderInfo[i].openPrice) * pParams->orderInfo[i].lots;
 				}
 
 			}
