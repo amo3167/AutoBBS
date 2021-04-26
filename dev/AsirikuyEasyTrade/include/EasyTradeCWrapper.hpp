@@ -1021,6 +1021,7 @@ AsirikuyReturnCode closeAllWithNegativeEasy(int tradeMode, time_t currentTime,in
 AsirikuyReturnCode closeAllLimitAndStopOrdersEasy(time_t currentTime);
 
 int getWinTimesInDaywithSamePriceEasy(time_t currentTime, double openPrice, double limit);
+int getLossTimesInDaywithSamePriceEasy(time_t currentTime, double openPrice, double limit);
 
 /**
 * Closes all active long trades.

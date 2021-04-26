@@ -386,7 +386,8 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
   AsirikuyReturnCode returnCode;
   AsirikuyReturnCode (*runStrategyFunc)(StrategyParams*);
   int i;
-
+  struct tm timeInfo1;
+  char   timeString[MAX_TIME_STRING_SIZE] = "";
   if(pParams == NULL)
   {
     pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runStrategy() failed. pParams = NULL");
@@ -402,7 +403,20 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
 
   /* initialize the easy trade library */
   initEasyTradeLibrary(pParams);
-  
+  //As XAUUSD quote on 1am, but trading on 1:02 am, it causes some gap 
+  if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL && (BOOL)pParams->settings[IS_BACKTESTING] == FALSE)
+  {
+	  safe_gmtime(&timeInfo1, pParams->currentBrokerTime);
+	  safe_timeString(timeString, pParams->currentBrokerTime);
+
+	  if (timeInfo1.tm_hour == 1 && timeInfo1.tm_min < 2)
+	  {
+		  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Start skiping tick on XAUUSD on %s", timeString);
+		  return SUCCESS;
+	  }
+
+  }
+
   if (!isValidTradingTime(pParams,pParams->currentBrokerTime))
   {
 	pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runStrategy() failed. Invalid trading time.");
@@ -424,6 +438,7 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
   }
 
   // Control when should run the strategy....
+  // Add special rule for XAUUSD, it is open on 1am, but only start trade from 1£º02 am. 
   if(!pParams->settings[RUN_EVERY_TICK] 
     && areOrdersCorrect(pParams, pParams->settings[USE_SL], pParams->settings[USE_TP]) 
     && hasInstanceRunOnCurrentBar((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].time[pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]))

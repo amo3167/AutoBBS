@@ -964,6 +964,8 @@ AsirikuyReturnCode openSingleSellLimitEasy(double entryPrice, double takeProfit,
   int getLossTimesInDay(time_t currentTime, double * total_lost_pips);
   int getWinTimesInDay(time_t currentTime);
   int getWinTimesInDaywithSamePrice(time_t currentTime, double openPrice, double limit);
+  int getLossTimesInDaywithSamePrice(time_t currentTime, double openPrice, double limit);
+
   int getLossTimesInDayCloseOrder(time_t currentTime, double * total_lost_pips);
 
   int getLossTimesInPreviousDays(time_t currentTime, double *pTotal_Lost_Pips);

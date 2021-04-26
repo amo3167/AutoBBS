@@ -2219,14 +2219,6 @@ static BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicato
 	if (shouldFilter == FALSE)
 		return TRUE;
 
-	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE)
-		readWeeklyATRFile(pParams->tradeSymbol, &(pBase_Indicators->pWeeklyPredictATR), &(pBase_Indicators->pWeeklyPredictMaxATR), (BOOL)pParams->settings[IS_BACKTESTING]);
-	//else
-	//{
-	//	pBase_Indicators->pWeeklyPredictATR = 20;
-	//	pBase_Indicators->pWeeklyPredictMaxATR = 25;
-	//}
-
 	//if ((pBase_Indicators->dailyTrend == 6 || pBase_Indicators->dailyTrend == -6))
 	//	return TRUE;
 
@@ -2257,7 +2249,7 @@ static BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicato
 		return FALSE;
 	}
 
-	if (iAtr(B_DAILY_RATES, 1, 1) >= max(20, pBase_Indicators->pWeeklyPredictATR / 2)) //日波幅到了最小的周波幅
+	if (iAtr(B_DAILY_RATES, 1, 1) - max(20, pBase_Indicators->pWeeklyPredictATR / 2) >= 0) //日波幅到了最小的周波幅
 	{
 		sprintf(pIndicators->status, "ATR1 %lf is greater than half of pWeeklyPredictATR %lf",
 			iAtr(B_DAILY_RATES, 1, 1), max(20, pBase_Indicators->pWeeklyPredictATR / 2));
@@ -2267,6 +2259,7 @@ static BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicato
 
 		return FALSE;
 	}
+
 	if (fabs(close_prev1 - close_prev2) >= max(10, pBase_Indicators->pWeeklyPredictATR / 3)) //日升跌幅到了一半的最小周波幅
 	{
 		sprintf(pIndicators->status, "Previous close gap %lf is greater than third of pWeeklyPredictATR %lf",
@@ -2912,8 +2905,8 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading_Ver2(StrategyParams* 
 					//pIndicators->winTimes = getWinTimesInDayEasy(currentTime);
 					if (pIndicators->lossTimes < pIndicators->maxTradeTime && pIndicators->winTimes == 0 )
 					{
-						//pIndicators->risk = pow(2, pIndicators->lossTimes);
-						//pIndicators->entrySignal = 1;
+						pIndicators->risk = pow(2, pIndicators->lossTimes);
+						pIndicators->entrySignal = 1;
 					}
 					pIndicators->exitSignal = EXIT_SELL;
 				}
@@ -2941,8 +2934,8 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading_Ver2(StrategyParams* 
 					//pIndicators->winTimes = getWinTimesInDayEasy(currentTime);
 					if (pIndicators->lossTimes < pIndicators->maxTradeTime && pIndicators->winTimes == 0)
 					{
-						//pIndicators->risk = pow(2, pIndicators->lossTimes);
-						//pIndicators->entrySignal = -1;
+						pIndicators->risk = pow(2, pIndicators->lossTimes);
+						pIndicators->entrySignal = -1;
 					}
 
 					pIndicators->exitSignal = EXIT_BUY;

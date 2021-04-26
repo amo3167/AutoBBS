@@ -701,6 +701,11 @@ int getWinTimesInDaywithSamePriceEasy(time_t currentTime, double openPrice, doub
 	return easyTradePtr->getWinTimesInDaywithSamePrice(currentTime, openPrice,limit);
 }
 
+int getLossTimesInDaywithSamePriceEasy(time_t currentTime, double openPrice, double limit)
+{
+	return easyTradePtr->getLossTimesInDaywithSamePrice(currentTime, openPrice, limit);
+}
+
 OrderType getLastestOrderTypeEasy(int rateIndex, double *pHigh, double *pLow, BOOL * pIsOpen)
 {
 	return easyTradePtr->getLastestOrderType(rateIndex, pHigh, pLow, pIsOpen);

@@ -3970,6 +3970,47 @@ int EasyTrade::getLossTimesInDay(time_t currentTime,double * total_lost_pips)
 	return lossTimes;
 }
 
+int EasyTrade::getLossTimesInDaywithSamePrice(time_t currentTime, double openPrice, double limit)
+{
+	int i;
+	int lossTimes = 0;
+	struct tm timeInfo1, timeInfo2;
+
+	safe_gmtime(&timeInfo1, currentTime);
+
+	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+	{
+		// Close winning trades.
+		if (pParams->orderInfo[i].ticket != 0)
+		{
+			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
+			if (timeInfo1.tm_year == timeInfo2.tm_year && timeInfo1.tm_yday == timeInfo2.tm_yday && fabs(pParams->orderInfo[i].openPrice - openPrice) < limit)
+			{
+
+				if (pParams->orderInfo[i].isOpen == FALSE && pParams->orderInfo[i].profit < 0)
+					lossTimes++;
+
+				if (pParams->orderInfo[i].isOpen == TRUE)
+				{
+					if (pParams->orderInfo[i].type == BUY && pParams->bidAsk.ask[0] < pParams->orderInfo[i].openPrice						
+						)
+					{
+						lossTimes++;						
+					}
+
+					if (pParams->orderInfo[i].type == SELL && pParams->bidAsk.bid[0] > pParams->orderInfo[i].openPrice)
+					{
+						lossTimes++;						
+					}
+				}
+			}
+		}
+
+	}
+
+	return lossTimes;
+}
+
 int EasyTrade::getWinTimesInDaywithSamePrice(time_t currentTime,double openPrice,double limit)
 {
 	int i;
