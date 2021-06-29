@@ -385,6 +385,7 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 		addValueToUI("ShellingtonTrend", pBase_Indicators->shellingtonInTrend);
 		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
 		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
+		addValueToUI("flatTrend", pBase_Indicators->flatTrend);
 		addValueToUI("dailyPivot", pBase_Indicators->dailyPivot);
 		addValueToUI("DailyS1", pBase_Indicators->dailyS1);
 		addValueToUI("DailyR1", pBase_Indicators->dailyR1);
@@ -432,8 +433,7 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 		addValueToUI("MacdTrend", pBase_Indicators->mACDInTrend);
 		addValueToUI("ShellingtonTrend", pBase_Indicators->shellingtonInTrend);
 		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("flatTrend", pBase_Indicators->flatTrend);
+		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);		
 		addValueToUI("dailyPivot", pBase_Indicators->dailyPivot);
 		addValueToUI("DailyS1", pBase_Indicators->dailyS1);
 		addValueToUI("DailyR1", pBase_Indicators->dailyR1);
@@ -812,7 +812,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && (int)pParams->settings[TIMEFRAME] >= 5 &&		
-		(strstr(pParams->tradeSymbol, "BTCUSD") == NULL || !isWeekend(pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index])) &&
+		//(strstr(pParams->tradeSymbol, "BTCUSD") == NULL || !isWeekend(pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index])) &&
 		(		
 		validateCurrentTimeEasy(pParams, B_PRIMARY_RATES) > 0 ||
 		validateDailyBarsEasy(pParams, B_PRIMARY_RATES, B_DAILY_RATES) > 0 ||
