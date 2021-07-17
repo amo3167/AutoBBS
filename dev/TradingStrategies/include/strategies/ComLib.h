@@ -110,6 +110,7 @@ extern "C" {
 		double takeprice2;
 		double stopLoss;
 		int startHour;
+		int startHourOnLimt;
 		int endHour;
 		int maxTradeTime;
 
@@ -137,8 +138,10 @@ extern "C" {
 
 		BOOL isEnableBuyMinLotSize;
 		BOOL isEnableSellMinLotSize;
+		BOOL isEnableLimitSR1;
 		
 		char status[MAX_OUTPUT_ERROR_STRING_SIZE];
+
 
 	} Indicators;
 	

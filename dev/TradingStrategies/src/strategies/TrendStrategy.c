@@ -936,12 +936,26 @@ void splitBuyOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Base
 			&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
 			&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1				
 			//&& getLossTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
+			&& timeInfo1.tm_hour >= pIndicators->startHourOnLimt
 			)
 		{
 			openSingleBuyStopEasy(pIndicators->entryPrice, takePriceLevel* pIndicators->takePrice, pIndicators->stopLoss, lots);			
 		}
 
-		
+		if (pIndicators->isEnableLimitSR1 == TRUE && timeInfo1.tm_hour < 8)
+		{
+			pIndicators->entryPrice = pBase_Indicators->dailyS1;
+			if (!isSamePriceSellStopOrderEasy(pIndicators->entryPrice, currentTime, gap)
+				&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
+				&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
+				)
+			{
+				if (currentPrice > pIndicators->entryPrice)
+					openSingleBuyLimitEasy(pIndicators->entryPrice, takePriceLevel * pIndicators->takePrice, pIndicators->stopLoss, lots, 1);
+				else
+					openSingleBuyStopEasy(pIndicators->entryPrice, takePriceLevel* pIndicators->takePrice, pIndicators->stopLoss, lots);
+			}
+		}
 	}
 	else
 	{
@@ -951,6 +965,7 @@ void splitBuyOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Base
 			&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
 			&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
 			//&& getLossTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
+			&& timeInfo1.tm_hour >= pIndicators->startHourOnLimt
 			)
 		{
 			openSingleBuyLimitEasy(pIndicators->entryPrice, takePriceLevel * pIndicators->takePrice, pIndicators->stopLoss, lots, 1);			
@@ -1009,9 +1024,25 @@ void splitSellOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Bas
 			&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
 			&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
 			//&& getLossTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
+			&& timeInfo1.tm_hour >= pIndicators->startHourOnLimt
 			)
 		{
 			openSingleSellStopEasy(pIndicators->entryPrice, takePriceLevel* pIndicators->takePrice, pIndicators->stopLoss, lots);			
+		}
+
+		if (pIndicators->isEnableLimitSR1 == TRUE && timeInfo1.tm_hour < 8)
+		{			
+			pIndicators->entryPrice = pBase_Indicators->dailyR1;
+			if (!isSamePriceSellStopOrderEasy(pIndicators->entryPrice, currentTime, gap)
+				&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
+				&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1				
+				)
+			{
+				if (currentPrice < pIndicators->entryPrice)
+					openSingleSellLimitEasy(pIndicators->entryPrice, takePriceLevel * pIndicators->takePrice, pIndicators->stopLoss, lots, 1);
+				else
+					openSingleSellStopEasy(pIndicators->entryPrice, takePriceLevel* pIndicators->takePrice, pIndicators->stopLoss, lots);
+			}
 		}
 
 	}
@@ -1022,6 +1053,7 @@ void splitSellOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Bas
 			&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, gap)
 			&& getWinTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
 			//&& getLossTimesInDaywithSamePriceEasy(currentTime, pIndicators->entryPrice, gap) < 1
+			&& timeInfo1.tm_hour >= pIndicators->startHourOnLimt
 			)
 		{
 			openSingleSellLimitEasy(pIndicators->entryPrice, takePriceLevel * pIndicators->takePrice, pIndicators->stopLoss, lots, 1);			
@@ -2855,12 +2887,14 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	pIndicators->executionTrend = 0;
 
 	pIndicators->risk = 1;
+	pIndicators->isEnableLimitSR1 = FALSE;
 
 	//Move to break event if it moves to more than 2 *TP 
 	orderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
 	//Find the highest close price after order is opened			
 	getHighLowPrice(pParams, pIndicators, pBase_Indicators, B_PRIMARY_RATES, 5 * 60, orderIndex, &highPrice, &lowPrice);
 
+	
 	if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
 		startHour = 3;
@@ -2872,6 +2906,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		isEnableFlatTrend = TRUE;
 		//isEnableShellingtonTrend = TRUE;
+
+		pIndicators->startHourOnLimt = startHour;
 	}
 	else if (strstr(pParams->tradeSymbol, "USDJPY") != NULL)
 	{
@@ -2882,6 +2918,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			isCloseOrdersEOD = TRUE;
 
 		isEnableMACDSlow = FALSE;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
 	{
@@ -2892,6 +2929,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		//isEnableFlatTrend = TRUE;
 		//isEnableShellingtonTrend = TRUE;
+
+		pIndicators->startHourOnLimt = startHour;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
 	{		
@@ -2905,7 +2945,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			)
 			isCloseOrdersEOD = TRUE;
 		
-		startHour = 8;
+		startHour = 3;
+		pIndicators->startHourOnLimt = 8;
 
 		stopHour = 22;
 
@@ -2933,6 +2974,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		}
 
 		isEnableShellingtonTrend = TRUE;
+		pIndicators->isEnableLimitSR1 = TRUE;
 	
 	}
 	else if (strstr(pParams->tradeSymbol, "EURGBP") != NULL)
@@ -2961,10 +3003,13 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		isEnableFlatTrend = TRUE;
 		//isEnableShellingtonTrend = TRUE;
+
+		pIndicators->startHourOnLimt = startHour;
 	}
 	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
 	{
-		startHour = 3;
+		startHour = 2;
+		pIndicators->startHourOnLimt = startHour;
 		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
 			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
 			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
@@ -3007,6 +3052,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		isEnableWeeklyATR = FALSE;
 
+		pIndicators->isEnableLimitSR1 = TRUE;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
 	{		
@@ -3026,6 +3073,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		//	pIndicators->risk = 0.6;
 
 		//isEnableRangeTrade = TRUE;
+		pIndicators->startHourOnLimt = pIndicators->startHour;
 	}
 
 	shift1Index = filterExcutionTF(pParams, pIndicators, pBase_Indicators);
@@ -3169,6 +3217,10 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		return SUCCESS;
 	}
 
+	if (pIndicators->isEnableLimitSR1 == TRUE && timeInfo1.tm_hour == pIndicators->startHourOnLimt && timeInfo1.tm_min < 7)
+	{
+		closeAllLimitAndStopOrdersEasy(currentTime); 
+	}
 	
 	if (timeInfo1.tm_hour >= startHour)
 	{
@@ -3179,6 +3231,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		{
 			if (isEnableWeeklyATR == TRUE && pParams->bidAsk.ask[0] > pBase_Indicators->weeklyR2)
 				autoMode = 0;
+
 
 			if ((pBase_Indicators->maTrend > 0 && timeInfo1.tm_hour >= pIndicators->startHour)
 				//|| (iOpen(B_DAILY_RATES, 0) - pBase_Indicators->dailyPivot >= iAtr(B_HOURLY_RATES,20,1) && timeInfo1.tm_hour >= pIndicators->startHour)
