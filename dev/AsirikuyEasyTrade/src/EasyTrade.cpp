@@ -52,6 +52,7 @@
 #include "OrderManagement.h"
 #include "OrderSignals.h"
 #include "AsirikuyTechnicalAnalysis.h"
+#include "tradingweekboundaries.h"
 #include "curl/curl.h"
 #include "TimeZoneOffsets.h"
 #include "Broker-tz.h"
@@ -3779,6 +3780,23 @@ int EasyTrade::getOrderCount()
 	return count;
 }
 
+double EasyTrade::caculateFreeMargin()
+{
+	int i;
+	double cost = 0;
+	
+	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+	{
+		if (pParams->orderInfo[i].ticket != 0 && pParams->orderInfo[i].isOpen == TRUE)
+		{
+			cost += pParams->bidAsk.ask[0] * pParams->orderInfo[i].lots;
+		}
+	}
+
+	return pParams->accountInfo.equity - cost;
+	
+}
+
 int EasyTrade::getOrderCountTodayExcludeBreakeventOrders(time_t currentTime, double points)
 {
 	int i;
@@ -3823,6 +3841,34 @@ int EasyTrade::getOrderCountToday(time_t currentTime)
 			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
 
 			if (timeInfo1.tm_year == timeInfo2.tm_year && timeInfo1.tm_yday == timeInfo2.tm_yday)
+			{
+				count++;
+			}
+		}
+
+	}
+
+	return count;
+}
+
+int EasyTrade::getOrderCountForCurrentWeek(time_t currentTime)
+{
+	int i;
+	int count = 0;
+	struct tm timeInfo1, timeInfo2;
+	int days = 0;
+
+	safe_gmtime(&timeInfo1, currentTime);
+
+	for (i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+	{
+		if (pParams->orderInfo[i].ticket != 0 && pParams->orderInfo[i].isOpen == TRUE && (pParams->orderInfo[i].type == BUY || pParams->orderInfo[i].type == SELL))
+		{
+			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
+
+			days = difftime(currentTime, pParams->orderInfo[i].openTime) / 60 / 60 / 24;
+
+			if (days <= timeInfo1.tm_wday)
 			{
 				count++;
 			}
@@ -5263,20 +5309,6 @@ AsirikuyReturnCode EasyTrade::validateDailyBars(StrategyParams* pParams, int pri
 	int   shiftDaily0Index = pParams->ratesBuffers->rates[daily_rate].info.arraySize - 1;
 	int   startHour = 0;
 
-	if (strstr(pParams->tradeSymbol, "XAU") != NULL)
-		startHour = 1;
-	if (strstr(pParams->tradeSymbol, "XAG") != NULL)
-		startHour = 1;
-	if (strstr(pParams->tradeSymbol, "XPD") != NULL)
-		startHour = 1;
-
-	if (strstr(pParams->tradeSymbol, "XTI") != NULL)
-		startHour = 1;
-	if (strcmp(pParams->accountInfo.brokerName, "International Capital Markets Pty Ltd.") == 0
-		&& (strstr(pParams->tradeSymbol, "US500USD") != NULL || strstr(pParams->tradeSymbol, "USTECUSD") != NULL))
-		startHour = 1;
-
-
 	//Validate daily bars first
 	currentDailyTime = pParams->ratesBuffers->rates[daily_rate].time[shiftDaily0Index];
 	safe_gmtime(&dailyTimeInfo, currentDailyTime);
@@ -5285,6 +5317,16 @@ AsirikuyReturnCode EasyTrade::validateDailyBars(StrategyParams* pParams, int pri
 	currentTime = pParams->ratesBuffers->rates[primary_rate].time[shift0Index];
 	safe_gmtime(&timeInfo, currentTime);
 	safe_timeString(timeString, currentTime);
+
+	if (strstr(pParams->tradeSymbol, "XAU") != NULL
+		|| strstr(pParams->tradeSymbol, "XAG") != NULL
+		|| strstr(pParams->tradeSymbol, "XPD") != NULL
+		|| strstr(pParams->tradeSymbol, "XTI") != NULL
+		|| (strstr(pParams->tradeSymbol, "BTC") != NULL && timeInfo.tm_wday == 6)
+		|| strstr(pParams->tradeSymbol, "US500USD") != NULL
+		|| strstr(pParams->tradeSymbol, "USTECUSD") != NULL
+		)
+		startHour = 1;
 
 	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checking missing bars: Current daily bar matached: current time = %s, current daily time =%s", timeString, dailyTimeString);
 	printBarInfo(pParams, daily_rate, timeString);
@@ -5367,16 +5409,14 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 	char  secondaryTimeString[MAX_TIME_STRING_SIZE] = "";	
 	int diff = 0;
 	int closeMin = 60 - secondary_tf;
+	int startMin = 0;
 	int   offset_min = 3;
-	
+	int closeHour = 23;
+	int specialCloseHour = 19;
+
 	BOOL isCheckHistoricalBars = TRUE;
 	if (rateErrorTimes > 2)
 		isCheckHistoricalBars = FALSE;
-
-	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
-	{
-		offset_min = 7;
-	}
 
 
 	safe_gmtime(&timeInfo, currentTime);
@@ -5387,7 +5427,20 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 
 	diff = (int)(difftime(currentTime,currentSeondaryTime) / 60);
 
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"validateSecondaryBarsGap:current time = %s, current secondary time =%s", timeString, secondaryTimeString);
+	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
+	{
+		offset_min = 7;
+		if (timeInfo.tm_wday == 0)
+			closeHour = 16;
+		specialCloseHour = 16;
+
+		startMin = 5;
+		if (secondary_tf >= 60)
+			closeMin = 5;
+	}
+
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"validateSecondaryBarsGap:current time = %s, current secondary time =%s weekend=%d,startHour=%d,diff=%d,secondary_tf=%d",
+		timeString, secondaryTimeString, isWeekend(currentTime), startHour, diff, secondary_tf);
 
 	
 	if (isWithPrimary)
@@ -5441,28 +5494,45 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 					closeMin = 40;
 			}
 			
-			if (startHour == 1 && diff < 2 * MINUTES_PER_HOUR) // XAU for a noremal weekday.
-			{
-				if (diff == MINUTES_PER_HOUR + secondary_tf &&
-					( (secondaryTimeInfo.tm_year == timeInfo.tm_year && timeInfo.tm_yday - secondaryTimeInfo.tm_yday == 1) ||
-						(secondaryTimeInfo.tm_year < timeInfo.tm_year && timeInfo.tm_yday == 0)
-					) )
-					return TRUE;
-				else
-				{
-					pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateSecondaryBarsGap: Current seondary bar not matached: current time = %s, current secondary time =%s System InstanceID = %d",
-						timeString, secondaryTimeString, (int)pParams->settings[STRATEGY_INSTANCE_ID]);
-					saveRateFile((int)pParams->settings[STRATEGY_INSTANCE_ID], rateErrorTimes+1, (BOOL)pParams->settings[IS_BACKTESTING]);
-					return FALSE;
-				}
-			}
+			//if (startHour == 1 && diff < 2 * MINUTES_PER_HOUR) // XAU for a noremal weekday.
+			//{
+			//	if (diff == MINUTES_PER_HOUR + secondary_tf &&
+			//		( (secondaryTimeInfo.tm_year == timeInfo.tm_year && timeInfo.tm_yday - secondaryTimeInfo.tm_yday == 1) ||
+			//			(secondaryTimeInfo.tm_year < timeInfo.tm_year && timeInfo.tm_yday == 0)
+			//		) )
+			//		return TRUE;
+			//	else
+			//	{
+			//		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateSecondaryBarsGap: Current seondary bar not matached: current time = %s, current secondary time =%s System InstanceID = %d",
+			//			timeString, secondaryTimeString, (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+			//		saveRateFile((int)pParams->settings[STRATEGY_INSTANCE_ID], rateErrorTimes+1, (BOOL)pParams->settings[IS_BACKTESTING]);
+			//		return FALSE;
+			//	}
+			//}
+
+			//TODO: 
+			//For example XAU close eariler on US holiday, it means close on 20:00. Close hour is 20, min is 0
+			// XTI: 19:55, US500: 19:55
 			
-			//Only BTCUSD will miss 00:00 on 5m chart
-			if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL && secondary_tf == 5 && secondaryTimeInfo.tm_hour == 23 && secondaryTimeInfo.tm_min == closeMin
-				&& timeInfo.tm_hour == startHour && timeInfo.tm_min == secondary_tf)
+			//Only BTCUSD will miss 00:00 on 5m chart, in the weekend,it can be more than 5 mins....
+			if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL && secondary_tf == 5 
+				&& secondaryTimeInfo.tm_hour == closeHour 
+				&& ( (!isWeekend(currentTime) && secondaryTimeInfo.tm_min == closeMin)
+				|| (isWeekend(currentTime) && secondaryTimeInfo.tm_min >= closeMin-30)
+				)
+				&& timeInfo.tm_hour == startHour && timeInfo.tm_min == startMin)
 				return TRUE;
-			else if (secondaryTimeInfo.tm_hour == 23 && secondaryTimeInfo.tm_min == closeMin &&
-				timeInfo.tm_hour == startHour && timeInfo.tm_min <= 1)
+			else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL && secondary_tf == 60
+				&& secondaryTimeInfo.tm_hour == closeHour && timeInfo.tm_wday == 0 //Sunday
+				&&  secondaryTimeInfo.tm_min == closeMin
+				&& timeInfo.tm_hour == startHour && timeInfo.tm_min == startMin)
+				return TRUE;
+			else if (secondaryTimeInfo.tm_hour == closeHour && secondaryTimeInfo.tm_min == closeMin &&
+				timeInfo.tm_hour == startHour && timeInfo.tm_min == startMin)
+				return TRUE;
+			else if (secondaryTimeInfo.tm_hour == specialCloseHour
+				&& secondaryTimeInfo.tm_min == closeMin
+				&& timeInfo.tm_hour == startHour && timeInfo.tm_min == startMin)
 				return TRUE;
 			else
 			{
@@ -5488,7 +5558,7 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 AsirikuyReturnCode EasyTrade::validateSecondaryBars(StrategyParams* pParams, int primary_rate, int secondary_rate, int secondary_tf, int rateErrorTimes)
 {
 	time_t currentTime, currentSeondaryTime;	
-	struct tm secondaryTimeInfo;
+	struct tm timInfo,secondaryTimeInfo;
 	char  timeString[MAX_TIME_STRING_SIZE] = "";
 	char  secondaryTimeString[MAX_TIME_STRING_SIZE] = "";
 	int   shift0Index = pParams->ratesBuffers->rates[primary_rate].info.arraySize - 1;
@@ -5498,29 +5568,28 @@ AsirikuyReturnCode EasyTrade::validateSecondaryBars(StrategyParams* pParams, int
 	int   startHour = 0;
 	int   checkedBarNum = pParams->ratesBuffers->rates[secondary_rate].info.arraySize -1;
 
-	if (strstr(pParams->tradeSymbol, "XAU") != NULL)	
-		startHour = 1;
-	if (strstr(pParams->tradeSymbol, "XAG") != NULL)
-		startHour = 1;
-	if (strstr(pParams->tradeSymbol, "XPD") != NULL)
-		startHour = 1;
+	// Check out the first bar
+	currentSeondaryTime = pParams->ratesBuffers->rates[secondary_rate].time[shiftSecondary0Index];
+	currentTime = pParams->ratesBuffers->rates[primary_rate].time[shift0Index];
 
-	if (strstr(pParams->tradeSymbol, "XTI") != NULL)
-		startHour = 1;
+	safe_timeString(timeString, currentTime);
+	safe_timeString(secondaryTimeString, currentSeondaryTime);
 
-	
-	if (strcmp(pParams->accountInfo.brokerName, "International Capital Markets Pty Ltd.") == 0
-		&& (strstr(pParams->tradeSymbol, "US500USD") != NULL || strstr(pParams->tradeSymbol, "USTECUSD") != NULL))
+	safe_gmtime(&timInfo, currentTime);
+	safe_gmtime(&secondaryTimeInfo, currentSeondaryTime);
+
+	if (strstr(pParams->tradeSymbol, "XAU") != NULL
+		|| strstr(pParams->tradeSymbol, "XAG") != NULL
+		|| strstr(pParams->tradeSymbol, "XPD") != NULL
+		|| strstr(pParams->tradeSymbol, "XTI") != NULL
+		|| (strstr(pParams->tradeSymbol, "BTC") != NULL && timInfo.tm_wday == 6)
+		|| strstr(pParams->tradeSymbol, "US500USD") != NULL 
+		|| strstr(pParams->tradeSymbol, "USTECUSD") != NULL
+		)
 		startHour = 1;
 		
 	//if (primary_tf != secondary_tf)
 	{
-		// Check out the first bar
-		currentSeondaryTime = pParams->ratesBuffers->rates[secondary_rate].time[shiftSecondary0Index];
-		currentTime = pParams->ratesBuffers->rates[primary_rate].time[shift0Index];
-
-		safe_timeString(timeString, currentTime);
-		safe_timeString(secondaryTimeString, currentSeondaryTime);
 
 		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Checking missing bars:current time = %s, current secondary time =%s", timeString, secondaryTimeString);
 		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"current time=%s checking rate %d current bar 0: time =%s high=%lf,low=%lf,open=%lf,close=%lf", timeString, secondary_rate, secondaryTimeString,
@@ -5532,7 +5601,7 @@ AsirikuyReturnCode EasyTrade::validateSecondaryBars(StrategyParams* pParams, int
 		if (!validateSecondaryBarsGap(pParams, currentTime, currentSeondaryTime, secondary_tf, primary_tf, true, startHour, rateErrorTimes))
 			return ERROR_IN_RATES_RETRIEVAL;
 		
-		safe_gmtime(&secondaryTimeInfo, currentSeondaryTime);
+
 		if (secondary_rate < MINUTES_PER_HOUR) //Ö»œyÔ‡®”ÈÕ
 		{
 			checkedBarNum = (int)((secondaryTimeInfo.tm_hour-startHour) * MINUTES_PER_HOUR + secondaryTimeInfo.tm_min) / secondary_tf;

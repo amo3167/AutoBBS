@@ -5085,7 +5085,7 @@ AsirikuyReturnCode enterOrder_MultipleDay(StrategyParams* pParams, Indicators* p
 			pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
 
 			pIndicators->riskCap = riskCapBuy;
-
+			
 			if (isSameDayClosedOrder == FALSE)
 				pIndicators->entrySignal = 1;
 

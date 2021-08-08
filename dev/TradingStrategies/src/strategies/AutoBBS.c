@@ -107,6 +107,9 @@ static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Bas
 		case 32:
 			splitBuyRangeOrders(pParams, pIndicators, pBase_Indicators);
 			break;
+		case 33:
+			splitBuyOrders_Ichimoko_Weekly(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+			break;
 
 	}
 	
@@ -278,11 +281,11 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	case 24:
 		workoutExecutionTrend_MACD_Weekly(pParams, pIndicators, pBase_Indicators);
 		break;
-	case 25: // Ö»¸ºÔðÈÕÄÚ¶ÌÏß´óµ¥
+	case 25: // Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ú¶ï¿½ï¿½ß´ï¿½
 		pIndicators->tradeMode = 1;
 		workoutExecutionTrend_Auto(pParams, pIndicators, pBase_Indicators);
 		break;
-	case 26: // Ö»¸ºÔð³¤µ¥
+	case 26: // Ö»ï¿½ï¿½ï¿½ð³¤µï¿½
 		//pIndicators->tradeMode = 0;
 		//workoutExecutionTrend_Auto(pParams, pIndicators, pBase_Indicators);
 		workoutExecutionTrend_Limit_BBS_LongTerm(pParams, pIndicators, pBase_Indicators);
@@ -315,6 +318,9 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	case 34:
 		workoutExecutionTrend_ShortTerm(pParams, pIndicators, pBase_Indicators);
 		break;
+	case 35:
+		workoutExecutionTrend_Ichimoko_Weekly_Index(pParams, pIndicators, pBase_Indicators);
+		break;
 	case 100:
 		workoutExecutionTrend_MACD_Daily_Chart_RegressionTest(pParams, pIndicators, pBase_Indicators);
 		break;
@@ -332,7 +338,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && pParams->accountInfo.totalOpenTradeRiskPercent < parameter(AUTOBBS_MAX_ACCOUNT_RISK) * -1) //if account risk is more than 3%, stop entring trades.
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, Over max riks %lf£º skip this entry signal=%d",
+		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, Over max riks %lfï¿½ï¿½ skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, parameter(AUTOBBS_MAX_ACCOUNT_RISK), pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -340,7 +346,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	//Filter out macro trend
 	if (pIndicators->side != 0 && pIndicators->entrySignal != 0 && pIndicators->side != pIndicators->entrySignal)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,Againt Side =%ld£º skip this entry signal=%d",
+		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,Againt Side =%ldï¿½ï¿½ skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->side, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -348,7 +354,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	//// Dont enter trade on the new day bar, it is too risky and not reliable.
 	//if (pIndicators->entrySignal != 0 && timeInfo.tm_hour == startHour && timeInfo.tm_min == 0)
 	//{
-	//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s Not allowed to trade on the firt bar of new day£º skip this entry signal=%d",
+	//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s Not allowed to trade on the firt bar of new dayï¿½ï¿½ skip this entry signal=%d",
 	//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 	//	pIndicators->entrySignal = 0;
 	//}
@@ -661,7 +667,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 
 	pIndicators->total_lose_pips = 0;
 
-	pIndicators->maxTradeTime = 3; //×î¶à×öÁ½´Î£¬ÈÕÄÚ
+	pIndicators->maxTradeTime = 3; //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î£ï¿½ï¿½ï¿½ï¿½ï¿?
 
 	pIndicators->startHour = (int) parameter(AUTOBBS_STARTHOUR);
 
@@ -795,13 +801,13 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 
-	if (strcmp(timeString, "27/08/13 03:00") == 0)
+	if (strcmp(timeString, "07/09/20 01:00") == 0)
 		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
 
 	if (strcmp(timeString, "04/01/21 12:15") == 0)
 		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
 
-	if ((int)parameter(AUTOBBS_TREND_MODE) == 16) // GBPJPY Daily Swing strategy, Õâ²ßÂÔÖ»ÐèÒªÈÕÄÚµÄÖ¸±ê	
+	if ((int)parameter(AUTOBBS_TREND_MODE) == 16) // GBPJPY Daily Swing strategy, ï¿½ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½Òªï¿½ï¿½ï¿½Úµï¿½Ö¸ï¿½ï¿?
 		base_Indicators.strategy_mode = 0;
 	else
 		base_Indicators.strategy_mode = 1;
@@ -811,9 +817,8 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 	rateErrorTimes = readRateFile((int)pParams->settings[STRATEGY_INSTANCE_ID], (BOOL)pParams->settings[IS_BACKTESTING]);
 
 
-	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && (int)pParams->settings[TIMEFRAME] >= 5 &&		
-		(strstr(pParams->tradeSymbol, "BTCUSD") == NULL || !isWeekend(pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index])) &&
-		(		
+	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && (int)pParams->settings[TIMEFRAME] >= 5 &&			
+		(
 		validateCurrentTimeEasy(pParams, B_PRIMARY_RATES) > 0 ||
 		validateDailyBarsEasy(pParams, B_PRIMARY_RATES, B_DAILY_RATES) > 0 ||
 		validateHourlyBarsEasy(pParams, B_PRIMARY_RATES, B_HOURLY_RATES) > 0 ||
@@ -831,7 +836,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	if ((int)parameter(AUTOBBS_MACRO_TREND) * (int)parameter(AUTOBBS_ONE_SIDE) < 0)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Invalid paramenter config: System InstanceID = %d, BarTime = %s, AUTOBBS_MACRO_TREND= %d£ºAUTOBBS_ONE_SIDE=%d",
+		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Invalid paramenter config: System InstanceID = %d, BarTime = %s, AUTOBBS_MACRO_TREND= %dï¿½ï¿½AUTOBBS_ONE_SIDE=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, (int)parameter(AUTOBBS_MACRO_TREND), (int)parameter(AUTOBBS_ONE_SIDE));
 		return INVALID_CONFIG;
 	}

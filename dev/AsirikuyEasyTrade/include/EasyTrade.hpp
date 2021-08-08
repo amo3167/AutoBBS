@@ -979,8 +979,11 @@ AsirikuyReturnCode openSingleSellLimitEasy(double entryPrice, double takeProfit,
 
   int getOrderCountTodayExcludeBreakeventOrders(time_t currentTime, double points);
   int getOrderCountToday(time_t currentTime);
+  int getOrderCountForCurrentWeek(time_t currentTime);
   int getOrderCount();
   double getLastestOrderPrice(int rateIndex, BOOL * pIsOpen);
+
+  double caculateFreeMargin();
 
   int hasOpenOrder();
   int hasSameDayOrderExcludeBreakeventOrders(time_t currentTime, BOOL *pIsOpen, double points);

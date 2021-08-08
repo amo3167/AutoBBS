@@ -658,6 +658,11 @@ int getOrderCountTodayEasy(time_t currentTime)
 	return easyTradePtr->getOrderCountToday(currentTime);
 }
 
+int getOrderCountForCurrentWeekEasy(time_t currentTime)
+{
+	return easyTradePtr->getOrderCountForCurrentWeek(currentTime);
+}
+
 int getOrderCountTodayExcludeBreakeventOrdersEasy(time_t currentTime, double points)
 {
 	return easyTradePtr->getOrderCountTodayExcludeBreakeventOrders(currentTime, points);
@@ -770,4 +775,8 @@ int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int
 double iASIEasy(int ratesArrayIndex, int mode, int length, int smooth, double * outBull, double *outBear)
 {
 	return easyTradePtr->iASI(ratesArrayIndex, mode, length, smooth, outBull, outBear);
+}
+
+double caculateFreeMarginEasy(){
+	return easyTradePtr->caculateFreeMargin();
 }

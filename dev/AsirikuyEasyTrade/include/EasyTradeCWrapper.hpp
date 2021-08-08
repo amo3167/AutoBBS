@@ -956,7 +956,10 @@ int getLossTimesInDayCloseOrderEasy(time_t currentTime, double * total_lost_pips
 
 int getOrderCountTodayExcludeBreakeventOrdersEasy(time_t currentTime, double points);
 int getOrderCountTodayEasy(time_t currentTime);
+int getOrderCountForCurrentWeekEasy(time_t currentTime);
 int getOrderCountEasy();
+
+double caculateFreeMarginEasy();
 
 int iMACDTrendBeiLiEasy(int ratesArrayIndex, int fastPeriod, int slowPeriod, int signalPeriod, int startShift, double macdLimit, OrderType orderType, int *pTruningPointIndex, double *pTurningPoint, int * pMinPointIndex, double *pMinPoint);
 
