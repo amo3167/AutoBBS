@@ -3021,6 +3021,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			return SUCCESS;
 		}
 
+		if (timeInfo1.tm_wday == 4)
+			pIndicators->risk = 0.5;
+
 		isEnableShellingtonTrend = TRUE;
 		pIndicators->isEnableLimitSR1 = TRUE;
 		isEnableTooFar = FALSE; 
@@ -3058,7 +3061,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		pIndicators->startHourOnLimt = startHour;
 	}
-	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
+	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
 	{
 		pIndicators->adjust = pBase_Indicators->dailyATR * 0.01;
 
@@ -3070,8 +3073,77 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			)
 			isCloseOrdersEOD = TRUE;
 
-		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
-			pIndicators->risk = 0.6;
+		//if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
+		//	pIndicators->risk = 0.6;
+
+		if (timeInfo1.tm_wday == 2 || timeInfo1.tm_wday == 3 || timeInfo1.tm_wday == 4)
+			pIndicators->risk = 0.5;
+
+		//if (timeInfo1.tm_wday == 6 && timeInfo1.tm_hour == 16 && timeInfo1.tm_min >= 50)
+		//{
+		//	closeAllLimitAndStopOrdersEasy(currentTime);			
+		//	closeAllCurrentDayShortTermOrdersEasy(1, currentTime);
+		//	return SUCCESS;
+		//}
+
+		//filter christmas eve and new year eve
+		if (timeInfo1.tm_mon == 11 && (timeInfo1.tm_mday == 24 || timeInfo1.tm_mday == 31))
+		{
+			strcpy(pIndicators->status, "Filter Christmas and New Year Eve.");
+
+			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+			return SUCCESS;
+		}
+		//if (iAtr(B_DAILY_RATES, 1, 1) >= pBase_Indicators->dailyATR * 2)
+		//{
+		//	pIndicators->risk = 0.6;
+		//}
+		//if (fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) >= pBase_Indicators->pWeeklyPredictATR / 3)
+		//{
+		//	strcpy(pIndicators->status, "Previous day Close is more than pWeeklyPredictATR / 3.");
+
+		//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, %s",
+		//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
+
+		//	return SUCCESS;
+		//}
+
+		isEnableWeeklyATR = FALSE;
+
+		pIndicators->isEnableLimitSR1 = TRUE;
+
+		if (timeInfo1.tm_wday == 6)
+			stopHour = 16;
+
+		tooFarLimit = 2;
+
+		isEnableRangeTrade = FALSE;
+
+		isEnableDoubleEntry = TRUE;
+
+		fastMAPeriod = 7;
+		slowMAPeriod = 14;
+		signalMAPeriod = 7;
+	}
+	else if (strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
+	{
+		pIndicators->adjust = pBase_Indicators->dailyATR * 0.01;
+
+		startHour = 0;
+		pIndicators->startHourOnLimt = startHour;
+		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
+			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
+			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
+			)
+			isCloseOrdersEOD = TRUE;
+
+		//if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
+		//	pIndicators->risk = 0.6;
+
+		if (timeInfo1.tm_wday == 2 || timeInfo1.tm_wday == 4)
+			pIndicators->risk = 0.5;
 
 		//if (timeInfo1.tm_wday == 6 && timeInfo1.tm_hour == 16 && timeInfo1.tm_min >= 50)
 		//{
@@ -3853,8 +3925,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 			)
 			isCloseOrdersEOD = TRUE;
 
-		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
-			pIndicators->risk = 0.6;
+		if (timeInfo1.tm_wday == 1 || timeInfo1.tm_wday == 2)
+			pIndicators->risk = 0.5;
 
 		//filter christmas eve and new year eve
 		if (timeInfo1.tm_mon == 11 && (timeInfo1.tm_mday == 24 || timeInfo1.tm_mday == 31))

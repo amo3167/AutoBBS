@@ -5354,8 +5354,8 @@ AsirikuyReturnCode EasyTrade::validateDailyBars(StrategyParams* pParams, int pri
 		|| strstr(pParams->tradeSymbol, "XAG") != NULL
 		|| strstr(pParams->tradeSymbol, "XPD") != NULL
 		|| strstr(pParams->tradeSymbol, "XTI") != NULL
-		|| (strstr(pParams->tradeSymbol, "BTC") != NULL && timeInfo.tm_wday == 6)
-		|| (strstr(pParams->tradeSymbol, "ETH") != NULL && timeInfo.tm_wday == 6)
+		//|| (strstr(pParams->tradeSymbol, "BTC") != NULL && timeInfo.tm_wday == 6)
+		//|| (strstr(pParams->tradeSymbol, "ETH") != NULL && timeInfo.tm_wday == 6)
 		|| strstr(pParams->tradeSymbol, "US500USD") != NULL
 		|| strstr(pParams->tradeSymbol, "USTECUSD") != NULL
 		)

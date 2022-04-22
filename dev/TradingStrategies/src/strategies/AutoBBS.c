@@ -806,10 +806,10 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 
 	if (strcmp(timeString, "30/01/21 18:30") == 0)
-		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
+		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, "hit a point");
 
 	if (strcmp(timeString, "22/11/21 15:00") == 0)
-		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
+		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, "hit a point");
 
 	if ((int)parameter(AUTOBBS_TREND_MODE) == 16) // GBPJPY Daily Swing strategy, �����ֻ��Ҫ���ڵ�ָ��?
 		base_Indicators.strategy_mode = 0;
@@ -855,13 +855,13 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 	setUIValues(pParams, &indicators, &base_Indicators);
 
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_primary=%ld,BBStopPrice_primary=%lf, BBSIndex_primary = %ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_primary=%ld,BBStopPrice_primary=%lf, BBSIndex_primary = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_primary, indicators.bbsStopPrice_primary, indicators.bbsIndex_primary);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,bbsTrend_secondary=%ld,BBStopPrice_secondary=%lf, bbsIndex_secondary = %ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,bbsTrend_secondary=%ld,BBStopPrice_secondary=%lf, bbsIndex_secondary = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_secondary, indicators.bbsStopPrice_secondary, indicators.bbsIndex_secondary);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_1H=%ld,BBStopPrice_1H=%lf, BBSIndex_1H = %ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_1H=%ld,BBStopPrice_1H=%lf, BBSIndex_1H = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_1H, indicators.bbsStopPrice_1H, indicators.bbsIndex_1H);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_4H=%ld,BBStopPrice_4H=%lf, BBSIndex_4H = %ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_4H=%ld,BBStopPrice_4H=%lf, BBSIndex_4H = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_4H, indicators.bbsStopPrice_4H, indicators.bbsIndex_4H);
 
 	returnCode = handleTradeExits(pParams, &indicators);

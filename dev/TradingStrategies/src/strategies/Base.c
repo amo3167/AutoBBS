@@ -29,7 +29,7 @@ static AsirikuyReturnCode loadMonthlyIndicators(StrategyParams* pParams, Base_In
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_WEEKLY_RATES].time[shift0Index]);
 	iSRLevels(pParams, pIndicators, B_WEEKLY_RATES, shift1Index, 8, &(pIndicators->monthlyHigh), &(pIndicators->monthlyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, 10weeksHigh=%lf, 10weeksLow = %lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, 10weeksHigh=%lf, 10weeksLow = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->monthlyHigh, pIndicators->monthlyLow);
 	return SUCCESS;
 }
@@ -51,14 +51,14 @@ AsirikuyReturnCode loadWeeklyIndicators(StrategyParams* pParams, Base_Indicators
 
 	iSRLevels(pParams, pIndicators, B_WEEKLY_RATES, shift1Index,2, &(pIndicators->weeklyHigh), &(pIndicators->weeklyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyHLTrend = %ld,weeklyMATrend=%ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyHLTrend = %ld,weeklyMATrend=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyHLTrend, pIndicators->weeklyMATrend);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weekly3RulesTrend = %ld,weeklyHigh=%lf, weeklyLow = %lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weekly3RulesTrend = %ld,weeklyHigh=%lf, weeklyLow = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weekly3RulesTrend, pIndicators->weeklyHigh, pIndicators->weeklyLow);
 
 	workoutWeeklyTrend(pParams, pIndicators);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyTrend=%ld, weeklySupport = %lf,weeklyResistance = %lf,weeklyTP=%lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyTrend=%ld, weeklySupport = %lf,weeklyResistance = %lf,weeklyTP=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyTrend, pIndicators->weeklyS, pIndicators->weeklyR, pIndicators->weeklyTP);
 
 	predictWeeklyATR(pParams, pIndicators);
@@ -120,7 +120,7 @@ static AsirikuyReturnCode loadIntradayKeyKIndicators(StrategyParams* pParams, Ba
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, intradayTrend = %ld,intradyIndex=%ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, intradayTrend = %ld,intradyIndex=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->intradayTrend, pIndicators->intradyIndex);
 
 
@@ -147,10 +147,10 @@ static AsirikuyReturnCode loadDailyIndicators(StrategyParams* pParams, Base_Indi
 
 	iSRLevels(pParams, pIndicators, B_DAILY_RATES, shift1Index-index,2, &(pIndicators->dailyHigh), &(pIndicators->dailyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyHLTrend = %ld,dailyMATrend=%ld",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyHLTrend = %ld,dailyMATrend=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyHLTrend, pIndicators->dailyMATrend);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, daily3RulesTrend = %ld,dailyHigh=%lf, dailyLow = %lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, daily3RulesTrend = %ld,dailyHigh=%lf, dailyLow = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->daily3RulesTrend, pIndicators->dailyHigh, pIndicators->dailyLow);
 
 	
@@ -189,7 +189,7 @@ static AsirikuyReturnCode loadDailyIndicators(StrategyParams* pParams, Base_Indi
 	}
 
 	workoutDailyTrend(pParams, pIndicators);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyTrend=%ld, dailySupport = %lf,dailyResistance = %lf��dailyTP=%lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyTrend=%ld, dailySupport = %lf,dailyResistance = %lf��dailyTP=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyTrend, pIndicators->dailyS, pIndicators->dailyR, pIndicators->dailyTP);
 
 	predictDailyATR(pParams, pIndicators);
@@ -228,7 +228,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Base_Indicator
 		pIndicators->ma4H200M = iMA(3, B_FOURHOURLY_RATES, 200, 1);
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MA1H200M = %lf,MA4H200M=%lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MA1H200M = %lf,MA4H200M=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->ma1H200M, pIndicators->ma4H200M);
 
 	iPivot(B_DAILY_RATES,1, &(pIndicators->dailyPivot),
@@ -237,7 +237,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Base_Indicator
 		&(pIndicators->dailyS3), &(pIndicators->dailyR3));
 
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyPivot = %lf,dailyS1=%lf, dailyR1 = %lf,dailyS2=%lf, dailyR2 = %lf,dailyS3=%lf, dailyR3 = %lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyPivot = %lf,dailyS1=%lf, dailyR1 = %lf,dailyS2=%lf, dailyR2 = %lf,dailyS3=%lf, dailyR3 = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyPivot, pIndicators->dailyS1, pIndicators->dailyR1, pIndicators->dailyS2, pIndicators->dailyR2, pIndicators->dailyS3, pIndicators->dailyR3);
 
 	if (pIndicators->strategy_mode > 0)
@@ -247,7 +247,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Base_Indicator
 			&(pIndicators->weeklyS2), &(pIndicators->weeklyR2),
 			&(pIndicators->weeklyS3), &(pIndicators->weeklyR3));
 
-		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyPivot = %lf,weeklyS1=%lf, weeklyR1 = %lf,weeklyS2=%lf, weeklyR2 = %lf,weeklyS3=%lf, weeklyR3 = %lf",
+		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyPivot = %lf,weeklyS1=%lf, weeklyR1 = %lf,weeklyS2=%lf, weeklyR2 = %lf,weeklyS3=%lf, weeklyR3 = %lf",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyPivot, pIndicators->weeklyS1, pIndicators->weeklyR1, pIndicators->weeklyS2, pIndicators->weeklyR2, pIndicators->weeklyS3, pIndicators->weeklyR3);
 	}
 
@@ -963,10 +963,10 @@ void predictDailyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	maxATR = max(maxATR, longDailyATR);
 	pIndicators->pDailyMaxATR = maxATR;
 	
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortDailyATR = %f,mediumDailyATR=%f,longDailyATR=%f,minATR=%f,maxATR=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortDailyATR = %f,mediumDailyATR=%f,longDailyATR=%f,minATR=%f,maxATR=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, shortDailyATR, mediumDailyATR, longDailyATR, minATR, maxATR);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f,ATR4=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f,ATR4=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, ATR0, ATR1, ATR2, ATR3, ATR4);
 
 	// 1. ʹ��ƽ��5�첨��
@@ -992,12 +992,12 @@ void predictDailyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	//Get average atr on the same week day.
 	pATRSameWeekDay = (iAtr(B_DAILY_RATES, 1, 5) + iAtr(B_DAILY_RATES, 1, 10) + iAtr(B_DAILY_RATES, 1, 15) + iAtr(B_DAILY_RATES, 1, 20)) / 4;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameWeekDay=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameWeekDay=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, pATRSameWeekDay);
 
 	pATR = min(pATR, pATRSameWeekDay);
 	//pATR = min(pATR, minATR);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameWeekDay=%f,ATR0=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameWeekDay=%f,ATR0=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, pATRSameWeekDay, ATR0);
 
 	//pATR = max(ATR0, pATR);
@@ -1056,7 +1056,7 @@ void predictDailyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	pIndicators->pMaxDailyHigh = pMaxHigh;
 	pIndicators->pMaxDailyLow = pMaxLow;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pDailyPredictATR=%f,pDailyATR=%f,pDailyHigh=%f,pDailyLow=%f, pDailyTrend = %ld,pMaxDailyHigh=%lf,pMaxDailyLow=%lf",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pDailyPredictATR=%f,pDailyATR=%f,pDailyHigh=%f,pDailyLow=%f, pDailyTrend = %ld,pMaxDailyHigh=%lf,pMaxDailyLow=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->pDailyPredictATR, pIndicators->pDailyATR, pIndicators->pDailyHigh, pIndicators->pDailyLow, pIndicators->pDailyTrend, pIndicators->pMaxDailyHigh, pIndicators->pMaxDailyLow);
 
 	//setPredictDailyATR((int)pParams->settings[STRATEGY_INSTANCE_ID], pIndicators->pDailyATR, (BOOL)pParams->settings[IS_BACKTESTING]);
@@ -1099,10 +1099,10 @@ void predictWeeklyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	
 	pIndicators->pWeeklyPredictMaxATR = maxATR;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortWeeklyATR = %f,mediumWeeklyATR=%f,longWeeklyATR=%f,minATR=%f,maxATR=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortWeeklyATR = %f,mediumWeeklyATR=%f,longWeeklyATR=%f,minATR=%f,maxATR=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, shortWeeklyATR, mediumWeeklyATR, longWeeklyATR, minATR, maxATR);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, ATR0, ATR1, ATR2, ATR3);
 
 	// 1. ʹ��ƽ��4�ܲ���
@@ -1124,7 +1124,7 @@ void predictWeeklyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	else
 		pATR = (pMinATR + pMaxATR) / 2;
 		
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,ATR0=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,ATR0=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, ATR0);
 
 	//Get average atr on the same week day.
@@ -1134,7 +1134,7 @@ void predictWeeklyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	pATR = min(pATR, pATRSameMonthWeek);
 	pATR = min(pATR, minATR);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameMonthWeek=%f,ATR0=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameMonthWeek=%f,ATR0=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, pATRSameMonthWeek, ATR0);
 	
 	//3. ʹ��pivot�����?���������£����з��ദ��
@@ -1177,7 +1177,7 @@ void predictWeeklyATR(StrategyParams* pParams, Base_Indicators* pIndicators)
 	pIndicators->pMaxWeeklyHigh = pMaxHigh;
 	pIndicators->pMaxWeeklyLow = pMaxLow;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pWeeklyPredictATR=%f,pWeeklyATR=%f,pWeeklyHigh=%f,pWeeklyLow=%f, pWeeklyTrend = %ld,pMaxWeeklyHigh=%f,pMaxWeeklyLow=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pWeeklyPredictATR=%f,pWeeklyATR=%f,pWeeklyHigh=%f,pWeeklyLow=%f, pWeeklyTrend = %ld,pMaxWeeklyHigh=%f,pMaxWeeklyLow=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->pWeeklyPredictATR, pIndicators->pWeeklyATR, pIndicators->pWeeklyHigh, pIndicators->pWeeklyLow, pIndicators->pWeeklyTrend, pIndicators->pMaxWeeklyHigh, pIndicators->pMaxWeeklyLow);
 
 	//setPredictDailyATR((int)pParams->settings[STRATEGY_INSTANCE_ID], pIndicators->pDailyATR, (BOOL)pParams->settings[IS_BACKTESTING]);
@@ -1219,10 +1219,10 @@ void predictWeeklyATR_LongerTerm(StrategyParams* pParams, Base_Indicators* pIndi
 
 	pIndicators->pWeeklyPredictMaxATR = maxATR;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortWeeklyATR = %f,mediumWeeklyATR=%f,longWeeklyATR=%f,minATR=%f,maxATR=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, shortWeeklyATR = %f,mediumWeeklyATR=%f,longWeeklyATR=%f,minATR=%f,maxATR=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, shortWeeklyATR, mediumWeeklyATR, longWeeklyATR, minATR, maxATR);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ATR0 = %f,ATR1=%f,ATR2=%f,ATR3=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, ATR0, ATR1, ATR2, ATR3);
 
 	// 1. ʹ��ƽ��4�ܲ���
@@ -1244,7 +1244,7 @@ void predictWeeklyATR_LongerTerm(StrategyParams* pParams, Base_Indicators* pIndi
 	else
 		pATR = (pMinATR + pMaxATR) / 2;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,ATR0=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,ATR0=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, ATR0);
 
 	//Get average atr on the same week day.
@@ -1253,7 +1253,7 @@ void predictWeeklyATR_LongerTerm(StrategyParams* pParams, Base_Indicators* pIndi
 	pATR = min(pATR, pATRSameMonthWeek);
 	pATR = min(pATR, minATR);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameMonthWeek=%f,ATR0=%f ",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pATR=%f,pATRSameMonthWeek=%f,ATR0=%f ",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pATR, pATRSameMonthWeek, ATR0);
 
 	//3. ʹ��pivot�����?���������£����з��ദ��
@@ -1296,7 +1296,7 @@ void predictWeeklyATR_LongerTerm(StrategyParams* pParams, Base_Indicators* pIndi
 	pIndicators->pMaxWeeklyHigh = pMaxHigh;
 	pIndicators->pMaxWeeklyLow = pMaxLow;
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pWeeklyPredictATR=%f,pWeeklyATR=%f,pWeeklyHigh=%f,pWeeklyLow=%f, pWeeklyTrend = %ld,pMaxWeeklyHigh=%f,pMaxWeeklyLow=%f",
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,pWeeklyPredictATR=%f,pWeeklyATR=%f,pWeeklyHigh=%f,pWeeklyLow=%f, pWeeklyTrend = %ld,pMaxWeeklyHigh=%f,pMaxWeeklyLow=%f",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->pWeeklyPredictATR, pIndicators->pWeeklyATR, pIndicators->pWeeklyHigh, pIndicators->pWeeklyLow, pIndicators->pWeeklyTrend, pIndicators->pMaxWeeklyHigh, pIndicators->pMaxWeeklyLow);
 
 	//setPredictDailyATR((int)pParams->settings[STRATEGY_INSTANCE_ID], pIndicators->pDailyATR, (BOOL)pParams->settings[IS_BACKTESTING]);
@@ -1327,11 +1327,11 @@ BOOL isNewDay(StrategyParams* pParams, time_t currentTime)
 	safe_timeString(timeString1, currentTime);
 	safe_timeString(timeString2, virtualOrderEntryTime);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Last order update time = %s,current time = %s, Time Difference (hours) = %lf", timeString2, timeString1, difftime(virtualOrderEntryTime, currentTime) / 3600);
+	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Last order update time = %s,current time = %s, Time Difference (hours) = %lf", timeString2, timeString1, difftime(virtualOrderEntryTime, currentTime) / 3600);
 
 	if (virtualOrderEntryTime != -1 && timeInfo1.tm_mday != timeInfo2.tm_mday && timeInfo1.tm_min >= 15) // New day
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Move to a new day.");
+		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Move to a new day.");
 		//setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[0].time[pParams->ratesBuffers->rates[0].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
 		return TRUE;
 	}
