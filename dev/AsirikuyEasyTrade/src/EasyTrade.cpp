@@ -5386,6 +5386,7 @@ AsirikuyReturnCode EasyTrade::validateHourlyBars(StrategyParams* pParams, int pr
 	int   shiftDaily0Index = pParams->ratesBuffers->rates[hourly_rate].info.arraySize - 1;
 	int   offset_min = 3;
 	int   offset_hour = 0;
+	int   start_min = 5;
 
 
 	//Validate daily bars first
@@ -5404,6 +5405,9 @@ AsirikuyReturnCode EasyTrade::validateHourlyBars(StrategyParams* pParams, int pr
 			offset_hour = 1;
 		else
 			offset_hour = 0;
+
+		if (timeInfo.tm_wday == 6)
+			start_min = 45;
 	}
 
 	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checking missing bars: Current hourly bar matached: current time = %s, current hourly time =%s", timeString, hourlyTimeString);
@@ -5411,15 +5415,15 @@ AsirikuyReturnCode EasyTrade::validateHourlyBars(StrategyParams* pParams, int pr
 	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
 	{
 		if (timeInfo.tm_hour == 0 && timeInfo.tm_min == 0
-			&& hourlyTimeInfo.tm_yday == timeInfo.tm_yday - 1 && hourlyTimeInfo.tm_hour == 23 && hourlyTimeInfo.tm_min == 5)
+			&& hourlyTimeInfo.tm_yday == timeInfo.tm_yday - 1 && hourlyTimeInfo.tm_hour == 23 && hourlyTimeInfo.tm_min == start_min)
 		{			
 			return SUCCESS;
 		}
-		else if (hourlyTimeInfo.tm_yday == timeInfo.tm_yday && hourlyTimeInfo.tm_hour == timeInfo.tm_hour - offset_hour && hourlyTimeInfo.tm_min == 5)
+		else if (hourlyTimeInfo.tm_yday == timeInfo.tm_yday && hourlyTimeInfo.tm_hour == timeInfo.tm_hour - offset_hour && hourlyTimeInfo.tm_min == start_min)
 		{
 			return SUCCESS;
 		}
-		
+
 
 		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Potential missing bars: Current hourly bar not matached: current time = %s, current hourly time =%s", timeString, hourlyTimeString);
 		return ERROR_IN_RATES_RETRIEVAL;
