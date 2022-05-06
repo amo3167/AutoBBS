@@ -2914,10 +2914,13 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	int barState = BAR_UNKNOWN;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0;
 	double daily_baseline = 0.0, daily_baseline_short = 0.0;
-	double rsi = 0.0;
+	double rsi = 0.0, rsiLow = 20.0, rsiHigh = 80.0;
+	int tradingDays = 10;
+	BOOL isEnableRSI = FALSE;
 	BOOL isEnableDoubleEntry = FALSE, isEnableDoubleEntry2 = FALSE;
 	int rangeType = 0;
 	OrderInfo orderInfo;
+	int atrTimes = 20;
 	
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
@@ -2941,6 +2944,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 	pIndicators->adjust = fabs(pParams->bidAsk.bid[0] - pParams->bidAsk.ask[0]);	
 	
+	if (timeInfo1.tm_wday == 0)
+		atrTimes = 50;
+
 	if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
 		startHour = 3;
@@ -2979,6 +2985,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		pIndicators->startHourOnLimt = startHour;
 		isCloseOrdersEOD = TRUE;
+		isEnableRSI = TRUE; // Not confirm it will be much better. Need manully control the risk if RSI or too much??
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
 	{		
@@ -3114,8 +3121,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		pIndicators->isEnableLimitSR1 = TRUE;
 
-		if (timeInfo1.tm_wday == 6)
-			stopHour = 16;
+		//if (timeInfo1.tm_wday == 6)
+		//	stopHour = 16;
 
 		tooFarLimit = 2;
 
@@ -3126,6 +3133,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		fastMAPeriod = 7;
 		slowMAPeriod = 14;
 		signalMAPeriod = 7;
+
+		tradingDays = 14;
 	}
 	else if (strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
 	{
@@ -3180,8 +3189,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		pIndicators->isEnableLimitSR1 = TRUE;
 
-		if (timeInfo1.tm_wday == 6)
-			stopHour = 16;
+		//if (timeInfo1.tm_wday == 6)
+		//	stopHour = 16;
 
 		tooFarLimit = 2;
 
@@ -3192,6 +3201,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		fastMAPeriod = 7;
 		slowMAPeriod = 14;
 		signalMAPeriod = 7;
+
+		tradingDays = 14;
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
 	{		
@@ -3227,7 +3238,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	pIndicators->preFast = fast2;
 	pIndicators->preSlow = slow2;
 
-	//rsi = iRSI(B_DAILY_RATES, 14, 1);
+	rsi = iRSI(B_DAILY_RATES, tradingDays, 1);
 	//isMACDBeili = iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint);
 
 	preDailyClose = iClose(B_DAILY_RATES, startShift);
@@ -3344,7 +3355,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	//AUTOBBS_IS_AUTO_MODE = 3, cancel all orders
 	//AUTOBBS_RISK_CAP=2 : stopLossLevel, by default is 2
 
-	pIndicators->takePrice = iAtr(B_HOURLY_RATES, 20, 1);
+	pIndicators->takePrice = iAtr(B_HOURLY_RATES, atrTimes, 1);
 	pIndicators->stopLoss = stopLossLevel * pIndicators->takePrice;
 	pIndicators->stopLossPrice = 0; // No moving 
 	pIndicators->stopMovingBackSL = TRUE;
@@ -3364,6 +3375,17 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	//{
 	//	saveVirutalOrdergInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->orderInfo[orderIndex]);	
 	//}
+
+	if (isEnableRSI && (rsi >= rsiHigh || rsi <= rsiLow) 
+		//&& (pIndicators->fast >= 0.012 || pIndicators->fast <=-0.012)
+		)
+	{
+		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,skip trading on rsi=%lf",
+			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, rsi);
+
+		return SUCCESS;
+		//pIndicators->risk = 0.5;
+	}
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen)
 	{
@@ -3418,11 +3440,11 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	//	return SUCCESS;
 	//}
 
-	//if (rsi >= 70 || rsi <= 30)
-	//	pIndicators->risk = 0.5;
 
 	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,startHour=%d,AUTOBBS_IS_AUTO_MODE=%d,isEnableRangeTrade=%d,pBase_dailyHigh=%lf,dailyLow=%lf,pDailyMaxATR=%lf,hourATR=%lf",
-		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->startHour,(int)parameter(AUTOBBS_IS_AUTO_MODE), (int)parameter(AUTOBBS_RANGE), iHigh(B_DAILY_RATES, 0), iLow(B_DAILY_RATES, 0), pBase_Indicators->pDailyMaxATR, iAtr(B_HOURLY_RATES, 20, 1));
+		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->startHour, (int)parameter(AUTOBBS_IS_AUTO_MODE), (int)parameter(AUTOBBS_RANGE), iHigh(B_DAILY_RATES, 0), iLow(B_DAILY_RATES, 0), pBase_Indicators->pDailyMaxATR, iAtr(B_HOURLY_RATES, 20, 1));
+	
+
 	totalLossTimes = getLossTimesInDayCloseOrderEasy(currentTime, &totalLossPoint);
 	if (totalLossTimes >= 2)
 	{
@@ -3836,6 +3858,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 	BOOL isEnableDoubleEntry = FALSE, isEnableDoubleEntry2 = FALSE;
 	int rangeType = 0;
 	Order_Turning_Info orderTurningInfo;
+	int atrTime = 20;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -3943,8 +3966,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 
 		//pIndicators->isEnableLimitSR1 = TRUE;
 
-		if (timeInfo1.tm_wday == 6)
-			stopHour = 16;
+		//if (timeInfo1.tm_wday == 6)
+		//	stopHour = 16;
 
 		tooFarLimit = 2;
 
@@ -3952,6 +3975,10 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 		fastMAPeriod = 7;
 		slowMAPeriod = 14;
 		signalMAPeriod = 7;
+
+		if (timeInfo1.tm_wday == 0)
+			atrTime = 50;
+
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
 	{
@@ -4058,7 +4085,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 	else
 		trend = RANGE;
 
-	pIndicators->takePrice = iAtr(B_HOURLY_RATES, 20, 1);
+	pIndicators->takePrice = iAtr(B_HOURLY_RATES, atrTime, 1);
 	pIndicators->stopLoss = stopLossLevel * pIndicators->takePrice;
 	pIndicators->stopLossPrice = 0; // No moving 
 	pIndicators->stopMovingBackSL = TRUE;

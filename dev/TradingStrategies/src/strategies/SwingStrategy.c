@@ -4956,6 +4956,16 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 	}
 	else
 	{
+		//side = getLastestOrderTypeEasy(B_PRIMARY_RATES, &openOrderHigh, &openOrderLow, &isOpen);
+
+		//orderCountToday = getOrderCountTodayEasy(currentTime);
+		//if (orderCountToday == 1)
+		//{
+		//	openOrderHigh = intradayHigh;
+		//	openOrderLow = intradayLow;
+
+		//}
+
 		modifyOrder_MultipleDay(pParams, pIndicators, pBase_Indicators, oldestOpenOrderIndex, intradayHigh, intradayLow, floatingTP, takeProfitMode, TRUE);
 	}
 

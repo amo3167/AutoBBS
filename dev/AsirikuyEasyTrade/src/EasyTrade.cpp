@@ -2999,8 +2999,8 @@ OrderType EasyTrade::getLastestOrderType_XAUUSD(int rateIndex, double *pHigh, do
 			getHighLow(rateIndex, openIndex, count, pHigh, pLow);
 		else
 		{
-			*pHigh = -100000;
-			*pLow = 100000;
+			*pHigh = pParams->orderInfo[index].openPrice;
+			*pLow = pParams->orderInfo[index].openPrice;
 		}
 		orderType = pParams->orderInfo[index].type;
 	}
@@ -5471,16 +5471,22 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
 	{
 		offset_min = 7;
-		if (timeInfo.tm_wday == 0)
-			closeHour = 16;
+		//if (timeInfo.tm_wday == 0)
+		//	closeHour = 16;
 		specialCloseHour = 16;
 
 		startMin = 5;
 		if (timeInfo.tm_wday == 6)
-			startMin = 45;
+		{
+			startMin = 45;		
+		}
 
 		if (secondary_tf >= 60)
+		{
+			if (timeInfo.tm_wday == 6)
+				offset_min = 47;
 			closeMin = 5;
+		}
 	}
 
 	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"validateSecondaryBarsGap:current time = %s, current secondary time =%s weekend=%d,startHour=%d,diff=%d,secondary_tf=%d",
@@ -5565,6 +5571,12 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 				|| (isWeekend(currentTime) && secondaryTimeInfo.tm_min >= closeMin-30)
 				)
 				&& timeInfo.tm_hour == startHour && timeInfo.tm_min == startMin)
+				return TRUE;
+			if ((strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL) && secondary_tf == 5
+				&& secondaryTimeInfo.tm_hour == closeHour
+				&& timeInfo.tm_wday == 6
+				&& timeInfo.tm_hour == startHour
+				&& timeInfo.tm_min == secondaryTimeInfo.tm_min)
 				return TRUE;
 			else if ((strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL) && secondary_tf == 60
 				&& secondaryTimeInfo.tm_hour == closeHour && timeInfo.tm_wday == 0 //Sunday
