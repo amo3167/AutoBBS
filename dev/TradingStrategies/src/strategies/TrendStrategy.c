@@ -322,8 +322,7 @@ void splitBuyOrders_4HSwing(StrategyParams* pParams, Indicators* pIndicators, Ba
 	double pDailyHigh = pBase_Indicators->pDailyHigh;
 	double pDailyLow = pBase_Indicators->pDailyLow;
 	
-	double dailyGap = pDailyHigh - pIndicators->entryPrice;	
-	double lots_singal;
+	double dailyGap = pDailyHigh - pIndicators->entryPrice;
 
 	//double pWeeklyATR = pBase_Indicators->pWeeklyATR;
 	//double pWeeklyHigh = pBase_Indicators->pWeeklyHigh;
@@ -362,8 +361,6 @@ void splitSellOrders_4HSwing(StrategyParams* pParams, Indicators* pIndicators, B
 	double pDailyLow = pBase_Indicators->pDailyLow;
 
 	double dailyGap = pIndicators->entryPrice - pDailyLow;
-
-	double lots_singal;
 
 	//double pWeeklyATR = pBase_Indicators->pWeeklyATR;
 	//double pWeeklyHigh = pBase_Indicators->pWeeklyHigh;
@@ -555,7 +552,6 @@ void splitSellOrders_4HSwing_Shellington(StrategyParams* pParams, Indicators* pI
 	double lots, lots_singal;
 
 	double total_pre_lost = 0;
-	int lostTimes;
 	time_t currentTime;
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 
@@ -647,9 +643,7 @@ void splitSellOrders_Ichimoko_Daily(StrategyParams* pParams, Indicators* pIndica
 void splitBuyOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss)
 {
 	double takePrice;
-	double lots;	
-	double reminding, main;
-	double test;
+	double lots;
 	
 	if (pIndicators->tradeMode == 1)
 	{
