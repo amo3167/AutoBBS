@@ -49,7 +49,6 @@
 #include "OrderManagement.h"
 #include "StrategyUserInterface.h"
 
-#include "Coatl.h"
 #include "RecordBars.h"
 #include "Munay.h"
 #include "Screening.h"
@@ -60,7 +59,6 @@
 
 typedef enum strategyId_t
 {
-  COATL             = 4,
   RECORD_BARS       = 19,
   MUNAY				= 20,
   TAKEOVER			= 26,
@@ -74,11 +72,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
 {
   switch((int)pParams->settings[INTERNAL_STRATEGY_ID])
   {
-  case COATL:
-    {
-      *runStrategyFunc            = &runCoatl;
-      return SUCCESS;
-    }
   case RECORD_BARS:
     {
       *runStrategyFunc            = &runRecordBars;
