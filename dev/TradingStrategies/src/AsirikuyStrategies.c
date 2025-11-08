@@ -103,7 +103,6 @@ typedef enum strategyId_t
   MUNAY				= 20,
   RENKO_TEST		= 21,
   KANTU_ML          = 22,
-  KANTU_RL          = 23,
   KELPIE			= 24,
   BBS				= 25,
   TAKEOVER			= 26,
@@ -440,7 +439,7 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
   }
 
   // Control when should run the strategy....
-  // Add special rule for XAUUSD, it is open on 1am, but only start trade from 1£º02 am. 
+  // Add special rule for XAUUSD, it is open on 1am, but only start trade from 1ï¿½ï¿½02 am. 
   if(!pParams->settings[RUN_EVERY_TICK] 
     && areOrdersCorrect(pParams, pParams->settings[USE_SL], pParams->settings[USE_TP]) 
     && hasInstanceRunOnCurrentBar((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].time[pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]))
