@@ -51,7 +51,6 @@
 
 #include "Atipaq.h"
 #include "Coatl.h"
-#include "Comitl.h"
 #include "GodsGiftATR.h"
 #include "eurchf_grid.h"
 #include "Qallaryi.h"
@@ -81,9 +80,6 @@ typedef enum strategyId_t
   WATUKUSHAY_FE_CCI = 1,
   ATIPAQ            = 2,
   COATL             = 4,
-  COMITL_BB         = 5,
-  COMITL_KC         = 6,
-  COMITL_PA         = 7,
   GODS_GIFT_ATR     = 8,
   QALLARYI          = 9,
   QUIMICHI          = 10,
@@ -130,21 +126,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
   case COATL:
     {
       *runStrategyFunc            = &runCoatl;
-      return SUCCESS;
-    }
-  case COMITL_BB:
-    {
-      *runStrategyFunc            = &runComitl_BB;
-      return SUCCESS;
-    }
-  case COMITL_KC:
-    {
-      *runStrategyFunc            = &runComitl_KC;
-      return SUCCESS;
-    }
-  case COMITL_PA:
-    {
-      *runStrategyFunc            = &runComitl_PA;
       return SUCCESS;
     }
   case GODS_GIFT_ATR:

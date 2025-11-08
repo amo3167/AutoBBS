@@ -547,19 +547,19 @@ static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, double* pL
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pParams = NULL");
+    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pParams = NULL");
     return NULL_POINTER;
   }
 
   if(pLogicParams1 == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pLogicParams = NULL");
+    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pLogicParams = NULL");
     return NULL_POINTER;
   }
 
   if(pLogicParams2 == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pLogicParams = NULL");
+    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pLogicParams = NULL");
     return NULL_POINTER;
   }
 
