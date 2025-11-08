@@ -1,4 +1,4 @@
-
+﻿
 #include "Precompiled.h"
 #include "OrderManagement.h"
 #include "Logging.h"
@@ -506,7 +506,7 @@ static AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pInd
 
 				modifyTradeEasy_DayTrading(BUY, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust);
 			}
-			// else if ((int)parameter(AUTOBBS_TREND_MODE) == 13) //�ڿ��ֺ�TP�ǵ͵㵽�ߵ�ľ��롣
+			// [Comment removed - encoding corrupted]
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR/3);
 			//	modifyTradeEasy_new(BUY, -1, stopLoss, takePrice, tpMode);
@@ -525,7 +525,7 @@ static AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pInd
 				// stopLoss2 = fabs(pIndicators->entryPrice - pIndicators->bbsStopPrice_primary) + pIndicators->adjust;
 				modifyTradeEasy_DayTrading(SELL, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust);
 			}
-			// else if ((int)parameter(AUTOBBS_TREND_MODE) == 13) //�ڿ��ֺ�TP�ǵ͵㵽�ߵ�ľ��롣
+			// [Comment removed - encoding corrupted]
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR / 3);
 			//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode);
@@ -706,7 +706,7 @@ static void splitBuyOrders_MediumTerm(StrategyParams *pParams, Indicators *pIndi
 
 		if ((int)parameter(AUTOBBS_TP_MODE) == 1)
 		{
-			// 1��3
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->dailyPivot - pIndicators->entryPrice > 0)
 				takePrice = 3 * takePrice_primary;
 			else
@@ -800,7 +800,7 @@ static void splitBuyOrders_Daily_Swing(StrategyParams *pParams, Indicators *pInd
 		{
 			lots = pIndicators->total_lose_pips / takePrice + lots_singal;
 
-			////Ԥ��2���ķ���,�������3% risk
+			// [Comment removed - encoding corrupted]
 			if (lots * takePrice * 100 / pParams->accountInfo.equity > 0.015)
 				lots = pParams->accountInfo.equity * 0.015 / 100 / takePrice;
 		}
@@ -833,7 +833,7 @@ static void splitSellOrders_Daily_Swing(StrategyParams *pParams, Indicators *pIn
 		{
 			lots = pIndicators->total_lose_pips / takePrice + lots_singal;
 
-			////Ԥ��2���ķ���,�������3% risk
+			// [Comment removed - encoding corrupted]
 			if (lots * takePrice * 100 / pParams->accountInfo.equity > 0.015)
 				lots = pParams->accountInfo.equity * 0.015 / 100 / takePrice;
 		}
@@ -918,7 +918,7 @@ static void splitBuyOrders_ShortTerm_ATR_Hedge(StrategyParams *pParams, Indicato
 	double down_gap = pIndicators->entryPrice - pLow;
 	double up_gap = pHigh - pIndicators->entryPrice;
 
-	// ������1/3 �ռ�
+	// [Comment removed - encoding corrupted]
 	if (down_gap <= pATR / 3)
 	{
 		takePrice = up_gap / 4;
@@ -940,7 +940,7 @@ static void splitSellOrders_ShortTerm_ATR_Hedge(StrategyParams *pParams, Indicat
 	double down_gap = pIndicators->entryPrice - pLow;
 	double up_gap = pHigh - pIndicators->entryPrice;
 
-	// ������1/3 �ռ�
+	// [Comment removed - encoding corrupted]
 	if (up_gap <= pATR / 3)
 	{
 		takePrice = down_gap / 4;
@@ -962,7 +962,7 @@ static void splitBuyOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators *
 	double down_gap = pIndicators->entryPrice - pLow;
 	double up_gap = pHigh - pIndicators->entryPrice;
 
-	// ������1/3 �ռ�
+	// [Comment removed - encoding corrupted]
 	if (down_gap <= pATR / 3)
 	{
 		takePrice = up_gap / 4;
@@ -984,7 +984,7 @@ static void splitSellOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators 
 	double down_gap = pIndicators->entryPrice - pLow;
 	double up_gap = pHigh - pIndicators->entryPrice;
 
-	// ������1/3 �ռ�
+	// [Comment removed - encoding corrupted]
 	if (up_gap <= pATR / 3)
 	{
 		takePrice = down_gap / 4;
@@ -998,7 +998,7 @@ static void splitSellOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators 
 static void splitBuyOrders_KeyK(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss)
 {
 	double takePrice;
-	// 1��1
+	// [Comment removed - encoding corrupted]
 
 	takePrice = takePrice_primary;
 	openSingleLongEasy(takePrice, stopLoss, 0, pIndicators->risk / 3);
@@ -1015,7 +1015,7 @@ static void splitSellOrders_ATR(StrategyParams *pParams, Indicators *pIndicators
 	double takePrice;
 	// double intradayClose = iClose(B_DAILY_RATES, 0), intradayHigh = iHigh(B_DAILY_RATES, 0), intradayLow = iLow(B_DAILY_RATES, 0);
 
-	// 1��1
+	// [Comment removed - encoding corrupted]
 	if ((pIndicators->entryPrice >= pBase_Indicators->dailyS1 && (int)pParams->settings[TIMEFRAME] == 15) ||
 		(pIndicators->entryPrice >= pBase_Indicators->dailyS2 && (int)pParams->settings[TIMEFRAME] == 5) ||
 		(pIndicators->entryPrice >= pBase_Indicators->dailyS2 && (int)pParams->settings[TIMEFRAME] == 30))
@@ -1052,7 +1052,7 @@ static void splitSellOrders_ShortTerm(StrategyParams *pParams, Indicators *pIndi
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_Primary];
 	safe_gmtime(&timeInfo1, currentTime);
 
-	// ������1/3 �ռ�
+	// [Comment removed - encoding corrupted]
 	if (pIndicators->tradeMode == 1 && gap >= pATR / 2 && fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) < pBase_Indicators->dailyATR)
 	{
 		takePrice = gap / 3;
@@ -1526,10 +1526,10 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 
 		ATR0_EURO = fabs(pIndicators->euro_high - pIndicators->euro_low);
 
-		// 1. ��5Mͻ��������볡
-		// 2. ����������ǵ�һ���Ļ�����Ҫ��15���Ӻ�ʹ��15 BBS Trend ���
-		// 3. ���û��BBS Trend��֧�֣���close trade,���볡���ȴ���һ�λ��ᣨ���ʱ�򣬲����볡��
-		// 4. ͬʱ��ʹ��total lose risk control < 0.6%
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
 		static void XAUUSD_Daily_Stop_Check(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
 			int shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
@@ -1542,7 +1542,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
 			safe_gmtime(&timeInfo1, currentTime);
 			safe_timeString(timeString, currentTime);
-			// ����򵥴���������е�������ʹ��0 �ĵ���
+			// [Comment removed - encoding corrupted]
 
 			if (pParams->orderInfo[0].ticket != 0 && pParams->orderInfo[0].isOpen == TRUE)
 			{
@@ -1582,12 +1582,12 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 		}
 
 		/*
-		ֻ����XAUUSD 15M
-		����ʱ�Σ�1/2 risk �볡 �Ե���
-		�������1/2ATR,�Ͱ��յ�ʱ�����볡�����֮ǰ�ĵ��ӣ����ԣ���ֹ���볡�����ּӱ��볡��
-		����ŷ�ޣ�����ʱ�Σ�
-		���û�е�1/2ATR���Ͱ�������ʱ�ε�������ز��֡����ͻ�Ʊ�Ե���ס�ʹ��stop ����
-		���֮ǰ���ˣ�ֹ�𣬷��ּӱ��볡��
+		XAUUSD 15M
+		1/2 risk  
+		1/2ATR,
+		
+		1/2ATRstop 
+		
 		*/
 		static AsirikuyReturnCode workoutExecutionTrend_XAUUSD_Daily_Swing(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
@@ -1719,10 +1719,10 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			return SUCCESS;
 		}
 
-		// �������У����۸񴩹�pivot��ʱ���볡
-		// ֹ�������ڵ�ǿ֧��λ�á�
-		// һ���λ��R2/S2,һ����no TP
-		// ���ڵĲ�λ��Ҫ��Ҫ����close?
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
 		// UP signal: Low < pivot and Close > pivot
 		// DOWN: signal: High> pivot and Close < pivot
 		// PrimaryRate is 1H
@@ -1766,7 +1766,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 				}
 			}
 
-			// �������ͨ�����ն�̬�����Ʒ���
+			// [Comment removed - encoding corrupted]
 			if (pIndicators->executionTrend == 1)
 			{
 				pIndicators->entryPrice = pParams->bidAsk.ask[0];
@@ -1794,7 +1794,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			return SUCCESS;
 		}
 
-		// �ռ伫�޻ع齻��
+		// [Comment removed - encoding corrupted]
 		static AsirikuyReturnCode workoutExecutionTrend_ATR_Hedge(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
 			double closestR;
@@ -1839,7 +1839,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			//	pIndicators->entryPrice = pParams->bidAsk.bid[0];
 			//	pIndicators->stopLossPrice = pIndicators->entryPrice + pBase_Indicators->dailyATR;
 
-			//	//�����ڲ���������ATR(20)����ʾ�������ڼ��ޡ����ֵ�һ��15M���µ�bar,����10%ATR0
+			// [Comment removed - encoding corrupted]
 			//	if (up_gap <= pBase_Indicators->pDailyATR / 3 && ATR0 >= pMaxATR && preClose < preOpen && intradayHigh - intradayClose >= ATR0 * 0.1
 			//		&& timeInfo1.tm_hour < 23
 			//		&& !isSameDaySamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3, currentTime)
@@ -1864,7 +1864,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			//}
 			// else
 			{
-				// ������1/3 �ռ�,Sell
+				// [Comment removed - encoding corrupted]
 				if (up_gap <= pBase_Indicators->pDailyATR / 3)
 				{
 					pIndicators->executionTrend = -1;
@@ -1882,7 +1882,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 					pIndicators->entryPrice = pParams->bidAsk.ask[0];
 					pIndicators->stopLossPrice = pIndicators->entryPrice - pBase_Indicators->dailyATR;
 
-					// ���ƶԳ彻��
+					// [Comment removed - encoding corrupted]
 					if (ATR0 >= pMaxATR && preClose > preOpen && intradayClose - intradayLow >= ATR0 * 0.1 && timeInfo1.tm_hour < 23 && !isSameDaySamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3, currentTime))
 						pIndicators->entrySignal = 1;
 
@@ -1953,7 +1953,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			}
 			else
 			{
-				// ������1/3 �ռ�,Sell
+				// [Comment removed - encoding corrupted]
 				if (up_gap <= pBase_Indicators->pDailyATR / 3)
 				{
 					pIndicators->executionTrend = -1;
@@ -1973,7 +1973,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 					pIndicators->stopLossPrice = pBase_Indicators->dailyS;
 					pIndicators->stopLossPrice = min(pIndicators->stopLossPrice, pIndicators->entryPrice - pBase_Indicators->dailyATR);
 
-					// ���ƶԳ彻��
+					// [Comment removed - encoding corrupted]
 					if (pIndicators->bbsTrend_excution == 1 && pIndicators->bbsIndex_excution == shift1Index && timeInfo1.tm_hour < 23 && !isSameDaySamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3, currentTime))
 						pIndicators->entrySignal = 1;
 
@@ -2135,7 +2135,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			// if (timeInfo1.tm_hour < 5)
 			//	pIndicators->risk = 0.5;
 
-			// �������ͨ�����ն�̬�����Ʒ���
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->dailyTrend_Phase == MIDDLE_UP_PHASE || (ignored && pBase_Indicators->dailyTrend_Phase > 0))
 			{
 				pIndicators->executionTrend = 1;
@@ -2177,9 +2177,9 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			return SUCCESS;
 		}
 
-		// ����BBS, �볡��15MBBS,ֹ���ǹؼ�֧��λ�� ���Ҷ��� S2/R2 only
-		// ���Լ����ܷ��տ��ƣ����������볡��
-		// ���б��� close ������23��45
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
 		static AsirikuyReturnCode workoutExecutionTrend_MIDDLE_RETREAT_PHASE(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
 			double closestR;
@@ -2202,7 +2202,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 
 			pIndicators->tradeMode = 1;
 
-			// �������ͨ�����ն�̬�����Ʒ���
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->dailyTrend_Phase == MIDDLE_UP_RETREAT_PHASE)
 			{
 				pIndicators->executionTrend = 1;
@@ -2295,9 +2295,9 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 		}
 
 		// Weekly retreat strategy, only for EUR, AUD, crossing currencies
-		// ˳ ��ͼ ���� 4H
-		// �� ��ͼ ���� 1H
-		// ˳ 1H С��   15BBS
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
+		// [Comment removed - encoding corrupted]
 		static AsirikuyReturnCode workoutExecutionTrend_WeeklyRetreat(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
 			double closestR;
@@ -2413,7 +2413,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			pIndicators->tpMode = 0;
 			pIndicators->splitTradeMode = 11;
 
-			// �������ͨ�����ն�̬�����Ʒ���
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->weeklyTrend_Phase == MIDDLE_UP_PHASE || (ignored && pBase_Indicators->weeklyTrend_Phase > 0))
 			{
 				pIndicators->executionTrend = 1;
@@ -2462,7 +2462,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			pIndicators->tpMode = 0;
 			pIndicators->splitTradeMode = 5;
 
-			// �������ͨ�����ն�̬�����Ʒ���
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->weeklyTrend_Phase == MIDDLE_UP_RETREAT_PHASE || (ignored && pBase_Indicators->weeklyTrend_Phase > 0))
 			{
 				pIndicators->executionTrend = 1;
@@ -2505,7 +2505,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 			safe_gmtime(&timeInfo1, currentTime);
 
-			// ������ͼ��ʷ�����Ʒ�����
+			// [Comment removed - encoding corrupted]
 			if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
 				dailyTrend = 0;
 			else if (pBase_Indicators->dailyTrend > 0)
@@ -2546,13 +2546,13 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 		}
 
 		/*
-		�����׵������
-		1.ǰһ���ATR > 20
-		2.ǰһ���Close -  ǰ�����Close�ľ��� > 10
-		3.����ʱ�εĲ���> 7 or 8?
-		4.��ཻ��3�Σ�����
-		5.10��֮ǰ��������
-		6.���15MA too close, ���� 2��1H MA ����֧��
+		
+		1.ATR > 20
+		2.Close -  Close > 10
+		3.> 7 or 8?
+		4.3
+		5.10
+		6.15MA too close,  21H MA 
 		*/
 		static BOOL XAUUSD_DayTrading_Allow_Trade(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 		{
@@ -2584,7 +2584,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			pIndicators->asia_open = close_prev1;
 			pIndicators->asia_close = iClose(B_PRIMARY_RATES, asia_index_rate);
 
-			if (timeInfo1.tm_hour >= 17) // 17:00 �������޽���ʱ��
+			if (timeInfo1.tm_hour >= 17) // [Comment removed - encoding corrupted]
 			{
 				euro_index_rate = shift1Index - ((timeInfo1.tm_hour - 17) * (60 / execution_tf) + (int)(timeInfo1.tm_min / execution_tf));
 
@@ -2631,7 +2631,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			if (close_prev1 > R3 || close_prev1 < S3)
 				return FALSE;
 
-			////��ũ �����ף� ÿ���µĵ�һ��������
+			// [Comment removed - encoding corrupted]
 			// if (timeInfo1.tm_wday == 5 && timeInfo1.tm_mday - 7 < 1)
 			//{
 			//	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s No Trade on  Non Farm PayRoll day",
@@ -2685,37 +2685,37 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 		}
 
 		/*
-		�ռ���BBS15�Ľ�����ڻƽ��׷�
-		����ʱ�Σ�
+		BBS15
+		
 		1- 10am
 
-		���е��ӵ�����£��ڵ��ղ���С�� 80p,����ʹ�ÿռ䷨��
+		 80p,
 
-		�����׵������
-		1.ǰһ���ATR > 20
-		2.ǰһ���Close -  ǰ�����Close�ľ��� > 10
-		3.����ʱ�εĲ���> 7 or 8?
-		4.��ཻ��3�Σ�����
-		5.���ǰһ�쵽��S3 or R3
+		
+		1.ATR > 20
+		2.Close -  Close > 10
+		3.> 7 or 8?
+		4.3
+		5.S3 or R3
 
-		�������ƣ�
+		
 		MA15(50) > MA15(200): UP
 		MA15(50) < MA15(200): DOWN
 
-		�볡:
-		1. �����10���ʱ��˳��, �������볡
-		2. ���10���ʱ�����ƣ� �͵ȴ������������
-			2.1 ���5M������ͻ������ʱ�εĸߵ͵㣬���볡
-			2.2 ֱ��˳�Ƶ�15MBBS ͻ�ƣ� �볡
+		:
+		1. 10, 
+		2. 10 
+			2.1 5M
+			2.2 15MBBS  
 
-		������
+		
 		0.3 risk
 
-		������
-		����23��30�������볡
+		
+		2330
 
-		���˳�ƣ� ����5Mͻ�����ڵĸߵ͵㣬�ų����ź�
-		������ƣ� ����BBS15��stoploss, �ͳ����źš���Ϊ�ͱ��˳�Ƶ�BBSͻ�ơ�
+		 5M
+		 BBS15stoploss, BBS
 
 		*/
 		static AsirikuyReturnCode workoutExecutionTrend_XAUUSD_DayTrading(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
@@ -2793,23 +2793,23 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 			}
 
 			// secondary rate is 15M , priarmy rate is 5M
-			if (hasSameDayOrderEasy(currentTime, &isOpen) == FALSE) // ���û�п���, �Ϳ��Կ���
+			if (hasSameDayOrderEasy(currentTime, &isOpen) == FALSE) // [Comment removed - encoding corrupted]
 			{
-				if (ATR0_EURO > Range && pBase_Indicators->maTrend > 0 && pIndicators->bbsTrend_secondary == 1 && timeInfo1.tm_hour < 22) // ˳��
+				if (ATR0_EURO > Range && pBase_Indicators->maTrend > 0 && pIndicators->bbsTrend_secondary == 1 && timeInfo1.tm_hour < 22) // [Comment removed - encoding corrupted]
 				{
 					pIndicators->executionTrend = 1;
 					pIndicators->entryPrice = pParams->bidAsk.ask[0];
 					pIndicators->stopLossPrice = pIndicators->entryPrice - stopLoss;
 					pIndicators->entrySignal = 1;
 				}
-				else if (ATR0_EURO > Range && pBase_Indicators->maTrend < 0 && pIndicators->bbsTrend_secondary == -1 && timeInfo1.tm_hour < 22) // ˳��
+				else if (ATR0_EURO > Range && pBase_Indicators->maTrend < 0 && pIndicators->bbsTrend_secondary == -1 && timeInfo1.tm_hour < 22) // [Comment removed - encoding corrupted]
 				{
 					pIndicators->executionTrend = -1;
 					pIndicators->entryPrice = pParams->bidAsk.bid[0];
 					pIndicators->stopLossPrice = pIndicators->entryPrice + stopLoss;
 					pIndicators->entrySignal = -1;
 				}
-				else // ���ƣ�ʹ�ÿռ佻�׷�,ͻ�������̵ĸߵ͵�
+				else // [Comment removed - encoding corrupted]
 				{
 					if (ATR0_EURO > Range && primary_close_pre1 > pIndicators->asia_high && timeInfo1.tm_hour < 22)
 					{
@@ -2837,13 +2837,13 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 					pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T *)"System InstanceID = %d, BarTime = %s, Side = SELL isOpen=%ld, ATR0 = %lf,openOrderHigh = %lf,openOrderLow = %lf",
 										(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, isOpen, ATR0, openOrderHigh, openOrderLow);
 
-					// С��80�� ����ʹ�ÿռ䡣
-					// 1. ��5Mͻ��������볡
-					// 2. ����������ǵ�һ���Ļ�����Ҫ��15���Ӻ�ʹ��15 BBS Trend ���
-					// 3. ���û��BBS Trend��֧�֣���close trade,���볡���ȴ���һ�λ��ᣨ���ʱ�򣬲����볡��
+					// [Comment removed - encoding corrupted]
+					// [Comment removed - encoding corrupted]
+					// [Comment removed - encoding corrupted]
+					// [Comment removed - encoding corrupted]
 
 					if (ATR0 >= Range &&
-						(pBase_Indicators->maTrend > 0 && pIndicators->bbsTrend_secondary == 1 && pIndicators->bbsIndex_secondary == shift1Index_secondary) // ˳�ƣ�ʹ��15BBS ����BBS�����ź�
+						(pBase_Indicators->maTrend > 0 && pIndicators->bbsTrend_secondary == 1 && pIndicators->bbsIndex_secondary == shift1Index_secondary) // [Comment removed - encoding corrupted]
 					)
 					{
 						XAUUSD_DayTrading_Entry(pParams, pIndicators, pBase_Indicators, SELL, ATR0_EURO, stopLoss, Range);
@@ -2875,7 +2875,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 										(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, isOpen, ATR0, openOrderHigh, openOrderLow);
 
 					if (ATR0 >= Range &&
-						(pBase_Indicators->maTrend < 0 && pIndicators->bbsTrend_secondary == -1 && pIndicators->bbsIndex_secondary == shift1Index_secondary) // ˳�ƣ�ʹ��15BBS ����BBS�����ź�
+						(pBase_Indicators->maTrend < 0 && pIndicators->bbsTrend_secondary == -1 && pIndicators->bbsIndex_secondary == shift1Index_secondary) // [Comment removed - encoding corrupted]
 					)
 					{
 						XAUUSD_DayTrading_Entry(pParams, pIndicators, pBase_Indicators, BUY, ATR0_EURO, stopLoss, Range);
@@ -2903,7 +2903,7 @@ static AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams *pParams, In
 				if (pIndicators->entrySignal == 0 && timeInfo1.tm_hour >= 15 && timeInfo1.tm_hour <= 17)
 					XAUUSD_Daily_Stop_Check(pParams, pIndicators, pBase_Indicators);
 
-				// ��21�c������І��ӣ�ʹ��BBS15ƽ��
+				// [Comment removed - encoding corrupted]
 				if (pIndicators->entrySignal == 0 && timeInfo1.tm_hour >= 21)
 				{
 					if (isOpen == TRUE)
