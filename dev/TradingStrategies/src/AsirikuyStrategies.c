@@ -51,12 +51,9 @@
 
 #include "Atipaq.h"
 #include "Coatl.h"
-#include "Sapaq.h"
 #include "Kantu.h"
 #include "KantuML.h"
 #include "AsirikuyBrain.h"
-#include "TestEA.h"
-#include "WatukushayFE.h"
 #include "RecordBars.h"
 #include "Munay.h"
 #include "Screening.h"
@@ -67,14 +64,9 @@
 
 typedef enum strategyId_t
 {
-  WATUKUSHAY_FE_BB  = 0,
-  WATUKUSHAY_FE_CCI = 1,
   ATIPAQ            = 2,
   COATL             = 4,
-  SAPAQ             = 11,
   ASIRIKUY_BRAIN    = 12,
-  WATUKUSHAY_FE_RSI = 14,
-  TEST_EA           = 16,
   KANTU             = 18,
   RECORD_BARS       = 19,
   MUNAY				= 20,
@@ -90,16 +82,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
 {
   switch((int)pParams->settings[INTERNAL_STRATEGY_ID])
   {
-  case WATUKUSHAY_FE_BB:
-    {
-      *runStrategyFunc            = &runWatukushayFE_BB;
-      return SUCCESS;
-    }
-  case WATUKUSHAY_FE_CCI:
-    {
-      *runStrategyFunc            = &runWatukushayFE_CCI;
-      return SUCCESS;
-    }
   case ATIPAQ:
     {
       *runStrategyFunc            = &runAtipaq;
@@ -110,24 +92,9 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
       *runStrategyFunc            = &runCoatl;
       return SUCCESS;
     }
-  case SAPAQ:
-    {
-      *runStrategyFunc            = &runSapaq;
-      return SUCCESS;
-    }
     case ASIRIKUY_BRAIN:
     {
       *runStrategyFunc            = &runAsirikuyBrain;
-      return SUCCESS;
-    }
-  case WATUKUSHAY_FE_RSI:
-    {
-      *runStrategyFunc            = &runWatukushayFE_RSI;
-      return SUCCESS;
-    }
-  case TEST_EA:
-    {
-      *runStrategyFunc            = &runTestEA;
       return SUCCESS;
     }
   case KANTU:
