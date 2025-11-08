@@ -90,7 +90,6 @@ else
 	  "dev/SymbolAnalyzer/include", 
 	  "dev/Log/include", 
 	  "dev/AsirikuyTechnicalAnalysis/include", 
-	  "dev/AsirikuyImageLib/include", 
 	  "dev/OrderManager/include", 
 	  "dev/TradingStrategies/include", 
 	  "dev/TradingStrategies/include/strategies", 
@@ -220,7 +219,6 @@ else
 	include "dev/SymbolAnalyzer"
 	include "dev/AsirikuyEasyTrade"
 	include "dev/AsirikuyTechnicalAnalysis"
-	include "dev/AsirikuyImageLib"
 	include "dev/OrderManager"
 	include "dev/TradingStrategies"
 	include "dev/NTPClient"

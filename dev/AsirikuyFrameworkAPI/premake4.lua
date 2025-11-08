@@ -37,7 +37,6 @@ project "AsirikuyFrameworkAPI"
 	  "Log", 
 	  "SymbolAnalyzer", 
 	  "AsirikuyTechnicalAnalysis", 
-	  "AsirikuyImageLib", 
 	  "OrderManager", 
 	  "TradingStrategies",
 	  "AsirikuyEasyTrade",
@@ -69,7 +68,6 @@ project "AsirikuyFrameworkAPI"
   configuration{"not windows"}
     links{
 	  "TradingStrategies",
-	  "AsirikuyImageLib",
       "chartdir51",
 	  "DevIL",
 	  "AsirikuyCommon",

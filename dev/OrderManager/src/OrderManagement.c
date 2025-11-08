@@ -49,7 +49,6 @@
 #include "InstanceStates.h"
 #include "TradingWeekBoundaries.h"
 #include "EasyTradeCWrapper.hpp"
-#include "AsirikuyImageProcessorCWrapper.hpp"
 
 #define STOPS_REFERENCE_POINTS 5000 /* A high enough value that the broker SL or TP should never be hit but can be used as a benchmark for calculating the internal SL or TP. */
 #define ELLIPTICAL_SL 0
