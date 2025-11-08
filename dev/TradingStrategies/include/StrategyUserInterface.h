@@ -90,8 +90,8 @@ AsirikuyReturnCode saveTradingInfo(int instanceID, Order_Info * pOrderInfo);
 int readTradingInfo(int instanceID, Order_Info *pOrderInfo);
 AsirikuyReturnCode resetTradingInfo(int instanceID);
 
-AsirikuyReturnCode saveTurningPoint(int instanceID, BOOL isTurning);
-int readTurningPoint(int instanceID);
+AsirikuyReturnCode saveTurningPoint(int instanceID, Order_Turning_Info *pOrderTurning);
+int readTurningPoint(int instanceID, Order_Turning_Info *pOrderTurning);
 
 int readVirtualOrderInfo(int instanceID, OrderInfo *pOrderInfo);
 AsirikuyReturnCode resetVirtualOrderInfo(int instanceID);
