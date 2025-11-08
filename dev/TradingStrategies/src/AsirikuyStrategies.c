@@ -66,7 +66,6 @@
 #include "Screening.h"
 #include "TakeOver.h"
 #include "Screening.h"
-#include "KeyK.h"
 #include "AutoBBS.h"
 #include "TrendLimit.h"
 
@@ -90,7 +89,6 @@ typedef enum strategyId_t
   KANTU_ML          = 22,
   TAKEOVER			= 26,
   SCREENING			= 27,
-  KEYK				= 28,
   AUTOBBS			= 29,
   AUTOBBSWEEKLY		= 30,
   TRENDLIMIT		= 31
@@ -188,11 +186,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
   case SCREENING:
   {
 	  *runStrategyFunc = &runScreening;
-	  return SUCCESS;
-  }
-  case KEYK:
-  {
-	  *runStrategyFunc = &runKeyK;
 	  return SUCCESS;
   }
   case AUTOBBS:
