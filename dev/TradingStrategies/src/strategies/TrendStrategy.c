@@ -5415,7 +5415,6 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 	char   timeString[MAX_TIME_STRING_SIZE] = "";	
 	int orderIndex;
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);	
-	int index1, index2, index3;
 	double level = 0, histLevel = 0, maxLevel = 0;
 	
 
@@ -6137,16 +6136,12 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	int orderIndex;
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	//double ma50Daily, preDailyClose;
-	int index1, index2, index3;
 	double level = 0, histLevel = 0, maxLevel = 0;
 	double nextMACDRange = 0;
 	double volume_ma_5;
 
 	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double ma20Daily, preDailyClose;
-	double preHist1, preHist2, preHist3, preHist4, preHist5,preHistTurning;
-	double fast1, fast2, fast3, fast4, fast5, fastTurning;
-	double slow1, slow2, slow3, slow4, slow5,slowTurning;
 	double dailyBaseLine;
 
 	int startHour = 1;
@@ -7396,7 +7391,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Weekly(StrategyParams* pParams, In
 	double preFast, preSlow;
 	int orderIndex;
 	double atr5 = iAtr(B_WEEKLY_RATES, 5, 1);
-	int index1, index2, index3;
+	/* int index1, index2, index3; */
 	double level = 0;
 	double volume1, volume2, volume_ma_3;
 
