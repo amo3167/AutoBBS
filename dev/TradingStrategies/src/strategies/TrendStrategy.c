@@ -11,6 +11,12 @@
 #include "TrendStrategy.h"
 #include "AsirikuyTime.h" /* added for safe_gmtime/safe_timeString prototypes */
 
+/* Forward declarations for static helper functions to avoid C4013 */
+static BOOL move_stop_loss(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, double stopLossLevel);
+static BOOL entryBuyRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, int stopHour, BOOL isOrderSignal, BOOL isEnterOrder);
+static BOOL entrySellRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, int stopHour, BOOL isOrderSignal, BOOL isEnterOrder);
+AsirikuyReturnCode workoutExecutionTrend_DailyOpen(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL ignored);
+
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
 
