@@ -37,8 +37,8 @@
  * @copyright In no event shall Asirikuy or any contributors to the Asirikuy Framework be liable for any damages (including, without limitation, lost profits, business interruption, or lost information) rising out of 'Authorized Users' use of or inability to use the Asirikuy Framework, even if Asirikuy has been advised of the possibility of such damages. In no event will Asirikuy or any contributors to the Asirikuy Framework be liable for loss of data or for indirect, special, incidental, consequential (including lost profit), or other damages based in contract, tort or otherwise. Asirikuy and contributors to the Asirikuy Framework shall have no liability with respect to the content of the Asirikuy Framework or any part thereof, including but not limited to errors or omissions contained therein, libel, infringements of rights of publicity, privacy, trademark rights, business interruption, personal injury, loss of privacy, moral rights or the disclosure of confidential information.
  */
 
-#ifndef PAQARIN_H_
-#define PAQARIN_H_
+#ifndef ASIRIKUY_BRAIN_H_
+#define ASIRIKUY_BRAIN_H_
 #pragma once
 
 #ifndef ASIRIKUY_DEFINES_H_
@@ -50,7 +50,7 @@ extern "C" {
 #endif
 
 /**
-* Runs the Paqarin trading strategy.
+* Runs the AsirikuyBrain trading strategy.
 *
 * @param StrategyParams* pParams
 *   The structure containing all necessary parameters.
@@ -64,4 +64,4 @@ AsirikuyReturnCode runAsirikuyBrain(StrategyParams* pParams);
 } /* extern "C" */
 #endif
 
-#endif /* PAQARIN_H_ */
+#endif /* ASIRIKUY_BRAIN_H_ */
