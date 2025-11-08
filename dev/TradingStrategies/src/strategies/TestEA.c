@@ -5,6 +5,11 @@
 #include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "StrategyAPI.h" /* central prototypes */
+
+/* Local static forward for modifyOrders only (others now in StrategyAPI.h) */
+typedef struct indicators_t Indicators; 
+static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, OrderType orderType, double stopLoss, double takePrice);
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
@@ -103,13 +108,10 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 
 static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, OrderType orderType, double stopLoss, double takePrice)
 {
-	int shift0Index, shift1Index;
-	time_t currentTime;
-	time_t virtualOrderEntryTime;
-	struct tm timeInfo1, timeInfo2;
-	char       timeString1[MAX_TIME_STRING_SIZE] = "";
-	char       timeString2[MAX_TIME_STRING_SIZE] = "";
-
+	/* Removed unused locals (previously triggering C4101). The commented block
+	 * below relied on these variables; if that logic is reinstated, restore the
+	 * declarations with proper usage.
+	 */
 	int tpMode = 0;
 
 	//if ((int)pParams->settings[TIMEFRAME] >= MINUTES_PER_HOUR) // 1H above time frame short term trade
