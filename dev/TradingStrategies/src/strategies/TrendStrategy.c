@@ -515,7 +515,7 @@ void splitBuyOrders_4HSwing_Shellington(StrategyParams* pParams, Indicators* pIn
 
 	double dailyGap = pDailyHigh - pIndicators->entryPrice;
 
-	double lots, lots_singal;
+	double lots_singal;
 
 	time_t currentTime;
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
@@ -551,7 +551,7 @@ void splitSellOrders_4HSwing_Shellington(StrategyParams* pParams, Indicators* pI
 
 	double dailyGap = pIndicators->entryPrice - pDailyLow;
 
-	double lots, lots_singal;
+	double lots_singal;
 
 	double total_pre_lost = 0;
 	time_t currentTime;
@@ -859,7 +859,6 @@ void splitRangeBuyOrders_Limit(StrategyParams* pParams, Indicators* pIndicators,
 	time_t currentTime;
 	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	double currentPrice;
 	double lots;
 	double gap = iAtr(B_HOURLY_RATES, 20, 1);
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
@@ -1128,12 +1127,7 @@ AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams* pParams, Indicator
 	int execution_tf, euro_index_rate, count;
 	double ATR0_EURO = 10;
 
-	double intradayClose = iClose(B_PRIMARY_RATES, 0), intradayHigh, intradayLow;
-	double ATR0;
-	double fast, slow;
-	double preFast, preSlow;
-
-	double preClose1, preClose2,preClose3, preClose4, preClose5;
+	double intradayClose = iClose(B_PRIMARY_RATES, 0);
 	
 	safe_gmtime(&timeInfo1, currentTime);
 	safe_timeString(timeString, currentTime);
@@ -2106,9 +2100,6 @@ AsirikuyReturnCode workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(StrategyParam
 	time_t currentTime;
 	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	BOOL isOpen;
-	OrderType side;
-	double openOrderHigh, openOrderLow;
 
 	double preHigh = iHigh(B_PRIMARY_RATES, 1);
 	double preLow = iLow(B_PRIMARY_RATES, 1);
@@ -2760,7 +2751,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_WeeklyATR(StrategyParams* pParams
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	time_t currentTime;
-	struct tm timeInfo1, timeInfo2;
+	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double currentLow = iLow(B_DAILY_RATES, 0);
 	double currentHigh = iHigh(B_DAILY_RATES, 0);
@@ -2779,11 +2770,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_WeeklyATR(StrategyParams* pParams
 	BOOL isEnableRangeTrade = FALSE;
 	int trend = UNKNOWN;
 	int truningPointIndex = -1, minPointIndex = -1;
-	double turningPoint, minPoint;
 	double isMACDBeili = FALSE;
 	double totalLossPoint = 0;
 	int totalLossTimes = 0;
-	double realTakePrice;
 	BOOL isEnableMACDSlow = TRUE;
 	int stopHour = 23;
 	int stopDay = 5;
@@ -2897,7 +2886,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	BOOL isEnableRangeTrade = FALSE;
 	int trend = UNKNOWN;
 	int truningPointIndex = -1, minPointIndex = -1;
-	double turningPoint, minPoint;
 	double isMACDBeili = FALSE;
 	double totalLossPoint = 0;
 	int totalLossTimes = 0;
@@ -2908,7 +2896,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	BOOL isEnableWeeklyATR = TRUE;
 	BOOL isEnableTooFar = FALSE;
 	int stopHour = 23;		
-	int adjustMaTrend;
 	double tooFarLimit = 1;
 	int barState = BAR_UNKNOWN;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0;
@@ -2918,7 +2905,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	BOOL isEnableRSI = FALSE;
 	BOOL isEnableDoubleEntry = FALSE, isEnableDoubleEntry2 = FALSE;
 	int rangeType = 0;
-	OrderInfo orderInfo;
 	int atrTimes = 20;
 	BOOL isEnableTooBigSpread = FALSE;
 	double ma960M = 0.0;
@@ -3905,7 +3891,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 	BOOL isEnableRangeTrade = FALSE;
 	int trend = UNKNOWN;
 	int truningPointIndex = -1, minPointIndex = -1;
-	double turningPoint, minPoint;
 	double isMACDBeili = FALSE;
 	double totalLossPoint = 0;
 	int totalLossTimes = 0;
@@ -3916,7 +3901,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BreakOutOnPivot(StrategyParams* p
 	BOOL isEnableWeeklyATR = TRUE;
 	BOOL isEnableTooFar = FALSE;
 	int stopHour = 23;
-	int adjustMaTrend;
 	double tooFarLimit = 1;
 	int barState = BAR_UNKNOWN;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0;
@@ -4699,7 +4683,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BBS(StrategyParams* pParams, Indi
 	double stopLossLevel = (double)parameter(AUTOBBS_RISK_CAP);
 	double macdMaxLevel = (double)parameter(AUTOBBS_IS_ATREURO_RANGE); 
 	int orderIndex = -1;
-	double highPrice, lowPrice;
 	int isMoveTP = (int)parameter(AUTOBBS_TP_MODE);	
 	int closeHour = 23, startHour = 2;	
 	int trend = UNKNOWN;
@@ -4934,7 +4917,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BBS_LongTerm(StrategyParams* pPar
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	time_t currentTime;
-	struct tm timeInfo1, timeInfo2;
+	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double currentLow = iLow(B_DAILY_RATES, 0);
 	double currentHigh = iHigh(B_DAILY_RATES, 0);
@@ -5442,7 +5425,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 
 	BOOL isMACDZeroExit = FALSE;
 
-	double preWeeklyClose, preWeeklyClose1;
+	double preWeeklyClose;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0, shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0;
 	double daily_baseline = 0.0, weekly_baseline = 0.0, daily_baseline_short = 0.0, weekly_baseline_short = 0.0;
 	int pre3KTrend;
@@ -6141,9 +6124,9 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	double ma20Daily, preDailyClose;
 	/* Restored historical MACD component buffers (previous removal caused C2065 errors).
 	 * Keep for computations later in function; if some become truly unused, consider pruning with care. */
-	double preHist1;
-	double fast1;
-	double slow1;
+	double preHist1, preHist2, preHist3, preHist4, preHist5;
+	double fast1, fast2, fast3, fast4, fast5;
+	double slow1, slow2, slow3, slow4, slow5;
 	double dailyBaseLine;
 
 	int startHour = 1;
@@ -6183,7 +6166,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	
 	//int oldestOpenOrderIndex = -1;
 
-	double preWeeklyClose, preWeeklyClose1;
+	double preWeeklyClose;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0, shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0;
 	double daily_baseline = 0.0, weekly_baseline = 0.0, daily_baseline_short = 0.0, weekly_baseline_short = 0.0;
 	int pre3KTrend;
@@ -9317,162 +9300,15 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 	}
 	return SUCCESS;
 }
-/*
-1. Daily Chart
-2. Baseline = MA50
-3. Take profit: 3% 
-4. Internal channel: 1%
- 
-*/
-//AsirikuyReturnCode workoutExecutionTrend_Envelop_Stock(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
-//{
-//	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-//	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
-//	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
-//	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
-//	int   dailyTrend;
-//	time_t currentTime;
-//	struct tm timeInfo1, timeInfo2;
-//	char   timeString[MAX_TIME_STRING_SIZE] = "";
-//	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
-//	double preDailyClose, preDailyClose1;
-//	double preWeeklyClose;
-//	double upboundTP = 0.0, downboundTP = 0.0, upboundInternal = 0.0, downboundInternal = 0.0;
-//	double tpEnvelope = 0.03, internalEnvelope = 0.01;
-//
-//	double targetPNL = 0;
-//	double strategyMarketVolRisk = 0.0;
-//	double strategyVolRisk = 0.0;
-//
-//	int openOrderCount = 0;
-//
-//	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
-//	safe_gmtime(&timeInfo1, currentTime);
-//	safe_timeString(timeString, currentTime);
-//
-// Determine trend direction from daily chart
-//
-//	if (pBase_Indicators->dailyTrend_Phase > 0)
-//		dailyTrend = 1;
-//	else if (pBase_Indicators->dailyTrend_Phase < 0)
-//		dailyTrend = -1;
-//	else
-//		dailyTrend = 0;
-//
-//	shift1Index = filterExcutionTF(pParams, pIndicators, pBase_Indicators);
-//
-//	pIndicators->splitTradeMode = 26;
-//	pIndicators->tpMode = 3;
-//	pIndicators->tradeMode = 1;
-//
-//	if (pIndicators->tradeMode == 1)
-//	{
-//		targetPNL = parameter(AUTOBBS_MAX_STRATEGY_RISK) * 3;
-//		strategyVolRisk = pIndicators->strategyMaxRisk;
-//	}
-//	else
-//	{
-//		targetPNL = parameter(AUTOBBS_MAX_STRATEGY_RISK) * 2;
-//		strategyVolRisk = pIndicators->strategyMaxRisk / 3 * 2;
-//	}
-//
-//	preDailyClose = iClose(B_DAILY_RATES, 1);
-//	preDailyClose1 = iClose(B_DAILY_RATES, 2);
-//	preWeeklyClose = iClose(B_WEEKLY_RATES, 1);
-//
-//	openOrderCount = getOrderCountEasy();
-//
-// If previous day close price not exceed 0.2 daily ATR, wait for next day
-//	if (timeInfo1.tm_hour >= 1) // 1:00 start, avoid the first hour
-//	{
-//		
-//		//Work out envelope up and down bound
-//		upboundTP = pBase_Indicators->maDaily50M * (1 + tpEnvelope);
-//		downboundTP = pBase_Indicators->maDaily50M * (1 - tpEnvelope);
-//
-//		upboundInternal = pBase_Indicators->maDaily50M * (1 + internalEnvelope);
-//		downboundInternal = pBase_Indicators->maDaily50M * (1 - internalEnvelope);
-//
-//		if (preDailyClose > daily_baseline	) // Buy
-//		{
-//
-//			pIndicators->executionTrend = 1;
-//			pIndicators->entryPrice = pParams->bidAsk.ask[0];
-//
-//			pIndicators->stopLossPrice = daily_baseline - pBase_Indicators->dailyATR * 0.25; //TODO: Need to adjust
-//			pIndicators->stopLossPrice = min(pIndicators->stopLossPrice, pIndicators->entryPrice - pBase_Indicators->pWeeklyPredictMaxATR);
-//
-//			//Option 1:
-//			if (
-//				dailyOnly == 1
-//				&& preDailyClose > preDailyClose1
-//				&& preDailyClose > daily_baseline_short
-//				&& daily_baseline_short > daily_baseline
-//				&& preWeeklyClose > weekly_baseline
-//				//&& isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3) == FALSE
-//				)
-//			{
-//				pIndicators->entrySignal = 1;
-//			}
-//
-//			pIndicators->exitSignal = EXIT_SELL;
-//
-//		}
-//
-//		if (//pBase_Indicators->weeklyTrend_Phase < 0 &&			
-//			preDailyClose < daily_baseline
-//			) // Sell
-//		{
-//
-//			pIndicators->executionTrend = -1;
-//			pIndicators->entryPrice = pParams->bidAsk.bid[0];
-//
-//			pIndicators->stopLossPrice = daily_baseline + pBase_Indicators->dailyATR * 0.25;
-//			pIndicators->stopLossPrice = max(pIndicators->stopLossPrice, pIndicators->entryPrice + pBase_Indicators->pWeeklyPredictMaxATR);
-//
-//			//Option 1:
-//			if (
-//				dailyOnly == 1
-//				&& preDailyClose < preDailyClose1
-//				&& preDailyClose < daily_baseline_short
-//				&& daily_baseline_short < daily_baseline
-//				&& preWeeklyClose < weekly_baseline
-//				//&& isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3) == FALSE
-//				)
-//			{
-//				pIndicators->entrySignal = -1;
-//			}
-//
-//			pIndicators->exitSignal = EXIT_BUY;
-//			
-//		}
-//
-//
-//	}
-//
-//	
-//
-//	if (pIndicators->entrySignal != 0 && openOrderCount >= 2)
-//	{
-//		pIndicators->entrySignal = 0;
-//	}
-//
-//	profitManagement_base(pParams, pIndicators, pBase_Indicators);
-//
-//	return SUCCESS;
-//}
-/*
-Test strategy
-*/
+
 AsirikuyReturnCode workoutExecutionTrend_Test(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
 	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
 	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
-	int   dailyTrend;
 	time_t currentTime;
-	struct tm timeInfo1, timeInfo2;
+	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
@@ -10183,9 +10019,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Weekly_Index(StrategyParams* p
 	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
-	int   dailyTrend;
 	time_t currentTime;
-	struct tm timeInfo1, timeInfo2;
+	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preWeeklyClose, preWeeklyClose1, preWeeklyClose2, preDailyClose;
