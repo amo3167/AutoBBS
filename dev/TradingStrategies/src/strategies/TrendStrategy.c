@@ -1130,7 +1130,6 @@ AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams* pParams, Indicator
 
 	double intradayClose = iClose(B_PRIMARY_RATES, 0), intradayHigh, intradayLow;
 	double ATR0;
-	double volume1, volume2;
 	double fast, slow;
 	double preFast, preSlow;
 
@@ -2240,9 +2239,6 @@ AsirikuyReturnCode workoutExecutionTrend_4HBBS_Swing_BoDuan(StrategyParams* pPar
 	time_t currentTime;
 	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	BOOL isOpen;
-	OrderType side;
-	double openOrderHigh, openOrderLow;
 
 	double preHigh = iHigh(B_PRIMARY_RATES, 1);
 	double preLow = iLow(B_PRIMARY_RATES, 1);
@@ -5421,7 +5417,6 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams,
 	double level = 0, histLevel = 0, maxLevel = 0;
 	
 
-	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double ma20Daily, preDailyClose;
 	double preHist1, preHist2, preHist3, preHist4, preHist5;
 	double fast1, fast2, fast3, fast4, fast5;
@@ -6143,13 +6138,12 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 	double nextMACDRange = 0;
 	double volume_ma_5;
 
-	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double ma20Daily, preDailyClose;
 	/* Restored historical MACD component buffers (previous removal caused C2065 errors).
 	 * Keep for computations later in function; if some become truly unused, consider pruning with care. */
-	double preHist1, preHist2, preHist3, preHist4, preHist5;
-	double fast1, fast2, fast3, fast4, fast5;
-	double slow1, slow2, slow3, slow4, slow5;
+	double preHist1;
+	double fast1;
+	double slow1;
 	double dailyBaseLine;
 
 	int startHour = 1;
@@ -9521,9 +9515,6 @@ AsirikuyReturnCode workoutExecutionTrend_4H_ShellingtonVer1(StrategyParams* pPar
 	time_t currentTime;
 	struct tm timeInfo1,closeTimeInfo;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	BOOL isOpen;
-	OrderType side;
-	double openOrderHigh, openOrderLow;
 
 	double preHigh = iHigh(B_PRIMARY_RATES, 1);
 	double preLow = iLow(B_PRIMARY_RATES, 1);
@@ -9792,9 +9783,6 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 	time_t currentTime;
 	struct tm timeInfo1, closeTimeInfo;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	BOOL isOpen;
-	OrderType side;
-	double openOrderHigh, openOrderLow;
 
 	double preHigh = iHigh(B_PRIMARY_RATES, 1);
 	double preLow = iLow(B_PRIMARY_RATES, 1);
@@ -9812,7 +9800,6 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 	int buyWonTimes = 0, sellWonTimes = 0;
 
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
-	double volume1, volume2;
 
 	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
 
