@@ -52,7 +52,6 @@
 #include "Coatl.h"
 #include "Kantu.h"
 #include "KantuML.h"
-#include "AsirikuyBrain.h"
 #include "RecordBars.h"
 #include "Munay.h"
 #include "Screening.h"
@@ -64,7 +63,6 @@
 typedef enum strategyId_t
 {
   COATL             = 4,
-  ASIRIKUY_BRAIN    = 12,
   KANTU             = 18,
   RECORD_BARS       = 19,
   MUNAY				= 20,
@@ -83,11 +81,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
   case COATL:
     {
       *runStrategyFunc            = &runCoatl;
-      return SUCCESS;
-    }
-    case ASIRIKUY_BRAIN:
-    {
-      *runStrategyFunc            = &runAsirikuyBrain;
       return SUCCESS;
     }
   case KANTU:
