@@ -50,7 +50,6 @@
 #include "StrategyUserInterface.h"
 
 #include "RecordBars.h"
-#include "Munay.h"
 #include "Screening.h"
 #include "TakeOver.h"
 #include "Screening.h"
@@ -60,7 +59,6 @@
 typedef enum strategyId_t
 {
   RECORD_BARS       = 19,
-  MUNAY				= 20,
   TAKEOVER			= 26,
   SCREENING			= 27,
   AUTOBBS			= 29,
@@ -75,11 +73,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
   case RECORD_BARS:
     {
       *runStrategyFunc            = &runRecordBars;
-      return SUCCESS;
-    }
-  case MUNAY:
-    {
-      *runStrategyFunc            = &runMunay;
       return SUCCESS;
     }
   case TAKEOVER:
