@@ -499,7 +499,7 @@ static AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pInd
 
 				modifyTradeEasy_DayTrading(BUY, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, TRUE);
 			}
-			// [Comment removed - encoding corrupted]
+
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR/3);
 			//	modifyTradeEasy_new(BUY, -1, stopLoss, takePrice, tpMode);
@@ -518,7 +518,7 @@ static AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pInd
 				// stopLoss2 = fabs(pIndicators->entryPrice - pIndicators->bbsStopPrice_primary) + pIndicators->adjust;
 				modifyTradeEasy_DayTrading(SELL, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, TRUE);
 			}
-			// [Comment removed - encoding corrupted]
+
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR / 3);
 			//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode);
@@ -739,7 +739,7 @@ static void splitBuyOrders_ShortTerm(StrategyParams *pParams, Indicators *pIndic
 static void splitBuyOrders_KeyK(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss)
 {
 	double takePrice;
-	// [Comment removed - encoding corrupted]
+
 
 	takePrice = takePrice_primary;
 	openSingleLongEasy(takePrice, stopLoss, 0, pIndicators->risk / 3);
@@ -756,7 +756,7 @@ static void splitSellOrders_ATR(StrategyParams *pParams, Indicators *pIndicators
 	double takePrice;
 	// double intradayClose = iClose(B_DAILY_RATES, 0), intradayHigh = iHigh(B_DAILY_RATES, 0), intradayLow = iLow(B_DAILY_RATES, 0);
 
-	// [Comment removed - encoding corrupted]
+
 	if ((pIndicators->entryPrice >= pBase_Indicators->dailyS1 && (int)pParams->settings[TIMEFRAME] == 15) ||
 		(pIndicators->entryPrice >= pBase_Indicators->dailyS2 && (int)pParams->settings[TIMEFRAME] == 5) ||
 		(pIndicators->entryPrice >= pBase_Indicators->dailyS2 && (int)pParams->settings[TIMEFRAME] == 30))
@@ -793,7 +793,7 @@ static void splitSellOrders_ShortTerm(StrategyParams *pParams, Indicators *pIndi
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_Primary];
 	safe_gmtime(&timeInfo1, currentTime);
 
-	// [Comment removed - encoding corrupted]
+
 	if (pIndicators->tradeMode == 1 && gap >= pATR / 2 && fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) < pBase_Indicators->dailyATR)
 	{
 		takePrice = gap / 3;
@@ -1428,10 +1428,10 @@ else
 return SUCCESS;
 }
 
-// [Comment removed - encoding corrupted]
-// [Comment removed - encoding corrupted]
-// [Comment removed - encoding corrupted]
-// [Comment removed - encoding corrupted]
+
+
+
+
 // UP signal: Low < pivot and Close > pivot
 // DOWN: signal: High> pivot and Close < pivot
 // PrimaryRate is 1H
@@ -1475,7 +1475,7 @@ if (pIndicators->executionTrend == 0)
 	}
 }
 
-// [Comment removed - encoding corrupted]
+
 if (pIndicators->executionTrend == 1)
 {
 	pIndicators->entryPrice = pParams->bidAsk.ask[0];
@@ -1564,7 +1564,7 @@ else if (pBase_Indicators->dailyTrend_Phase < 0)
 }
 else
 {
-	// [Comment removed - encoding corrupted]
+
 	if (up_gap <= pBase_Indicators->pDailyATR / 3)
 	{
 		pIndicators->executionTrend = -1;
@@ -1584,7 +1584,7 @@ else
 		pIndicators->stopLossPrice = pBase_Indicators->dailyS;
 		pIndicators->stopLossPrice = min(pIndicators->stopLossPrice, pIndicators->entryPrice - pBase_Indicators->dailyATR);
 
-		// [Comment removed - encoding corrupted]
+
 		if (pIndicators->bbsTrend_excution == 1 && pIndicators->bbsIndex_excution == shift1Index && timeInfo1.tm_hour < 23 && !isSameDaySamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3, currentTime))
 			pIndicators->entrySignal = 1;
 
@@ -1746,7 +1746,7 @@ pIndicators->tradeMode = 1;
 // if (timeInfo1.tm_hour < 5)
 //	pIndicators->risk = 0.5;
 
-// [Comment removed - encoding corrupted]
+
 if (pBase_Indicators->dailyTrend_Phase == MIDDLE_UP_PHASE || (ignored && pBase_Indicators->dailyTrend_Phase > 0))
 {
 	pIndicators->executionTrend = 1;
@@ -1810,7 +1810,7 @@ pIndicators->splitTradeMode = 0;
 
 pIndicators->tradeMode = 1;
 
-// [Comment removed - encoding corrupted]
+
 if (pBase_Indicators->dailyTrend_Phase == MIDDLE_UP_RETREAT_PHASE)
 {
 	pIndicators->executionTrend = 1;
@@ -1903,9 +1903,9 @@ return SUCCESS;
 }
 
 // Weekly retreat strategy, only for EUR, AUD, crossing currencies
-// [Comment removed - encoding corrupted]
-// [Comment removed - encoding corrupted]
-// [Comment removed - encoding corrupted]
+
+
+
 static AsirikuyReturnCode workoutExecutionTrend_WeeklyRetreat(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 {
 double closestR;
@@ -2021,7 +2021,7 @@ pIndicators->risk = 1;
 pIndicators->tpMode = 0;
 pIndicators->splitTradeMode = 11;
 
-// [Comment removed - encoding corrupted]
+
 if (pBase_Indicators->weeklyTrend_Phase == MIDDLE_UP_PHASE || (ignored && pBase_Indicators->weeklyTrend_Phase > 0))
 {
 	pIndicators->executionTrend = 1;
@@ -2070,7 +2070,7 @@ pIndicators->risk = 1;
 pIndicators->tpMode = 0;
 pIndicators->splitTradeMode = 5;
 
-// [Comment removed - encoding corrupted]
+
 if (pBase_Indicators->weeklyTrend_Phase == MIDDLE_UP_RETREAT_PHASE || (ignored && pBase_Indicators->weeklyTrend_Phase > 0))
 {
 	pIndicators->executionTrend = 1;
@@ -2113,7 +2113,7 @@ int bbsTrend, bbsIndex;
 currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 safe_gmtime(&timeInfo1, currentTime);
 
-// [Comment removed - encoding corrupted]
+
 if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
 	dailyTrend = 0;
 else if (pBase_Indicators->dailyTrend > 0)
@@ -2192,7 +2192,7 @@ pIndicators->asia_high = max(close_prev1, pIndicators->asia_high);
 pIndicators->asia_open = close_prev1;
 pIndicators->asia_close = iClose(B_PRIMARY_RATES, asia_index_rate);
 
-if (timeInfo1.tm_hour >= 17) // [Comment removed - encoding corrupted]
+if (timeInfo1.tm_hour >= 17)
 {
 	euro_index_rate = shift1Index - ((timeInfo1.tm_hour - 17) * (60 / execution_tf) + (int)(timeInfo1.tm_min / execution_tf));
 
@@ -2239,7 +2239,7 @@ R3 = preHigh + 2 * (pivot - preLow);
 if (close_prev1 > R3 || close_prev1 < S3)
 	return FALSE;
 
-// [Comment removed - encoding corrupted]
+
 // if (timeInfo1.tm_wday == 5 && timeInfo1.tm_mday - 7 < 1)
 //{
 //	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s No Trade on  Non Farm PayRoll day",
