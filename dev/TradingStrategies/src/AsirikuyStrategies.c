@@ -64,7 +64,6 @@
 #include "Munay.h"
 #include "RenkoTest.h"
 #include "Screening.h"
-#include "Kelpie.h"
 #include "TakeOver.h"
 #include "Screening.h"
 #include "KeyK.h"
@@ -89,7 +88,6 @@ typedef enum strategyId_t
   MUNAY				= 20,
   RENKO_TEST		= 21,
   KANTU_ML          = 22,
-  KELPIE			= 24,
   TAKEOVER			= 26,
   SCREENING			= 27,
   KEYK				= 28,
@@ -180,11 +178,6 @@ AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnC
   case KANTU_ML:
     {
       *runStrategyFunc            = &runKantuML;
-      return SUCCESS;
-    }
-  case KELPIE:
-    {
-      *runStrategyFunc            = &runKelpie;
       return SUCCESS;
     }
   case TAKEOVER:

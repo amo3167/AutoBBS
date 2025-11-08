@@ -1,7 +1,7 @@
 /**
  * @file
- * @brief     The Munay trading system.
- * @details   Munay is a machine learning prototype strategy.
+ * @brief     The KantuML machine learning trading system.
+ * @details   KantuML is a machine learning strategy that uses ensemble predictions from multiple ML algorithms (Linear Regression, Neural Network, K-Nearest Neighbor) to generate trading signals.
  * 
  * @author    Daniel Fernandez (Original idea, initial implementation, and optimization)
  * @version   F4.x.x

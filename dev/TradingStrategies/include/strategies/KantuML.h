@@ -1,13 +1,11 @@
 /**
  * @file
- * @brief     The Teyacanani trading system.
- * @details   Teyacanani uses a 1 hour timeframe and trades based on candle size.
+ * @brief     The KantuML machine learning trading system.
+ * @details   KantuML is a machine learning strategy that uses ensemble predictions from multiple ML algorithms to generate trading signals.
  * 
  * @author    Daniel Fernandez (Original idea, initial implementation, and optimization)
- * @author    Maxim Feinshtein (Contributed to initial implementation, code styling, error handling, and user interface)
- * @author    Morgan Doel (Ported Teyacanani to the F4 framework)
  * @version   F4.x.x
- * @date      2012
+ * @date      2015
  *
  * @copyright END-USER LICENSE AGREEMENT FOR ASIRIKUY SOFTWARE. IMPORTANT PLEASE READ THE TERMS AND CONDITIONS OF THIS LICENSE AGREEMENT CAREFULLY BEFORE USING THIS SOFTWARE: 
  * @copyright Asirikuy's End-User License Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and Asirikuy for the use of the Asirikuy Framework in both source and binary forms. By installing, copying, or otherwise using the Asirikuy Framework, you agree to be bound by the terms of this EULA. This license agreement represents the entire agreement concerning the program between you and Asirikuy, (referred to as "licenser"), and it supersedes any prior proposal, representation, or understanding between the parties. If you do not agree to the terms of this EULA, do not install or use the Asirikuy Framework.

@@ -1,10 +1,11 @@
 /**
  * @file
- * @brief     The Atipaq trading system.
- * @details   Atipaq is a box breakout or fading strategy using hourly or daily timeframes.
+ * @brief     Price Action based trading system generated with Kanut.
+ * @details   This is a price action based strategy generated using the Kanut system generator.
  * 
- * @author    Daniel Fernandez (Original idea, initial implementation, and optimization)
- * @author    Morgan Doel (Ported Atipaq to the F4 framework and merged Atipaq with Kutichiy)
+ * @author    Daniel Fernandez (Original idea, initial F4 implementation)
+ * @author    Maxim Feinshtein (Contributed to initial implementation, code styling, error handling, and user interface)
+ * @author    Morgan Doel (Template F4 framework implementation)
  * @version   F4.x.x
  * @date      2012
  *
@@ -49,7 +50,7 @@ extern "C" {
 #endif
 
 /**
-* Runs the Atipaq trading strategy.
+* Runs the Kantu trading strategy.
 *
 * @param StrategyParams* pParams
 *   The structure containing all necessary parameters.
