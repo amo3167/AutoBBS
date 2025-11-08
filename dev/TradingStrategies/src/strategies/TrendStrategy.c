@@ -9,6 +9,7 @@
 #include "ComLib.h"
 #include "StrategyUserInterface.h"
 #include "TrendStrategy.h"
+#include "AsirikuyTime.h" /* added for safe_gmtime/safe_timeString prototypes */
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
@@ -6142,6 +6143,11 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 
 	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double ma20Daily, preDailyClose;
+	/* Restored historical MACD component buffers (previous removal caused C2065 errors).
+	 * Keep for computations later in function; if some become truly unused, consider pruning with care. */
+	double preHist1, preHist2, preHist3, preHist4, preHist5;
+	double fast1, fast2, fast3, fast4, fast5;
+	double slow1, slow2, slow3, slow4, slow5;
 	double dailyBaseLine;
 
 	int startHour = 1;

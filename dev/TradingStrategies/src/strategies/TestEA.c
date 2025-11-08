@@ -5,11 +5,15 @@
 #include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
-#include "StrategyAPI.h" /* central prototypes */
+#include "StrategyAPI.h" /* common shared prototypes (time util) */
 
-/* Local static forward for modifyOrders only (others now in StrategyAPI.h) */
+/* Local static forwards for strategy-internal helpers (not globally shared) */
 typedef struct indicators_t Indicators; 
 static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, OrderType orderType, double stopLoss, double takePrice);
+static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode handleTradeExits(StrategyParams* pParams, Indicators* pIndicators);
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE

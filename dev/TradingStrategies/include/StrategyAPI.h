@@ -11,21 +11,14 @@ extern "C" {
 #endif
 
 /*
- * Centralized prototypes for common strategy helper functions to avoid
- * implicit function declarations and duplicated forward declarations
- * scattered across strategy implementation files.
- * Add new shared prototypes here as they are introduced.
+ * Centralized prototypes reserved for truly shared, non-static helpers.
+ * Removed per-strategy internal helpers (loadIndicators, etc.) because those
+ * are defined static within their source files and do not need global
+ * declarations. Avoids mismatched prototypes and redefinition issues.
+ * Add only cross-TU functions here.
  */
 
-typedef struct StrategyParams StrategyParams; /* Forward decl */
-
-/* TestEA helpers */
-AsirikuyReturnCode loadIndicators(StrategyParams* pParams, void* pIndicators);
-AsirikuyReturnCode setUIValues(StrategyParams* pParams, void* pIndicators);
-AsirikuyReturnCode handleTradeExits(StrategyParams* pParams, void* pIndicators);
-AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, void* pIndicators);
-
-/* Common time utility provided externally */
+/* Common time utility (already declared elsewhere but kept here if needed). */
 void safe_timeString(char* dest, time_t t);
 
 #ifdef __cplusplus
