@@ -8455,13 +8455,11 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
 	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
 	int    shiftPreDayBar = shift1Index - 1;
-	int   dailyTrend;
 	time_t currentTime, preBarTime;
 	struct tm timeInfo1, timeInfo2, timeInfoPreBar;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preDailyClose, preDailyClose1;
-	double preDailyHigh1, preDailyHigh2, preDailyLow1, preDailyLow2;
 	double preWeeklyClose, preWeeklyClose1;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0, shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0;
 	double weekly_baseline = 0.0,weekly_baseline_short = 0.0;
@@ -8475,9 +8473,9 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	double dailyMA20 = 0.0;
 	int openOrderCount = 0;
 
-	double preHist1, preHist2, preHist3, preHist4, preHist5;
-	double fast1, fast2, fast3, fast4, fast5;
-	double slow1, slow2, slow3, slow4, slow5;
+	double preHist1;
+	double fast1;
+	double slow1;
 	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
 	int latestOrderIndex = 0;
 
@@ -8935,13 +8933,11 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
 	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
-	int   dailyTrend;
 	time_t currentTime;
 	struct tm timeInfo1, timeInfo2;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preDailyClose, preDailyClose1;
-	double preDailyHigh1, preDailyHigh2, preDailyLow1, preDailyLow2;
 	double preWeeklyClose, preWeeklyClose1;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0, shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0;
 	double daily_baseline = 0.0, weekly_baseline = 0.0, daily_baseline_short = 0.0, weekly_baseline_short = 0.0;
@@ -8956,9 +8952,9 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(St
 	double dailyMA20 = 0.0;
 	int openOrderCount = 0;
 
-	double preHist1, preHist2, preHist3, preHist4, preHist5;
-	double fast1, fast2, fast3, fast4, fast5;
-	double slow1, slow2, slow3, slow4, slow5;
+	double preHist1;
+	double fast1;
+	double slow1;
 	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
 	int latestOrderIndex = 0;
 
