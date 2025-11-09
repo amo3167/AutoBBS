@@ -47,5 +47,4 @@ project "TradingStrategies"
   configuration "Release"
     defines { "NDEBUG" }
     flags { "Optimize" }
-    optimize "Speed"
 

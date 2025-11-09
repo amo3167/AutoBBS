@@ -12,6 +12,7 @@
 
 #include "IStrategy.hpp"
 #include "StrategyContext.hpp"
+#include "StrategyTypes.h"
 #include <string>
 
 namespace trading {
@@ -39,21 +40,23 @@ public:
     explicit BaseStrategy(StrategyId id) : id_(id) {}
     virtual ~BaseStrategy() {}
 
-    // Non-copyable
-    BaseStrategy(const BaseStrategy&) = delete;
-    BaseStrategy& operator=(const BaseStrategy&) = delete;
+    // Non-copyable (private and unimplemented in C++03)
+private:
+    BaseStrategy(const BaseStrategy&);
+    BaseStrategy& operator=(const BaseStrategy&);
 
+public:
     // Execute - final wrapper implementing algorithm skeleton
-    AsirikuyReturnCode execute(const StrategyContext& context) override final {
+    AsirikuyReturnCode execute(const StrategyContext& context) /* override final */ {
         // 1. Validate inputs
         if (!validate(context)) {
-            return INVALID_PARAMETERS;
+            return static_cast<AsirikuyReturnCode>(STRATEGY_INVALID_PARAMETERS);
         }
 
         // 2. Load indicators (may be unused depending on strategy)
         Indicators* indicators = loadIndicators(context);
         if (requiresIndicators() && indicators == NULL) {
-            return FAILED_TO_LOAD_INDICATORS;
+            return static_cast<AsirikuyReturnCode>(STRATEGY_FAILED_TO_LOAD_INDICATORS);
         }
 
         // 3. Strategy-specific logic
@@ -65,7 +68,7 @@ public:
         return result.code;
     }
 
-    StrategyId getId() const override { return id_; }
+    StrategyId getId() const /* override */ { return id_; }
 
     // Default validate can be overridden
     bool validate(const StrategyContext& context) const override {

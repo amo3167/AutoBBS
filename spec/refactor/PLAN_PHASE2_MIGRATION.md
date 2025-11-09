@@ -448,7 +448,11 @@ After Phase 2 completion, proceed to:
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2024  
-**Status**: Ready for Implementation
+**Document Version**: 1.1  
+**Last Updated**: 2025-11-09  
+**Status**: Ready for Implementation (pending StrategyFactory availability)
+
+### Current Notes
+- Phase 2 migration sequenced to start once `StrategyFactory` and C API wrapper are in place.
+- Early priorities: `RecordBarsStrategy` migration (as the simplest unit) and `OrderBuilder` integration for order-splitting standardization.
 

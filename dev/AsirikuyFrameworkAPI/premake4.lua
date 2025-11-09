@@ -121,25 +121,29 @@ project "AsirikuyFrameworkAPI"
   configuration{"windows", "x32", "Release"}
     targetdir("bin/" .. _ACTION .. "/x32/Release")
     prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x32/Release variant=release link=static threading=multi runtime-link=static address-model=32 architecture=x86 stage 2>nul 1>nul"}
-  configuration{"windows", "x64", "Debug"}
-    targetdir("bin/" .. _ACTION .. "/x64/Debug")
-    prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Debug variant=debug link=static threading=multi runtime-link=static address-model=64 stage 2>nul 1>nul"}
-  configuration{"windows", "x64", "Release"}
-    targetdir("bin/" .. _ACTION .. "/x64/Release")
-    prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Release variant=release link=static threading=multi runtime-link=static address-model=64 architecture=ia64 stage 2>nul 1>nul"}
+	configuration{"windows", "x64", "Debug"}
+		targetdir("bin/" .. _ACTION .. "/x64/Debug")
+		-- Updated Boost build invocation: remove deprecated implicit architecture, explicitly set architecture=x86 for 64-bit
+		prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Debug variant=debug link=static threading=multi runtime-link=static address-model=64 architecture=x86 stage 2>nul 1>nul"}
+	configuration{"windows", "x64", "Release"}
+		targetdir("bin/" .. _ACTION .. "/x64/Release")
+		-- Fix erroneous architecture=ia64 (Itanium) to architecture=x86 for standard 64-bit builds
+		prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Release variant=release link=static threading=multi runtime-link=static address-model=64 architecture=x86 stage 2>nul 1>nul"}
   -- Not Windows
   configuration{"not windows", "x32", "Debug"}
     targetdir("bin/" .. _ACTION .. "/x32/Debug")
     prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x32/Debug variant=debug link=static threading=multi runtime-link=static address-model=32 architecture=x86 stage"}
-  configuration{"not windows", "x64", "Debug"}
-    targetdir("bin/" .. _ACTION .. "/x64/Debug")
-    prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Debug variant=debug link=static threading=multi runtime-link=static address-model=64 cxxflags=-fPIC architecture=ia64 stage"}
+	configuration{"not windows", "x64", "Debug"}
+		targetdir("bin/" .. _ACTION .. "/x64/Debug")
+		-- Replace architecture=ia64 with architecture=x86 (portable 64-bit)
+		prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Debug variant=debug link=static threading=multi runtime-link=static address-model=64 cxxflags=-fPIC architecture=x86 stage"}
   configuration{"not windows", "x32", "Release"}
     targetdir("bin/" .. _ACTION .. "/x32/Release")
     prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x32/Release variant=release link=static threading=multi runtime-link=static address-model=32 architecture=x86 cxxflags=-march=i686 stage"}
-  configuration{"not windows", "x64", "Release"}
-    targetdir("bin/" .. _ACTION .. "/x64/Release")
-    prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Release variant=release link=static threading=multi runtime-link=static address-model=64 cxxflags=-fPIC architecture=ia64 stage"}
+	configuration{"not windows", "x64", "Release"}
+		targetdir("bin/" .. _ACTION .. "/x64/Release")
+		-- Replace architecture=ia64 with architecture=x86 for consistency
+		prebuildcommands{"cd " .. boostdir .. " && ./b2 --with-atomic " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Release variant=release link=static threading=multi runtime-link=static address-model=64 cxxflags=-fPIC architecture=x86 stage"}
   configuration{"linux"}
     linkoptions{"-rdynamic"}
     buildoptions{"-DBOOST_THREAD_USE_LIB"}	

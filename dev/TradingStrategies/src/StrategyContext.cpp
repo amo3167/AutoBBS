@@ -163,8 +163,8 @@ double StrategyContext::getEquity() const {
     return params_->accountInfo.equity;
 }
 
-double StrategyContext::getFreeMargin() const {
-    return params_->accountInfo.freeMargin;
+double StrategyContext::getMargin() const {
+    return params_->accountInfo.margin;
 }
 
 // ============================================================================
@@ -179,7 +179,7 @@ const Rates& StrategyContext::getRates(BaseRatesIndexes index) const {
     if (index < 0 || index >= BASE_RATES_INDEXES_COUNT) {
         throw std::out_of_range("Rates index out of range");
     }
-    return params_->ratesBuffers->ratesBuffers[index];
+    return params_->ratesBuffers->rates[index];
 }
 
 // ============================================================================
@@ -188,13 +188,6 @@ const Rates& StrategyContext::getRates(BaseRatesIndexes index) const {
 
 OrderInfo* StrategyContext::getOrderInfo() const {
     return params_->orderInfo;
-}
-
-int StrategyContext::getOrderCount() const {
-    if (params_->orderInfo == NULL) {
-        return 0;
-    }
-    return params_->orderInfo->orderCount;
 }
 
 // ============================================================================
@@ -233,6 +226,11 @@ void StrategyContext::ensureIndicatorsLoaded() const {
 // ============================================================================
 
 OrderManager& StrategyContext::getOrderManager() {
+    ensureOrderManagerCreated();
+    return *orderManager_;
+}
+
+const OrderManager& StrategyContext::getOrderManager() const {
     ensureOrderManagerCreated();
     return *orderManager_;
 }

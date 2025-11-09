@@ -236,7 +236,7 @@ AsirikuyReturnCode workoutWeeklyTrend(StrategyParams* pParams, Base_Indicators* 
 AsirikuyReturnCode workoutDailyTrend(StrategyParams* pParams, Base_Indicators* pIndicators);
 
 int getMATrend_Signal(int ratesArrayIndex);
-int getMATrend_SignalBase(int rateShort, int rateLong, int ratesArrayIndex);
+int getMATrend_SignalBase(int rateShort, int rateLong, int ratesArrayIndex, int maxBars);
 
 #ifdef __cplusplus
 } /* extern "C" */

@@ -14,6 +14,7 @@
 #pragma once
 
 #include "AsirikuyDefines.h"
+#include "StrategyTypes.h"
 #include <string>
 
 namespace trading {
@@ -114,12 +115,12 @@ protected:
      * @brief Helper to convert boolean result to return code
      * 
      * @param success true for success, false for failure
-     * @return AsirikuyReturnCode SUCCESS or INTERNAL_ERROR
+     * @return AsirikuyReturnCode SUCCESS or STRATEGY_INTERNAL_ERROR
      * 
      * @details Utility method for derived classes to simplify return code generation
      */
     static AsirikuyReturnCode toReturnCode(bool success) {
-        return success ? SUCCESS : INTERNAL_ERROR;
+        return success ? SUCCESS : static_cast<AsirikuyReturnCode>(STRATEGY_INTERNAL_ERROR);
     }
 };
 

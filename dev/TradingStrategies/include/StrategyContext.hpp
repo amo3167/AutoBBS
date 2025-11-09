@@ -14,6 +14,8 @@
 #pragma once
 
 #include "AsirikuyDefines.h"
+#include "StrategyTypes.h"
+#include "strategies/Base.h"
 #include <string>
 #include <stdexcept>
 
@@ -68,10 +70,12 @@ public:
      */
     ~StrategyContext();
     
-    // Non-copyable (delete copy constructor and assignment)
-    StrategyContext(const StrategyContext&) = delete;
-    StrategyContext& operator=(const StrategyContext&) = delete;
+    // Non-copyable (private and unimplemented in C++03)
+private:
+    StrategyContext(const StrategyContext&);
+    StrategyContext& operator=(const StrategyContext&);
     
+public:
     // Movable (use default move semantics)
     // Note: VS2010 has limited move semantics support, may need manual implementation
     #if _MSC_VER >= 1600 // VS2010 and later
@@ -185,10 +189,10 @@ public:
     double getEquity() const;
     
     /**
-     * @brief Get free margin
-     * @return double Free margin available for trading
+     * @brief Get margin used
+     * @return double Margin currently used for open positions
      */
-    double getFreeMargin() const;
+    double getMargin() const;
     
     // ========================================================================
     // Price Data (Rates/Bars)
@@ -216,14 +220,11 @@ public:
     /**
      * @brief Get order information structure
      * @return OrderInfo* Pointer to current orders
+     * 
+     * @details The orders array size is determined by settings[ORDERINFO_ARRAY_SIZE].
+     *          Iterate through array and check isOpen field to find active orders.
      */
     OrderInfo* getOrderInfo() const;
-    
-    /**
-     * @brief Get count of currently open orders
-     * @return int Number of open orders
-     */
-    int getOrderCount() const;
     
     // ========================================================================
     // Results
@@ -270,6 +271,11 @@ public:
      *          modifying, and closing orders.
      */
     OrderManager& getOrderManager();
+    
+    /**
+     * @brief Get order manager (const version)
+     */
+    const OrderManager& getOrderManager() const;
     
     // ========================================================================
     // Raw Access (for Compatibility During Migration)

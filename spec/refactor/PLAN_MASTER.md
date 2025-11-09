@@ -134,7 +134,7 @@ Week 8: Testing & Validation
 
 ---
 
-**Document Version**: 1.0  
-**Last Updated**: 2024  
+**Document Version**: 1.1  
+**Last Updated**: 2025-11-09  
 **Status**: Active Planning
 
