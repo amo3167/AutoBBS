@@ -11,15 +11,70 @@
 
 ---
 
+## ⚠️ CRITICAL: API Discovery Required Before Strategy Migration
+
+**Status (2025-11-09)**: Strategy migrations are **BLOCKED** pending API discovery phase.
+
+**Issue**: Migration attempt revealed significant gaps between expected and actual Phase 2 API surface:
+
+### API Gaps Discovered
+1. **rates_t structure**: Missing expected fields
+   - No `barsTotal` field
+   - No `timeArray`, `openArray`, `highArray`, `lowArray`, `closeArray`, `volumeArray` fields
+   - Current structure incompatible with expected bar data access patterns
+
+2. **StrategyContext**: Missing accessor methods
+   - No `getBarsTotal()` method
+   - No `getTime(int index)` method  
+   - No `getOpen/High/Low/Close/Volume(int index)` methods
+   - Unclear how strategies should access historical bar data
+
+3. **OrderManager**: C wrapper vs singleton confusion
+   - Expected singleton pattern with `getInstance()` not present
+   - Missing advanced methods: `modifyTradeEasy()`, `closeAllLongs()`, `closeAllShorts()`, `totalOpenOrders()`
+   - Unclear if methods wrap C functions directly or provide higher-level abstractions
+
+4. **Logging API**: pantheios limitations
+   - Missing `pantheios::integer()` and `pantheios::real()` helper functions
+   - Need alternative approach for formatted numeric logging
+
+5. **Type Mismatches**
+   - `StrategyResult.code`: Expected `AsirikuyReturnCode`, actual type is `StrategyErrorCode`
+   - Need resolution strategy for error code enums
+
+6. **Missing Utilities**
+   - `addValueToUI()` function undefined
+   - Other utility functions may be missing
+
+### Required Before Migration
+- [ ] Create `API_DISCOVERY.md` documenting actual vs expected APIs
+- [ ] Analyze existing C strategies to understand actual data access patterns
+- [ ] Document actual rates_t structure and how to access bar data
+- [ ] Document actual StrategyContext capabilities
+- [ ] Document actual OrderManager methods available
+- [ ] Resolve error code type strategy
+- [ ] Identify all required utility functions
+- [ ] Create migration compatibility layer if needed
+
+### Lessons Learned
+- **Don't assume APIs exist**: Validate actual implementation before writing strategies
+- **Infrastructure ≠ Strategy API**: Infrastructure components exist but may not expose expected convenience methods
+- **C wrapper complexity**: Understanding the C/C++ boundary is critical
+- **Start with discovery**: Next time, document existing C strategy patterns first
+
+---
+
 ## Week 3: Simple Strategies (Foundation)
 
 ### Strategy: RecordBarsStrategy
 
+**Status**: ❌ **BLOCKED** - See API Discovery section above
+
 #### Tasks
-- [ ] Create `include/strategies/RecordBarsStrategy.hpp`
+- [ ] **BLOCKED**: Create `include/strategies/RecordBarsStrategy.hpp`
   - [ ] Inherit from BaseStrategy
   - [ ] Define class structure
-- [ ] Create `src/strategies/RecordBarsStrategy.cpp`
+- [ ] **BLOCKED**: Create `src/strategies/RecordBarsStrategy.cpp`
   - [ ] Migrate logic from `runRecordBars()` in `RecordBars.c`
   - [ ] Implement `loadIndicators()`
   - [ ] Implement `executeStrategy()`
@@ -47,9 +102,11 @@
 
 ### Strategy: TakeOverStrategy
 
+**Status**: ❌ **BLOCKED** - See API Discovery section above
+
 #### Tasks
-- [ ] Create `include/strategies/TakeOverStrategy.hpp`
-- [ ] Create `src/strategies/TakeOverStrategy.cpp`
+- [ ] **BLOCKED**: Create `include/strategies/TakeOverStrategy.hpp`
+- [ ] **BLOCKED**: Create `src/strategies/TakeOverStrategy.cpp`
   - [ ] Migrate from `runTakeOver()`
 - [ ] Register in factory
 - [ ] Write tests

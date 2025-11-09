@@ -111,24 +111,42 @@ This document tracks all tasks for the TradingStrategies refactoring project (Op
 
 ### Week 3: Simple Strategies
 
+#### Time Utility Refactoring (2025-11-09)
+- ✅ Create `include/StrategyTimeUtils.hpp`
+- ✅ Create `src/StrategyTimeUtils.cpp`
+- ✅ Implement gmtBreakdown (platform-independent GMT conversion)
+- ✅ Implement formatTime (strftime wrapper)
+- ✅ Implement timeToUIString (UI-friendly formatting)
+- ✅ Commit and push to cpp-migration-phase2 (commit 7f7cd48)
+
 #### RecordBarsStrategy
-- ⬜ Create `include/strategies/RecordBarsStrategy.hpp`
-- ⬜ Create `src/strategies/RecordBarsStrategy.cpp`
-- ⬜ Migrate logic from `runRecordBars()`
+- ❌ **BLOCKED**: Create `include/strategies/RecordBarsStrategy.hpp`
+- ❌ **BLOCKED**: Create `src/strategies/RecordBarsStrategy.cpp`
+- ❌ **BLOCKED**: Migrate logic from `runRecordBars()`
 - ⬜ Register in factory
 - ⬜ Write unit tests
 - ⬜ Side-by-side testing
 - ⬜ Validate backtesting
 - ⬜ Remove C implementation
 
+**Blocker**: API discovery needed. Migration attempt (2025-11-09) revealed Phase 2 API lacks expected features:
+- rates_t structure missing: barsTotal, timeArray, openArray, highArray, lowArray, closeArray, volumeArray
+- StrategyContext missing: getBarsTotal(), getTime(), getOpen/High/Low/Close/Volume() accessors
+
 #### TakeOverStrategy
-- ⬜ Create `include/strategies/TakeOverStrategy.hpp`
-- ⬜ Create `src/strategies/TakeOverStrategy.cpp`
-- ⬜ Migrate logic from `runTakeOver()`
+- ❌ **BLOCKED**: Create `include/strategies/TakeOverStrategy.hpp`
+- ❌ **BLOCKED**: Create `src/strategies/TakeOverStrategy.cpp`
+- ❌ **BLOCKED**: Migrate logic from `runTakeOver()`
 - ⬜ Register in factory
 - ⬜ Write unit tests
 - ⬜ Validate
 - ⬜ Remove C code
+
+**Blocker**: API discovery needed. Migration attempt (2025-11-09) revealed Phase 2 API lacks:
+- OrderManager methods: getInstance(), modifyTradeEasy(), closeAllLongs/Shorts(), totalOpenOrders()
+- pantheios logging: integer() and real() helper functions
+- Utility functions: addValueToUI()
+- Type mismatches: StrategyResult.code (StrategyErrorCode vs AsirikuyReturnCode)
 
 #### ScreeningStrategy
 - ⬜ Create `include/strategies/ScreeningStrategy.hpp`
@@ -337,7 +355,13 @@ This document tracks all tasks for the TradingStrategies refactoring project (Op
 - ✅ **Test Coverage**: 135+ comprehensive unit tests, zero compilation errors
 
 ### Blockers
-- None. All C/C++ interoperability issues resolved.
+- **API Discovery Required**: Strategy migrations blocked until Phase 2 API surface is fully documented and validated
+  - Need to determine actual fields available in rates_t structure
+  - Need to identify actual StrategyContext accessor methods
+  - Need to verify OrderManager available methods (C wrapper vs singleton patterns)
+  - Need to validate logging API capabilities (pantheios limitations)
+  - Need to document type compatibility (StrategyErrorCode vs AsirikuyReturnCode)
+  - Recommend creating API_DISCOVERY.md to document actual vs expected APIs
 
 ### Notes
 - **Build System Modernization Complete** (2025-11-09):
@@ -399,7 +423,24 @@ This document tracks all tasks for the TradingStrategies refactoring project (Op
   - **Commits**: 4 commits pushed to GitHub (bfaf054, 240f71c, fe17e12, 1b7bb95)
   - **Test Coverage**: 135+ unit tests (45 OrderBuilder + 40 Indicators + 50 OrderManager), zero compilation errors
   - Infrastructure ready for actual strategy migrations (RecordBarsStrategy recommended next)
-- **Next Steps**: Migrate RecordBarsStrategy (simplest strategy to validate infrastructure), then TrendStrategy components
+- **StrategyTimeUtils Complete** (2025-11-09):
+  - Created platform-independent time utility with gmtBreakdown, formatTime, timeToUIString
+  - Successfully committed and pushed (commit 7f7cd48)
+  - Replaces legacy safe_timeString usage
+  - Ready for use in future strategy implementations
+- **Strategy Migration Lessons Learned** (2025-11-09):
+  - Attempted migration of RecordBarsStrategy and TakeOverStrategy
+  - Discovered significant API gaps between expected and actual Phase 2 implementation
+  - **Key Finding**: Strategies were written against imagined APIs that don't exist
+  - **rates_t structure**: Lacks expected fields (barsTotal, time/open/high/low/close/volume arrays)
+  - **StrategyContext**: Missing bar count and OHLC accessor methods
+  - **OrderManager**: C wrapper lacks singleton pattern and advanced methods (getInstance, modifyTradeEasy, closeAllLongs/Shorts, totalOpenOrders)
+  - **Logging**: pantheios lacks integer() and real() helper functions
+  - **Type mismatches**: StrategyResult.code type (StrategyErrorCode vs AsirikuyReturnCode)
+  - **Missing utilities**: addValueToUI() function undefined
+  - **Decision**: Reverted all strategy work, kept only StrategyTimeUtils
+  - **Recommendation**: Complete API discovery phase before attempting strategy migrations
+- **Next Steps**: Need comprehensive API discovery documentation before strategy migrations can proceed
 
 ---
 
