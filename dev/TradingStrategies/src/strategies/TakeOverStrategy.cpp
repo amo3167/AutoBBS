@@ -17,7 +17,7 @@ namespace trading {
 namespace {
     /// @brief Helper to convert time_t to std::string
     std::string timeToString(time_t timestamp) {
-        char buffer[MAX_TIME_STRING_SIZE] = "";
+        char buffer[MAX_TIME_STRING_SIZE];
         safe_timeString(buffer, timestamp);
         return std::string(buffer);
     }

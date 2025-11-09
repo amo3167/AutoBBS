@@ -18,7 +18,7 @@ namespace trading {
 namespace {
     /// @brief Helper to convert time_t to std::string
     std::string timeToString(time_t timestamp) {
-        char buffer[MAX_TIME_STRING_SIZE] = "";
+        char buffer[MAX_TIME_STRING_SIZE];
         safe_timeString(buffer, timestamp);
         return std::string(buffer);
     }
@@ -139,18 +139,16 @@ bool RecordBarsStrategy::writeBarToCSV(const char* filePath,
             break;
 
         case RECORD_DATE_AS_STRING: {
-            char timeStr[MAX_TIME_STRING_SIZE];
-            formatTimestamp(timestamp, mode, timeStr, MAX_TIME_STRING_SIZE);
+            std::string timeStr = formatTimestamp(timestamp, mode);
             std::fprintf(fp, "%s, %lf, %lf, %lf, %lf, %lf\n",
-                        timeStr, open, high, low, close, volume);
+                        timeStr.c_str(), open, high, low, close, volume);
             break;
         }
 
         case RECORD_DATE_FOR_R: {
-            char timeStr[MAX_TIME_STRING_SIZE];
-            formatTimestamp(timestamp, mode, timeStr, MAX_TIME_STRING_SIZE);
+            std::string timeStr = formatTimestamp(timestamp, mode);
             std::fprintf(fp, "%s, %lf, %lf, %lf, %lf, %lf\n",
-                        timeStr, open, high, low, close, volume);
+                        timeStr.c_str(), open, high, low, close, volume);
             break;
         }
 
@@ -164,9 +162,9 @@ bool RecordBarsStrategy::writeBarToCSV(const char* filePath,
     return true;
 }
 
-void RecordBarsStrategy::formatTimestamp(time_t timestamp, RecordMode mode,
-                                        char* buffer, size_t maxLen) const {
+std::string RecordBarsStrategy::formatTimestamp(time_t timestamp, RecordMode mode) const {
     struct tm timeInfo;
+    char buffer[MAX_TIME_STRING_SIZE];
     
     // Use safe_gmtime from AsirikuyTime.h
     safe_gmtime(&timeInfo, timestamp);
@@ -174,18 +172,20 @@ void RecordBarsStrategy::formatTimestamp(time_t timestamp, RecordMode mode,
     switch (mode) {
         case RECORD_DATE_AS_STRING:
             // Format: dd/mm/yy HH:MM
-            std::strftime(buffer, maxLen - 1, " %d/%m/%y %H:%M", &timeInfo);
+            std::strftime(buffer, sizeof(buffer), " %d/%m/%y %H:%M", &timeInfo);
             break;
 
         case RECORD_DATE_FOR_R:
             // Format: YYYY-MM-DD
-            std::strftime(buffer, maxLen - 1, " %Y-%m-%d", &timeInfo);
+            std::strftime(buffer, sizeof(buffer), " %Y-%m-%d", &timeInfo);
             break;
 
         default:
             buffer[0] = '\0';
             break;
     }
+    
+    return std::string(buffer);
 }
 
 } // namespace trading

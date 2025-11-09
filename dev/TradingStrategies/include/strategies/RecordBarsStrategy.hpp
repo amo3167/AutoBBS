@@ -65,9 +65,8 @@ private:
     /// @brief Format timestamp for CSV output
     /// @param timestamp Unix timestamp
     /// @param mode Record mode (determines format)
-    /// @param buffer Output buffer
-    /// @param maxLen Maximum buffer length
-    void formatTimestamp(time_t timestamp, RecordMode mode, char* buffer, size_t maxLen) const;
+    /// @return Formatted timestamp string
+    std::string formatTimestamp(time_t timestamp, RecordMode mode) const;
 };
 
 } // namespace trading
