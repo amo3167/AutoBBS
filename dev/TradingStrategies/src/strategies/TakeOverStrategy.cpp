@@ -2,6 +2,7 @@
 #include "Indicators.hpp"
 #include "OrderManager.hpp"
 #include <cmath>
+#include <string>
 
 // Include C functions we need to call
 extern "C" {
@@ -12,6 +13,15 @@ extern "C" {
 }
 
 namespace trading {
+
+namespace {
+    /// @brief Helper to convert time_t to std::string
+    std::string timeToString(time_t timestamp) {
+        char buffer[MAX_TIME_STRING_SIZE] = "";
+        safe_timeString(buffer, timestamp);
+        return std::string(buffer);
+    }
+}
 
 TakeOverStrategy::TakeOverStrategy() 
     : BaseStrategy(TAKEOVER) {
@@ -38,24 +48,23 @@ StrategyResult TakeOverStrategy::executeStrategy(const StrategyContext& context,
     loadTakeOverIndicators(context, tkIndicators);
 
     // Log indicator values
-    char timeString[MAX_TIME_STRING_SIZE] = "";
     int shift0Index = context.getBarsTotal(0) - 1;
     time_t currentTime = context.getTime(0, shift0Index);
-    safe_timeString(timeString, currentTime);
+    std::string timeString = timeToString(currentTime);
 
     pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, 
         (PAN_CHAR_T*)"TakeOver InstanceID=%d, BarTime=%s, BBSTrend=%d, BBStopPrice=%lf, BBSIndex=%d",
-        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString, 
+        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString.c_str(), 
         tkIndicators.bbsTrend, tkIndicators.bbsStopPrice, tkIndicators.bbsIndex);
 
     pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL,
         (PAN_CHAR_T*)"TakeOver InstanceID=%d, BarTime=%s, preHigh=%lf, preLow=%lf, preClose=%lf",
-        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString,
+        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString.c_str(),
         tkIndicators.preHigh, tkIndicators.preLow, tkIndicators.preClose);
 
     pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL,
         (PAN_CHAR_T*)"TakeOver InstanceID=%d, BarTime=%s, buySLP=%lf, sellSLP=%lf, DSL=%d",
-        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString,
+        (int)context.getSetting(STRATEGY_INSTANCE_ID), timeString.c_str(),
         tkIndicators.buyStopLossPrice, tkIndicators.sellStopLossPrice, tkIndicators.dslType);
 
     // Check BBS exit condition for 1M timeframe

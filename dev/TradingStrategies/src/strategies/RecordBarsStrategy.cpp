@@ -3,6 +3,8 @@
 #include <cstring>
 #include <cstdio>
 #include <ctime>
+#include <string>
+#include <sstream>
 
 // Include C functions we need to call
 extern "C" {
@@ -12,6 +14,15 @@ extern "C" {
 }
 
 namespace trading {
+
+namespace {
+    /// @brief Helper to convert time_t to std::string
+    std::string timeToString(time_t timestamp) {
+        char buffer[MAX_TIME_STRING_SIZE] = "";
+        safe_timeString(buffer, timestamp);
+        return std::string(buffer);
+    }
+}
 
 RecordBarsStrategy::RecordBarsStrategy()
     : BaseStrategy(RECORD_BARS) {
@@ -34,11 +45,13 @@ StrategyResult RecordBarsStrategy::executeStrategy(const StrategyContext& contex
     result.pnlImpact = 0.0;
 
     // Build file path for CSV output
-    char filePath[MAX_FILE_PATH_CHARS];
-    if (!buildFilePath(context, filePath, MAX_FILE_PATH_CHARS)) {
+    std::string filePath;
+    char filePathBuffer[MAX_FILE_PATH_CHARS];
+    if (!buildFilePath(context, filePathBuffer, MAX_FILE_PATH_CHARS)) {
         result.code = STRATEGY_FAILED_TO_RECORD_DATA;
         return result;
     }
+    filePath = filePathBuffer;
 
     // Write the previous bar (shift 1) to CSV
     // We use shift 1 because shift 0 (current bar) is not yet complete
@@ -49,7 +62,7 @@ StrategyResult RecordBarsStrategy::executeStrategy(const StrategyContext& contex
         return result;
     }
 
-    if (!writeBarToCSV(filePath, context, shift)) {
+    if (!writeBarToCSV(filePath.c_str(), context, shift)) {
         result.code = STRATEGY_FAILED_TO_RECORD_DATA;
         return result;
     }
