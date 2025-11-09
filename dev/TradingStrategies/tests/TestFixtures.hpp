@@ -1,10 +1,10 @@
 /**
  * @file
- * @brief     Unit tests for the TradingStrategies project
+ * @brief     Shared test fixtures for TradingStrategies unit tests
  * 
  * @author    Morgan Doel (Initial implementation)
  * @version   F4.x.x
- * @date      2012
+ * @date      2025
  *
  * @copyright END-USER LICENSE AGREEMENT FOR ASIRIKUY SOFTWARE. IMPORTANT PLEASE READ THE TERMS AND CONDITIONS OF THIS LICENSE AGREEMENT CAREFULLY BEFORE USING THIS SOFTWARE: 
  * @copyright Asirikuy's End-User License Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and Asirikuy for the use of the Asirikuy Framework in both source and binary forms. By installing, copying, or otherwise using the Asirikuy Framework, you agree to be bound by the terms of this EULA. This license agreement represents the entire agreement concerning the program between you and Asirikuy, (referred to as "licenser"), and it supersedes any prior proposal, representation, or understanding between the parties. If you do not agree to the terms of this EULA, do not install or use the Asirikuy Framework.
@@ -34,13 +34,85 @@
  * @copyright In no event shall Asirikuy or any contributors to the Asirikuy Framework be liable for any damages (including, without limitation, lost profits, business interruption, or lost information) rising out of 'Authorized Users' use of or inability to use the Asirikuy Framework, even if Asirikuy has been advised of the possibility of such damages. In no event will Asirikuy or any contributors to the Asirikuy Framework be liable for loss of data or for indirect, special, incidental, consequential (including lost profit), or other damages based in contract, tort or otherwise. Asirikuy and contributors to the Asirikuy Framework shall have no liability with respect to the content of the Asirikuy Framework or any part thereof, including but not limited to errors or omissions contained therein, libel, infringements of rights of publicity, privacy, trademark rights, business interruption, personal injury, loss of privacy, moral rights or the disclosure of confidential information.
  */
 
-#include <boost/test/unit_test.hpp>
+#ifndef TRADING_STRATEGIES_TEST_FIXTURES_HPP
+#define TRADING_STRATEGIES_TEST_FIXTURES_HPP
 
-BOOST_AUTO_TEST_SUITE(Trading_Strategies)
+#include "StrategyContext.hpp"
+#include <cstring>
 
-BOOST_AUTO_TEST_CASE(placeholder)
-{
-  BOOST_CHECK(true);
-}
+/**
+ * @brief Test fixture providing mock StrategyParams data
+ * 
+ * This fixture sets up complete mock data for testing strategies, including:
+ * - Bid/Ask price arrays (10 ticks)
+ * - Account information (balance, equity, margin)
+ * - Order information
+ * - Strategy results structure
+ * - Default symbol: EURUSD
+ * - Default strategy: RECORD_BARS
+ */
+struct StrategyContextFixture {
+    StrategyParams params;
+    BidAsk bidAsk;
+    AccountInfo accountInfo;
+    RatesBuffers ratesBuffers;
+    OrderInfo orderInfo;
+    StrategyResults results;
+    
+    // Storage for bid/ask arrays
+    double bidArray[10];
+    double askArray[10];
+    
+    StrategyContextFixture() {
+        // Zero-initialize everything
+        std::memset(&params, 0, sizeof(params));
+        std::memset(&bidAsk, 0, sizeof(bidAsk));
+        std::memset(&accountInfo, 0, sizeof(accountInfo));
+        std::memset(&ratesBuffers, 0, sizeof(ratesBuffers));
+        std::memset(&orderInfo, 0, sizeof(orderInfo));
+        std::memset(&results, 0, sizeof(results));
+        std::memset(bidArray, 0, sizeof(bidArray));
+        std::memset(askArray, 0, sizeof(askArray));
+        
+        // Set up bid/ask data
+        bidAsk.arraySize = 10;
+        bidAsk.bid = bidArray;
+        bidAsk.ask = askArray;
+        
+        // Populate some bid/ask values
+        for (int i = 0; i < 10; ++i) {
+            bidArray[i] = 1.2000 + i * 0.0001;
+            askArray[i] = 1.2010 + i * 0.0001;
+        }
+        
+        // Set up account info
+        accountInfo.balance = 10000.0;
+        accountInfo.equity = 10500.0;
+        accountInfo.margin = 9500.0;
+        
+        // Set up order info (no orderCount field exists)
+        // orderInfo is just a pointer, actual data managed by OrderManager
+        
+        // Link pointers
+        params.bidAsk = bidAsk;
+        params.accountInfo = accountInfo;
+        params.ratesBuffers = &ratesBuffers;
+        params.orderInfo = &orderInfo;
+        params.results = &results;
+        
+        // Set symbol
+        std::strcpy(params.tradeSymbol, "EURUSD");
+        
+        // Set strategy ID (use RECORD_BARS as a valid strategy)
+        params.settings[INTERNAL_STRATEGY_ID] = static_cast<double>(RECORD_BARS);
+        
+        // Set some settings
+        params.settings[IS_BACKTESTING] = 1.0;
+        params.settings[MAX_OPEN_ORDERS] = 5.0;
+        
+        // Set current time
+        params.currentBrokerTime = 1234567890;
+    }
+};
 
-BOOST_AUTO_TEST_SUITE_END()
+#endif // TRADING_STRATEGIES_TEST_FIXTURES_HPP

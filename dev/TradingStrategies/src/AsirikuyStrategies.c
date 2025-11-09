@@ -39,6 +39,7 @@
 
 #include "Precompiled.h"
 #include "AsirikuyStrategies.h"
+#include "StrategyTypes.h"
 #include "CriticalSection.h"
 #include "Logging.h"
 #include "EquityLog.h"
@@ -56,15 +57,7 @@
 #include "AutoBBS.h"
 #include "TrendLimit.h"
 
-typedef enum strategyId_t
-{
-  RECORD_BARS       = 19,
-  TAKEOVER			= 26,
-  SCREENING			= 27,
-  AUTOBBS			= 29,
-  AUTOBBSWEEKLY		= 30,
-  TRENDLIMIT		= 31
-} StrategyId;
+// StrategyId enum now defined in StrategyTypes.h for C/C++ interop
 
 AsirikuyReturnCode getStrategyFunctions(StrategyParams* pParams, AsirikuyReturnCode(**runStrategyFunc)(StrategyParams*))
 {
@@ -202,6 +195,9 @@ static AsirikuyReturnCode validateCommonStrategySettings(StrategyParams* pParams
   return SUCCESS;
 }
 
+// Legacy C implementation of runStrategy
+// Disabled during C++ migration - new implementation in AsirikuyStrategiesWrapper.cpp
+#ifndef CPP_MIGRATION_IN_PROGRESS
 AsirikuyReturnCode runStrategy(StrategyParams* pParams)
 {
   AsirikuyReturnCode returnCode;
@@ -331,3 +327,4 @@ AsirikuyReturnCode clearStrategyResults(StrategyParams* pParams)
 
   return SUCCESS;
 }
+#endif // CPP_MIGRATION_IN_PROGRESS

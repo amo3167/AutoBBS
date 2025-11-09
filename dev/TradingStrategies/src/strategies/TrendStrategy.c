@@ -4507,7 +4507,7 @@ static int isRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_I
 		}
 	}
 
-	readTradingInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo, (BOOL)pParams->settings[IS_BACKTESTING]);
+	readTradingInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo);
 
 	if (orderInfo.orderStatus == PENDING)
 	{
