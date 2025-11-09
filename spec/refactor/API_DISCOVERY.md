@@ -48,15 +48,82 @@ for (int i = 0; i < barsTotal; i++) {
 }
 ```
 
-#### Actual (From Phase 2)
-**Status**: ❌ **UNKNOWN** - Need to analyze actual rates_t definition
+#### Actual (From AsirikuyDefines.h)
+**Status**: ✅ **DOCUMENTED** - Structure found and documented
 
-**Required Investigation**:
-- [ ] Find actual rates_t structure definition
-- [ ] Document actual fields available
-- [ ] Understand how C strategies currently access bar data
-- [ ] Determine if arrays exist but are named differently
-- [ ] Check if data access uses a different pattern (e.g., buffer access)
+**Actual Definition** (from `dev/AsirikuyCommon/include/AsirikuyDefines.h`):
+```cpp
+typedef struct ratesInfo_t {
+    BOOL     isEnabled;
+    BOOL     isBufferFull;
+    int      timeframe;
+    int      arraySize;        // ✅ This is "barsTotal"!
+    double   point;
+    int      digits;
+} RatesInfo;
+
+typedef struct rates_t {
+    RatesInfo info;            // Contains arraySize and other metadata
+    time_t*   time;            // ✅ Time array (not "timeArray")
+    double*   open;            // ✅ Open array (not "openArray")
+    double*   high;            // ✅ High array (not "highArray")
+    double*   low;             // ✅ Low array (not "lowArray")
+    double*   close;           // ✅ Close array (not "closeArray")
+    double*   volume;          // ✅ Volume array (not "volumeArray")
+} Rates;
+
+typedef struct ratesBuffers_t {
+    int    instanceId;
+    int    bufferOffsets[MAX_RATES_BUFFERS];
+    Rates  rates[MAX_RATES_BUFFERS];
+} RatesBuffers;
+```
+
+**Actual Usage in C Code** (from `RecordBars.c`):
+```cpp
+AsirikuyReturnCode runRecordBars(StrategyParams* pParams) {
+    // Access array size (not barsTotal!)
+    int shift1Index = pParams->ratesBuffers->rates[PRIMARY_RATES].info.arraySize - 2;
+    int shift0Index = pParams->ratesBuffers->rates[PRIMARY_RATES].info.arraySize - 1;
+    
+    // Access OHLCV arrays (not timeArray, openArray, etc!)
+    time_t barTime = pParams->ratesBuffers->rates[PRIMARY_RATES].time[shift1Index];
+    double barOpen = pParams->ratesBuffers->rates[PRIMARY_RATES].open[shift1Index];
+    double barHigh = pParams->ratesBuffers->rates[PRIMARY_RATES].high[shift1Index];
+    double barLow = pParams->ratesBuffers->rates[PRIMARY_RATES].low[shift1Index];
+    double barClose = pParams->ratesBuffers->rates[PRIMARY_RATES].close[shift1Index];
+    double barVolume = pParams->ratesBuffers->rates[PRIMARY_RATES].volume[shift1Index];
+}
+```
+
+**Key Differences**:
+| Expected | Actual | Notes |
+|----------|--------|-------|
+| `barsTotal` | `info.arraySize` | Bar count is in nested info struct |
+| `timeArray` | `time` | Simple pointer, not "Array" suffix |
+| `openArray` | `open` | Simple pointer, not "Array" suffix |
+| `highArray` | `high` | Simple pointer, not "Array" suffix |
+| `lowArray` | `low` | Simple pointer, not "Array" suffix |
+| `closeArray` | `close` | Simple pointer, not "Array" suffix |
+| `volumeArray` | `volume` | Simple pointer, not "Array" suffix |
+
+**Correct C++ Migration Pattern**:
+```cpp
+// RecordBarsStrategy.cpp (corrected)
+const rates_t* rates = context.getRates();
+int arraySize = rates->rates[PRIMARY_RATES].info.arraySize;
+
+for (int i = 0; i < arraySize; i++) {
+    time_t barTime = rates->rates[PRIMARY_RATES].time[i];
+    double barOpen = rates->rates[PRIMARY_RATES].open[i];
+    double barHigh = rates->rates[PRIMARY_RATES].high[i];
+    double barLow = rates->rates[PRIMARY_RATES].low[i];
+    double barClose = rates->rates[PRIMARY_RATES].close[i];
+    double barVolume = rates->rates[PRIMARY_RATES].volume[i];
+}
+```
+
+**Resolution**: ✅ **RESOLVED** - Field names documented, migration pattern established
 
 ---
 
@@ -93,44 +160,55 @@ for (int i = 0; i < barsTotal; i++) {
 ```
 
 #### Actual (From Phase 2)
-**Status**: ✅ **KNOWN** - These methods do NOT exist in StrategyContext
+**Status**: ✅ **DOCUMENTED** - These convenience methods do NOT exist, but not needed
 
-**Actual StrategyContext API** (from StrategyContext.hpp):
+**Actual StrategyContext API** (from `StrategyContext.hpp`):
 ```cpp
 class StrategyContext {
 public:
-    // Constructor
-    StrategyContext(StrategyParams* params);
+    // Raw access to rates buffers
+    RatesBuffers* getRatesBuffers() const;
     
-    // Getters for core data
-    const char* getSymbol() const;
-    double getBid() const;
-    double getAsk() const;
-    const SymbolInfo* getSymbolInfo() const;
-    const AccountInfo* getAccountInfo() const;
-    const rates_t* getRates() const;
-    const Base_Indicators* getIndicators() const;
-    OrderManager& getOrderManager();
-    const OrderManager& getOrderManager() const;
-    
-    // Results
-    StrategyResult& getResults();
+    // Access specific timeframe rates
+    const Rates& getRates(BaseRatesIndexes index) const;
     
     // No getBarsTotal(), getTime(), getOpen/High/Low/Close/Volume()!
 };
 ```
 
-**Gap**: Strategies need to either:
-- Access rates structure directly (but rates_t fields are unknown)
-- Use Indicators wrapper methods (if they provide bar access)
-- Add convenience methods to StrategyContext
-- Use a different pattern entirely
+**Why Convenience Methods Aren't Needed**:
 
-**Required Investigation**:
-- [ ] How do existing C strategies access bar data?
-- [ ] Can Indicators class provide bar access?
-- [ ] Should we add convenience methods to StrategyContext?
-- [ ] Is there a RatesBuffer or similar helper class?
+Strategies can access bar data directly through the rates structure:
+```cpp
+// Correct pattern using actual API
+const RatesBuffers* ratesBuffers = context.getRatesBuffers();
+const Rates& primaryRates = ratesBuffers->rates[PRIMARY_RATES];
+
+// Get bar count
+int arraySize = primaryRates.info.arraySize;
+
+// Access OHLCV data
+for (int i = 0; i < arraySize; i++) {
+    time_t barTime = primaryRates.time[i];
+    double barOpen = primaryRates.open[i];
+    double barHigh = primaryRates.high[i];
+    double barLow = primaryRates.low[i];
+    double barClose = primaryRates.close[i];
+    double barVolume = primaryRates.volume[i];
+}
+```
+
+**Alternative: Use Indicators Class** (if indicator wrappers are needed):
+
+The Indicators class provides wrapped access to technical indicators that internally access bar data:
+```cpp
+Indicators& indicators = context.getIndicators();
+double high = indicators.getHigh(PRIMARY_RATES, 1);  // High of bar at index 1
+double low = indicators.getLow(PRIMARY_RATES, 1);
+double close = indicators.getClose(PRIMARY_RATES, 1);
+```
+
+**Decision**: ✅ **No changes needed** to StrategyContext. Strategies should access rates directly or use Indicators class.
 
 ---
 
@@ -164,45 +242,88 @@ if (needToClose) {
 ```
 
 #### Actual (From Phase 2)
-**Status**: ✅ **PARTIALLY KNOWN** - OrderManager exists but has different API
+**Status**: ✅ **DOCUMENTED** - OrderManager exists but with different API
 
-**Actual OrderManager API** (from OrderManager.hpp):
+**Actual OrderManager API** (from `OrderManager.hpp`):
 ```cpp
 class OrderManager {
 public:
-    // Constructor (not singleton)
-    OrderManager(StrategyParams* params);
+    // Constructor (not singleton - access via StrategyContext)
+    explicit OrderManager(StrategyContext& context);
     
     // Order counting
-    int openBuyOrders(const char* symbol) const;
-    int openSellOrders(const char* symbol) const;
-    int totalOrders(const char* symbol) const;
+    int getTotalOpenOrders(OrderType orderType) const;
+    int getTotalClosedOrders(OrderType orderType) const;
     
-    // Order operations (wrap C functions)
-    int openTrade(/* ... many parameters ... */);
-    bool updateTrade(int ticket, double sl, double tp);
-    bool closeTrade(int ticket);
+    // Order sizing and risk management
+    double calculateOrderSize(OrderType orderType, double entryPrice, double stopLoss) const;
+    double calculateOrderSizeWithRisk(OrderType orderType, double entryPrice, double stopLoss, double risk) const;
+    bool hasEnoughFreeMargin(OrderType orderType, double lotSize) const;
+    double getMaxLossPerLot(OrderType orderType, double entryPrice, double stopLoss) const;
     
-    // Position sizing
-    double calculateOrderSize(/* ... */);
+    // Order lifecycle
+    bool openOrUpdateLongTrade(int ratesIndex, int resultsIndex, double stopLoss, double takeProfit, double risk, bool useInternalSL, bool useInternalTP);
+    bool openOrUpdateShortTrade(int ratesIndex, int resultsIndex, double stopLoss, double takeProfit, double risk, bool useInternalSL, bool useInternalTP);
     
-    // No getInstance(), modifyTradeEasy(), closeAllLongs/Shorts()!
+    // Note: No getInstance(), modifyTradeEasy(), closeAllLongs(), closeAllShorts()!
 };
 ```
 
-**Gap**: OrderManager is a wrapper around C functions, not a singleton with high-level operations.
+**Underlying C Functions Available**:
 
-**Workarounds**:
-- Access OrderManager via StrategyContext: `context.getOrderManager()`
-- Use lower-level methods: `updateTrade()` instead of `modifyTradeEasy()`
-- Implement closeAllLongs/Shorts logic manually using order counting and closeTrade()
-- totalOpenOrders() can be calculated: `openBuyOrders() + openSellOrders()`
+From `OrderManagement.h` and `EasyTradeCWrapper.hpp`:
+```c
+// Order counting (OrderManagement.h)
+int totalOpenOrders(StrategyParams* pParams, OrderType orderType);
 
-**Required Investigation**:
-- [ ] Document the C functions that OrderManager wraps
-- [ ] Determine if modifyTradeEasy() exists in C layer
-- [ ] Check if there are helper functions in OrderManagement.h
-- [ ] Decide if high-level convenience methods should be added
+// Order closing (EasyTradeCWrapper.hpp)
+AsirikuyReturnCode closeAllLongs();
+AsirikuyReturnCode closeAllShorts();
+```
+
+**Correct C++ Migration Patterns**:
+
+1. **Access OrderManager via StrategyContext** (not singleton):
+```cpp
+// TakeOverStrategy.cpp (corrected)
+OrderManager& orderMgr = context.getOrderManager();
+```
+
+2. **Count orders by type**:
+```cpp
+// Get count of BUY orders
+int buyOrders = orderMgr.getTotalOpenOrders(BUY);
+
+// Get count of SELL orders  
+int sellOrders = orderMgr.getTotalOpenOrders(SELL);
+
+// Get total count (BUY + SELL)
+int totalOrders = orderMgr.getTotalOpenOrders(BUY) + orderMgr.getTotalOpenOrders(SELL);
+```
+
+3. **Close all positions** (use C functions directly):
+```cpp
+// Close operations not wrapped in OrderManager, use C functions
+#include "EasyTradeCWrapper.hpp"
+
+if (needToCloseLongs) {
+    AsirikuyReturnCode result = closeAllLongs();
+    if (result != SUCCESS) {
+        // Handle error
+    }
+}
+
+if (needToCloseShorts) {
+    AsirikuyReturnCode result = closeAllShorts();
+    if (result != SUCCESS) {
+        // Handle error
+    }
+}
+```
+
+**Design Note**: OrderManager is a wrapper around C `OrderManagement.h` functions, not a singleton. It provides order sizing and lifecycle management but doesn't wrap all C functions. For operations like `closeAllLongs/Shorts`, strategies should call the C functions directly from `EasyTradeCWrapper.hpp`.
+
+**Resolution**: ✅ **RESOLVED** - Use OrderManager via context, call C functions directly for closeAll operations
 
 ---
 
