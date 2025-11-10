@@ -1,16 +1,41 @@
 #include "strategies/TakeOverStrategy.hpp"
 #include "Indicators.hpp"
-#include "OrderManager.hpp"
+#include "BridgeConstants.hpp"
+#include "IndicatorBridge.hpp"
 #include <cmath>
 #include <string>
 
-// Include C functions we need to call
+// Include C headers (they have their own extern "C" guards)
+// TODO: Fix StrategyUserInterface.h / StrategyParams struct/typedef conflict
+// #include "StrategyUserInterface.h"
+#include "AsirikuyTime.h"
+// Removed Logging.h include for isolated test build; logging is stubbed below
+
+// Forward declare C functions we need
 extern "C" {
-    #include "StrategyUserInterface.h"
-    #include "AsirikuyTime.h"
-    #include "AsirikuyDefines.h"
-    #include "Logging.h"
+    void addValueToUI(const char* name, double value);
 }
+
+// TODO: Enable Pantheios logging when STLSoft compatibility is fixed for VS2022
+// #include <pantheios/pantheios.h>
+// #include <pantheios/pantheios.hpp>
+
+// Temporary stubs for pantheios logging (Phase 3 Task 8: Fix Pantheios/STLSoft compatibility)
+#ifndef pantheios_logprintf
+#define pantheios_logprintf(sev, fmt, ...) ((void)0)
+#endif
+#ifndef pantheios_logputs
+#define pantheios_logputs(sev, msg) ((void)0)
+#endif
+#ifndef PANTHEIOS_SEV_INFORMATIONAL
+#define PANTHEIOS_SEV_INFORMATIONAL 6
+#endif
+#ifndef PANTHEIOS_SEV_ERROR
+#define PANTHEIOS_SEV_ERROR 3
+#endif
+#ifndef PAN_CHAR_T
+#define PAN_CHAR_T char
+#endif
 
 namespace trading {
 
@@ -73,13 +98,17 @@ StrategyResult TakeOverStrategy::executeStrategy(const StrategyContext& context,
         return result;
     }
 
+    // TODO: Implement OrderManager integration (Phase 3 Task 7)
+    // For now, order modification logic is stubbed out
+    // When OrderManager is fully implemented, uncomment and fix:
+    /*
     // Get OrderManager instance
     OrderManager& orderMgr = OrderManager::getInstance();
 
     // Modify buy orders if any exist
     if (orderMgr.totalOpenOrders(BUY) > 0) {
         if (!modifyOrders(context, tkIndicators, BUY)) {
-            result.code = STRATEGY_FAILED_TO_MODIFY_ORDERS;
+            result.code = INVALID_PARAMETER;  // Use existing Asirikuy return code
             pantheios_logputs(PANTHEIOS_SEV_ERROR,
                 (PAN_CHAR_T*)"TakeOver: Failed to modify buy orders");
         }
@@ -88,11 +117,12 @@ StrategyResult TakeOverStrategy::executeStrategy(const StrategyContext& context,
     // Modify sell orders if any exist
     if (orderMgr.totalOpenOrders(SELL) > 0) {
         if (!modifyOrders(context, tkIndicators, SELL)) {
-            result.code = STRATEGY_FAILED_TO_MODIFY_ORDERS;
+            result.code = INVALID_PARAMETER;  // Use existing Asirikuy return code
             pantheios_logputs(PANTHEIOS_SEV_ERROR,
                 (PAN_CHAR_T*)"TakeOver: Failed to modify sell orders");
         }
     }
+    */
 
     return result;
 }
@@ -105,12 +135,14 @@ void TakeOverStrategy::updateResults(const StrategyContext& context,
 
 void TakeOverStrategy::loadTakeOverIndicators(const StrategyContext& context,
                                               TakeOverIndicators& indicators) const {
-    // Get indicator values from C functions via Indicators helper
-    indicators.dailyATR = iAtr(DAILY_RATES, 
+    // Get indicator values from C functions via bridge
+    using namespace indicators;
+    
+    indicators.dailyATR = getATR(DAILY_RATES, 
         static_cast<int>(context.getSetting(ATR_AVERAGING_PERIOD)), 1);
 
     // Get Bollinger Band stop
-    iBBandStop(PRIMARY_RATES,
+    getBBandStop(PRIMARY_RATES,
         static_cast<int>(context.getSetting(ADDITIONAL_PARAM_1)),  // BBS_PERIOD
         static_cast<int>(context.getSetting(ADDITIONAL_PARAM_2)),  // BBS_DEVIATION
         &indicators.bbsTrend,
@@ -121,19 +153,19 @@ void TakeOverStrategy::loadTakeOverIndicators(const StrategyContext& context,
     indicators.position = context.getSetting(ADDITIONAL_PARAM_4);  // POSITION
 
     // Get daily price data
-    indicators.preHigh = iHigh(DAILY_RATES, 1);
-    indicators.preLow = iLow(DAILY_RATES, 1);
-    indicators.preClose = iClose(DAILY_RATES, 1);
+    indicators.preHigh = getHigh(DAILY_RATES, 1);
+    indicators.preLow = getLow(DAILY_RATES, 1);
+    indicators.preClose = getClose(DAILY_RATES, 1);
 
     // Calculate 2-day high/low
     indicators.pre2DaysHigh = indicators.preHigh;
-    if (iHigh(DAILY_RATES, 2) > indicators.preHigh) {
-        indicators.pre2DaysHigh = iHigh(DAILY_RATES, 2);
+    if (getHigh(DAILY_RATES, 2) > indicators.preHigh) {
+        indicators.pre2DaysHigh = getHigh(DAILY_RATES, 2);
     }
 
     indicators.pre2DaysLow = indicators.preLow;
-    if (iLow(DAILY_RATES, 2) < indicators.preLow) {
-        indicators.pre2DaysLow = iLow(DAILY_RATES, 2);
+    if (getLow(DAILY_RATES, 2) < indicators.preLow) {
+        indicators.pre2DaysLow = getLow(DAILY_RATES, 2);
     }
 
     // Get adjustment and DSL type
@@ -143,7 +175,7 @@ void TakeOverStrategy::loadTakeOverIndicators(const StrategyContext& context,
     );
 
     // Get 1H MA200
-    indicators.movingAverage200M = iMA(3, HOURLY_RATES, 200, 1);
+    indicators.movingAverage200M = getMA(3, HOURLY_RATES, 200, 1);
 
     // Calculate stop loss prices based on DSL type
     switch (indicators.dslType) {
@@ -209,6 +241,9 @@ void TakeOverStrategy::loadTakeOverIndicators(const StrategyContext& context,
 bool TakeOverStrategy::modifyOrders(const StrategyContext& context,
                                    const TakeOverIndicators& indicators,
                                    int orderType) const {
+    // TODO: Implement order modification (Phase 3 Task 7)
+    // Stub implementation for compilation
+    /*
     OrderManager& orderMgr = OrderManager::getInstance();
     double stopLoss = 0.0;
 
@@ -230,8 +265,9 @@ bool TakeOverStrategy::modifyOrders(const StrategyContext& context,
             return false;
         }
     }
+    */
 
-    return true;
+    return true;  // Stub: return success for now
 }
 
 bool TakeOverStrategy::shouldExitOnBBSTrend(const StrategyContext& context,
@@ -242,6 +278,9 @@ bool TakeOverStrategy::shouldExitOnBBSTrend(const StrategyContext& context,
         return false;
     }
 
+    // TODO: Implement BBS exit logic (Phase 3 Task 7)
+    // Stub implementation for compilation
+    /*
     OrderManager& orderMgr = OrderManager::getInstance();
     int shift1Index = context.getBarsTotal(0) - 2;
 
@@ -268,8 +307,9 @@ bool TakeOverStrategy::shouldExitOnBBSTrend(const StrategyContext& context,
             (PAN_CHAR_T*)"TakeOver: Closed all shorts on BBS trend reversal");
         return true;
     }
+    */
 
-    return false;
+    return false;  // Stub: no exit for now
 }
 
 } // namespace trading

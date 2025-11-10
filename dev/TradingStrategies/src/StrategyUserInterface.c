@@ -45,6 +45,113 @@
 #include "Logging.h"
 
 static char tempFilePath[MAX_FILE_PATH_CHARS] ;
+/* -------------------------------------------------------------------------
+ * Reconstructed legacy UI buffering mechanism
+ * -------------------------------------------------------------------------
+ * Many C strategy sources call addValueToUI("Name", value) expecting the
+ * framework to later persist these pairs for front-end consumption. The
+ * original implementation is absent in the current repository snapshot.
+ * We provide a lightweight buffering layer capped at TOTAL_UI_VALUES that
+ * can be flushed explicitly (flushUserInterfaceValues) at appropriate
+ * lifecycle points (e.g., end of strategy tick) by framework code.
+ * ------------------------------------------------------------------------- */
+static const char* g_uiNames[TOTAL_UI_VALUES];
+static double      g_uiValues[TOTAL_UI_VALUES];
+static int         g_uiCount = 0;
+
+/* Harvest helper forward declaration (defined near end of file) */
+void harvestStrategyTelemetry(struct StrategyParams* pParams,
+                              struct Indicators* pIndicators,
+                              struct Base_Indicators* pBase);
+
+void addValueToUI(const char* name, double value)
+{
+	if (name == NULL)
+	{
+		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addValueToUI() NULL name pointer.");
+		return;
+	}
+
+	if (g_uiCount >= TOTAL_UI_VALUES)
+	{
+		pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addValueToUI() UI buffer full (capacity=%d). Discarding '%s'", TOTAL_UI_VALUES, name);
+		return;
+	}
+
+	g_uiNames[g_uiCount]  = name;   /* store pointer (string literals assumed) */
+	g_uiValues[g_uiCount] = value;
+	++g_uiCount;
+}
+
+void updateOrAddValueToUI(const char* name, double value)
+{
+	if (name == NULL)
+	{
+		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"updateOrAddValueToUI() NULL name pointer.");
+		return;
+	}
+
+	/* Linear search; buffer is tiny (<=20) so O(n) is fine */
+	for (int i = 0; i < g_uiCount; ++i)
+	{
+		if (g_uiNames[i] != NULL && strcmp(g_uiNames[i], name) == 0)
+		{
+			g_uiValues[i] = value;
+			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"updateOrAddValueToUI() updated '%s'", name);
+			return;
+		}
+	}
+
+	/* Not found; attempt to append */
+	addValueToUI(name, value);
+}
+
+void flushUserInterfaceValues(int instanceID, BOOL isBackTesting)
+{
+	if (g_uiCount == 0)
+	{
+		pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"flushUserInterfaceValues() nothing to flush.");
+		return;
+	}
+
+	/* Cast away const for compatibility with existing saveUserInterfaceValues signature */
+	char* mutableNames[TOTAL_UI_VALUES];
+	for (int i = 0; i < g_uiCount; ++i)
+	{
+		mutableNames[i] = (char*)g_uiNames[i];
+	}
+
+	AsirikuyReturnCode rc = saveUserInterfaceValues(mutableNames, g_uiValues, g_uiCount, instanceID, isBackTesting);
+	if (rc != SUCCESS)
+	{
+		pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"flushUserInterfaceValues() saveUserInterfaceValues failed rc=%d", rc);
+	}
+	else
+	{
+		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"flushUserInterfaceValues() persisted %d UI values for instance %d", g_uiCount, instanceID);
+	}
+	g_uiCount = 0; /* reset buffer */
+}
+
+double getUIValue(const char* name, BOOL* found)
+{
+	if (found) *found = FALSE;
+	if (name == NULL) return 0.0;
+	for (int i = 0; i < g_uiCount; ++i)
+	{
+		if (g_uiNames[i] != NULL && strcmp(g_uiNames[i], name) == 0)
+		{
+			if (found) *found = TRUE;
+			return g_uiValues[i];
+		}
+	}
+	return 0.0;
+}
+
+int getUICount()
+{
+	return g_uiCount;
+}
 
 AsirikuyReturnCode setTempFileFolderPath(char* tempPath)
 {
@@ -645,4 +752,49 @@ AsirikuyReturnCode resetVirtualOrderInfo(int instanceID)
 	orderInfo.openTime = 0;
 
 	return saveVirutalOrdergInfo(instanceID, orderInfo);
+}
+
+/* -------------------------------------------------------------------------
+ * harvestStrategyTelemetry
+ * -------------------------------------------------------------------------
+ * Collect a normalized snapshot of key strategy state fields for UI emission
+ * when the underlying strategy source does not explicitly call addValueToUI.
+ * This is especially relevant for complex strategies (TrendStrategy) which
+ * rely on internal structs rather than ad-hoc UI writes.
+ *
+ * NOTE: Keep field count modest to respect TOTAL_UI_VALUES capacity and rely
+ * on later overwrite block in runStrategy() for mutable risk metrics.
+ * ------------------------------------------------------------------------- */
+void harvestStrategyTelemetry(struct StrategyParams* pParams,
+                              struct Indicators* pIndicators,
+                              struct Base_Indicators* pBase)
+{
+	if (pParams == NULL || pIndicators == NULL || pBase == NULL)
+	{
+		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"harvestStrategyTelemetry() NULL pointer.");
+		return;
+	}
+
+	/* Execution / signaling */
+	updateOrAddValueToUI("executionTrend", (double)pIndicators->executionTrend);
+	updateOrAddValueToUI("entrySignal", (double)pIndicators->entrySignal);
+	updateOrAddValueToUI("exitSignal", (double)pIndicators->exitSignal);
+
+	/* Position sizing & risk */
+	updateOrAddValueToUI("risk", pIndicators->risk);
+	updateOrAddValueToUI("splitTradeMode", (double)pIndicators->splitTradeMode);
+	updateOrAddValueToUI("tpMode", (double)pIndicators->tpMode);
+
+	/* Prices */
+	updateOrAddValueToUI("entryPrice", pIndicators->entryPrice);
+	updateOrAddValueToUI("stopLossPrice", pIndicators->stopLossPrice);
+
+	/* Volatility / predictive envelope */
+	updateOrAddValueToUI("atr_euro_range", pIndicators->atr_euro_range);
+	updateOrAddValueToUI("pWeeklyPredictATR", pBase->pWeeklyPredictATR);
+	updateOrAddValueToUI("pWeeklyPredictMaxATR", pBase->pWeeklyPredictMaxATR);
+	updateOrAddValueToUI("pDailyMaxATR", pBase->pDailyMaxATR);
+
+	/* Status / diagnostics (string status not stored; numeric proxy if any) */
+	updateOrAddValueToUI("strategyInstanceId", (double)pParams->settings[STRATEGY_INSTANCE_ID]);
 }

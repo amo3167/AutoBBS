@@ -1263,20 +1263,20 @@ double EasyTrade::parameter(int parameterIndex)
 
 BOOL EasyTrade::addValueToUI(char* valueName, double valueToAdd)
 {
-  int i;
-
-  for (i=0; i < TOTAL_UI_VALUES; i++)
-  {
-    if (userInterfaceVariableNames[i] == "")
-    {
-      userInterfaceVariableNames[i] = valueName;
-      userInterfaceValues[i] = valueToAdd;
-      saveUserInterfaceValues(userInterfaceVariableNames, userInterfaceValues, 20,  (int)pParams->settings[STRATEGY_INSTANCE_ID], (BOOL)pParams->settings[IS_BACKTESTING]);
-      return TRUE;
-    }
-  }
-
-  return FALSE;
+	/*
+	 * Phase 2 Migration Change:
+	 * Deprecated the immediate-write behavior in favor of the centralized
+	 * buffering + flush strategy (see StrategyUserInterface.c). This method now
+	 * delegates to global addValueToUI() so that all strategies (C or C++)
+	 * share the same emission pathway and a single flush point in runStrategy().
+	 *
+	 * Return value preserved (always TRUE unless buffer overflow occurred,
+	 * which is logged inside addValueToUI()). We cannot detect overflow here
+	 * without exposing buffer state, so we optimistically return TRUE for
+	 * backward compatibility with existing calling code that ignores FALSE.
+	 */
+	addValueToUI(valueName, valueToAdd);
+	return TRUE;
 }
 
 int EasyTrade::findShift(int finalArrayIndex, int originalArrayIndex, int shift)
@@ -1636,8 +1636,8 @@ int EasyTrade::iMACDTrendBeiLi(int ratesArrayIndex, int fastPeriod, int slowPeri
 		iMACDAll(ratesArrayIndex, fastPeriod, slowPeriod, signalPeriod, i, &fast[i], &slow[i], &preHist[i]);
 	}
 
-	// Èç¹ûÊÇÏòÉÏ£¬ ¾Í¿´¶¥²¿
-	// Èç¹ûÊÇÏòÏÂ£¬ ¾Í¿´µ×²¿
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï£ï¿½ ï¿½Í¿ï¿½ï¿½ï¿½ï¿½ï¿½
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Â£ï¿½ ï¿½Í¿ï¿½ï¿½×²ï¿½
 
 	if (fast[startShift] > 0)
 		trend = 1;
@@ -2581,7 +2581,7 @@ AsirikuyReturnCode EasyTrade::modifyAllShorts_DayTrading(double stopLoss1, doubl
 				}
 			}
 
-			//²»ÔÊÐíÖ¹ËðÍù»ØÒÆ¶¯
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 			if (stopMovingbackSL == TRUE && newSL > fabs(pParams->bidAsk.bid[0] - pParams->orderInfo[i].stopLoss))
 				newSL = fabs(pParams->bidAsk.bid[0] - pParams->orderInfo[i].stopLoss);
 
@@ -2627,7 +2627,7 @@ AsirikuyReturnCode EasyTrade::modifyAllShorts(double stopLoss,double takePrice,i
 				}
 			}
 
-			//²»ÔÊÐíÖ¹ËðÍù»ØÒÆ¶¯
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 			if (stopMovingbackSL == TRUE && newSL > fabs(pParams->bidAsk.bid[0] - pParams->orderInfo[i].stopLoss))
 				newSL = fabs(pParams->bidAsk.bid[0] - pParams->orderInfo[i].stopLoss);
 
@@ -4561,7 +4561,7 @@ AsirikuyReturnCode EasyTrade::modifyAllOrdersOnSameDate(int orderIndex,double st
 			}
 
 
-			//²»ÔÊÐíÖ¹ËðÍù»ØÒÆ¶¯
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 			if (stopMovingbackSL == TRUE && newSL > fabs(entryPrice - pParams->orderInfo[i].stopLoss))
 				newSL = fabs(entryPrice - pParams->orderInfo[i].stopLoss);
 
@@ -4618,7 +4618,7 @@ AsirikuyReturnCode EasyTrade::modifyAllLongs_DayTrading(double stopLoss1, double
 				}
 			}
 
-			//²»ÔÊÐíÖ¹ËðÍù»ØÒÆ¶¯
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 			if (stopMovingbackSL == TRUE && newSL > fabs(pParams->bidAsk.ask[0] - pParams->orderInfo[i].stopLoss))
 				newSL = fabs(pParams->bidAsk.ask[0] - pParams->orderInfo[i].stopLoss);
 
@@ -4630,8 +4630,8 @@ AsirikuyReturnCode EasyTrade::modifyAllLongs_DayTrading(double stopLoss1, double
 }
 
 /*
-tpMode = 1: ÔÚÐÂµÄÒ»Ìì£¬È¥µôTP=0
-tpMode = 2: ¸ú×ÙÖ¹Ó¯ 20 µã
+tpMode = 1: ï¿½ï¿½ï¿½Âµï¿½Ò»ï¿½ì£¬È¥ï¿½ï¿½TP=0
+tpMode = 2: ï¿½ï¿½ï¿½ï¿½Ö¹Ó¯ 20 ï¿½ï¿½
 */
 AsirikuyReturnCode EasyTrade::modifyAllLongs(double stopLoss, double takePrice, int tpMode, BOOL stopMovingbackSL)
 {
@@ -4670,7 +4670,7 @@ AsirikuyReturnCode EasyTrade::modifyAllLongs(double stopLoss, double takePrice, 
 				}
 			}
 
-			//²»ÔÊÐíÖ¹ËðÍù»ØÒÆ¶¯
+			//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ¶ï¿½
 			if (stopMovingbackSL == TRUE && newSL > fabs(pParams->bidAsk.ask[0] - pParams->orderInfo[i].stopLoss))
 				newSL = fabs(pParams->bidAsk.ask[0] - pParams->orderInfo[i].stopLoss);
 
@@ -4693,7 +4693,7 @@ AsirikuyReturnCode EasyTrade::closeAllLongsWithNegative(int tradeMode, time_t cu
 
 	safe_gmtime(&timeInfo1, currentTime);
 
-	// ¿çÄêÓÐÎÊÌâ
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 	monday = timeInfo1.tm_yday - timeInfo1.tm_wday + 1;
 	friday = timeInfo1.tm_yday - timeInfo1.tm_wday + 5;
 	 
@@ -4906,7 +4906,7 @@ AsirikuyReturnCode EasyTrade::closeAllShortsWithNegative(int tradeMode, time_t c
 				else
 				{
 					safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
-					if (timeInfo1.tm_mday == timeInfo2.tm_mday) //¿ª²ÖµÄµÚÒ»Ìì£¬²»Òªclose.µ«ÊÇÔÚ×îºóÒ»¸öbar,¿ÉÒÔclose,·ÀÖ¹µÚ¶þÌìµÄÌø¿ÕÈ±¿Ú¡£
+					if (timeInfo1.tm_mday == timeInfo2.tm_mday) //ï¿½ï¿½ï¿½ÖµÄµï¿½Ò»ï¿½ì£¬ï¿½ï¿½Òªclose.ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½bar,ï¿½ï¿½ï¿½ï¿½close,ï¿½ï¿½Ö¹ï¿½Ú¶ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½È±ï¿½Ú¡ï¿½
 					{
 						if (timeInfo1.tm_hour < 23 || (timeInfo1.tm_hour == 23 && timeInfo1.tm_min <25))
 							continue;
@@ -5537,9 +5537,9 @@ BOOL EasyTrade::validateSecondaryBarsGap(StrategyParams* pParams, time_t current
 		//		return FALSE;
 		//	}
 		//}
-		//Õâ¸öÊ±ºò£¬ÐèÒªcheck weekend? public holiday? µ«ÊÇpublic holiday²»ºÃ¼ÆËã¡£Õâ¸öÊ±ºò£¬½¨ÒéÊÇ
-		//23£º55 ------ 0£º00 or 1:00(XAU)
-		//TradeMAX broker, Êý¾ÝÖÊÁ¿²»ÐÐ¡£Ã¿ÖÜÎå£¬Ëü¶¼Ö»µ½23£º44,ÌáÔç20·ÖÖÓÊÕÅÌ¡£
+		//ï¿½ï¿½ï¿½Ê±ï¿½ï¿½ï¿½ï¿½Òªcheck weekend? public holiday? ï¿½ï¿½ï¿½ï¿½public holidayï¿½ï¿½ï¿½Ã¼ï¿½ï¿½ã¡£ï¿½ï¿½ï¿½Ê±ï¿½ò£¬½ï¿½ï¿½ï¿½ï¿½ï¿½
+		//23ï¿½ï¿½55 ------ 0ï¿½ï¿½00 or 1:00(XAU)
+		//TradeMAX broker, ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ð¡ï¿½Ã¿ï¿½ï¿½ï¿½å£¬ï¿½ï¿½ï¿½ï¿½Ö»ï¿½ï¿½23ï¿½ï¿½44,ï¿½ï¿½ï¿½ï¿½20ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ì¡ï¿½
 
 		
 		if (diff > secondary_tf) 
@@ -5712,7 +5712,7 @@ AsirikuyReturnCode EasyTrade::validateSecondaryBars(StrategyParams* pParams, int
 			return ERROR_IN_RATES_RETRIEVAL;
 		
 
-		if (secondary_rate < MINUTES_PER_HOUR) //Ö»œyÔ‡®”ÈÕ
+		if (secondary_rate < MINUTES_PER_HOUR) //Ö»ï¿½yÔ‡ï¿½ï¿½ï¿½ï¿½
 		{
 			checkedBarNum = (int)((secondaryTimeInfo.tm_hour-startHour) * MINUTES_PER_HOUR + secondaryTimeInfo.tm_min) / secondary_tf;
 		}

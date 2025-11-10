@@ -47,6 +47,26 @@
 
 #define TOTAL_UI_VALUES 20
 
+/* -------------------------------------------------------------------------
+ * Two-Phase UI Emission (Phase 2 Migration)
+ * -------------------------------------------------------------------------
+ * Strategies add preliminary fields early in their logic with addValueToUI().
+ * Certain metrics (risk, PnL, volatility, predictive ATR) can mutate after
+ * order management or late indicator updates. Immediately before flush the
+ * framework recomputes these and calls updateOrAddValueToUI() so front-ends
+ * receive an end-of-tick snapshot.
+ *
+ * Late-refreshed field set (kept small to respect TOTAL_UI_VALUES capacity):
+ *   strategyRisk, strategyRiskNLP, riskPNL, riskPNLNLP, StrategyVolRisk,
+ *   weeklyATR, weeklyMaxATR, dailyATR,
+ *   strategyMarketVolRisk, strategyMarketVolRiskNoTP, AccountRisk,
+ *   pWeeklyPredictATR, pDailyPredictATR (daily proxy when direct value absent).
+ *
+ * Testing helpers getUIValue() & getUICount() support overwrite semantics
+ * verification without exposing internal buffers. Raise TOTAL_UI_VALUES if
+ * the universe of UI fields grows; keep header & implementation aligned.
+ * ------------------------------------------------------------------------- */
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,7 +77,84 @@ extern "C" {
  * Saves an array of string and double to a file
  * so that the front-ends can use this information to draw UI objects
  */
-AsirikuyReturnCode saveUserInterfaceValues(char* userInterfaceVariableNames[15], double userInterfaceValues[15], int userInterfaceElementsCount, int instanceID, BOOL isBackTesting);
+/*
+ * NOTE (Phase 2 Migration): Original prototype used fixed size [15] but
+ * reconstruction of the buffering layer now relies on TOTAL_UI_VALUES (20).
+ * Align the declaration here to avoid mismatched pointer decay warnings
+ * and ensure consistency between header and implementation.
+ */
+AsirikuyReturnCode saveUserInterfaceValues(char* userInterfaceVariableNames[TOTAL_UI_VALUES], double userInterfaceValues[TOTAL_UI_VALUES], int userInterfaceElementsCount, int instanceID, BOOL isBackTesting);
+
+/**
+ * @brief Collect a single UI name/value pair for later persistence.
+ * @details Legacy strategies invoke addValueToUI("Name", value) repeatedly but
+ *          the original implementation is missing from the current codebase.
+ *          This reconstructed version buffers up to TOTAL_UI_VALUES entries
+ *          which can then be flushed using flushUserInterfaceValues(). If the
+ *          buffer is full the value is discarded and a CRITICAL log entry is
+ *          generated. Strategy code previously did not check return values so
+ *          this function returns void for source compatibility.
+ * @param name Null-terminated C string identifying the UI field.
+ * @param value Numeric value associated with the field.
+ */
+void addValueToUI(const char* name, double value);
+
+/**
+ * @brief Update an existing buffered UI value or append it if not present.
+ * @details Searches the current in-memory UI buffer for a matching name
+ *          (pointer/string comparison using strcmp). If found, overwrites the
+ *          stored numeric value in-place. If not found, delegates to
+ *          addValueToUI() to append (subject to TOTAL_UI_VALUES capacity).
+ *          This enables a two-phase UI update pattern where early indicators
+ *          are collected inside strategy logic and mutable, late-cycle metrics
+ *          (such as riskPNL or strategyRisk) are refreshed immediately before
+ *          the centralized flush.
+ * @param name Null-terminated field name.
+ * @param value New numeric value.
+ */
+void updateOrAddValueToUI(const char* name, double value);
+
+/**
+ * @brief Retrieve a buffered UI value by name (testing/diagnostics helper).
+ * @details Performs the same linear search used by updateOrAddValueToUI and returns
+ *          the associated numeric value if found. If not found returns 0.0 and sets
+ *          *found to FALSE. Intended for unit tests to validate two-phase overwrite
+ *          semantics without exposing internal buffer arrays.
+ * @param name UI field name to look up.
+ * @param found Optional out flag set to TRUE when value exists.
+ * @return double Stored value or 0.0 if not found.
+ */
+double getUIValue(const char* name, BOOL* found);
+
+/**
+ * @brief Return current buffered UI element count (testing helper).
+ */
+int getUICount();
+
+/**
+ * @brief Flush accumulated UI values to disk.
+ * @details Writes the buffered pairs using saveUserInterfaceValues() and
+ *          resets the buffer. Safe to call even if no values have been added.
+ * @param instanceID Strategy instance identifier (from settings array).
+ * @param isBackTesting Flag controlling file emission (mirrors existing API).
+ */
+void flushUserInterfaceValues(int instanceID, BOOL isBackTesting);
+
+/**
+ * @brief Harvest standardized strategy telemetry into the UI buffer.
+ * @details Collects a normalized set of key strategy/state metrics after
+ *          strategy logic executes but before late overwrite risk refresh.
+ *          Designed for strategies that do not emit UI values directly
+ *          (e.g. TrendStrategy). Uses updateOrAddValueToUI() so pre-added
+ *          fields are safely overwritten.
+ *          Safe to call multiple times (idempotent for identical values).
+ * @param pParams Strategy parameter/context pointer.
+ * @param pIndicators Strategy indicators pointer.
+ * @param pBase Base indicators pointer (predictive ATR, daily/weekly refs).
+ */
+void harvestStrategyTelemetry(struct StrategyParams* pParams,
+                              struct Indicators* pIndicators,
+                              struct Base_Indicators* pBase);
 
 /**
  * sets the temporary folder used to save the UI files

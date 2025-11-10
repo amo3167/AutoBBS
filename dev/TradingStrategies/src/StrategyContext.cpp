@@ -176,10 +176,83 @@ RatesBuffers* StrategyContext::getRatesBuffers() const {
 }
 
 const Rates& StrategyContext::getRates(BaseRatesIndexes index) const {
-    if (index < 0 || index >= BASE_RATES_INDEXES_COUNT) {
+    if (index < 0 || index >= MAX_RATES_BUFFERS) {
         throw std::out_of_range("Rates index out of range");
     }
     return params_->ratesBuffers->rates[index];
+}
+
+int StrategyContext::getBarsTotal(int ratesIndex) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    return params_->ratesBuffers->rates[ratesIndex].info.arraySize;
+}
+
+time_t StrategyContext::getTime(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.time[shift];
+}
+
+double StrategyContext::getOpen(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.open[shift];
+}
+
+double StrategyContext::getHigh(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.high[shift];
+}
+
+double StrategyContext::getLow(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.low[shift];
+}
+
+double StrategyContext::getClose(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.close[shift];
+}
+
+double StrategyContext::getVolume(int ratesIndex, int shift) const {
+    if (ratesIndex < 0 || ratesIndex >= MAX_RATES_BUFFERS) {
+        throw std::out_of_range("Rates index out of range");
+    }
+    const Rates& rates = params_->ratesBuffers->rates[ratesIndex];
+    if (shift < 0 || shift >= rates.info.arraySize) {
+        throw std::out_of_range("Bar shift out of range");
+    }
+    return rates.volume[shift];
 }
 
 // ============================================================================

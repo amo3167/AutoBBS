@@ -292,6 +292,53 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
     return logAsirikuyError("runStrategy()", returnCode);
   }
 
+  /* Harvest baseline telemetry for strategies that did not emit UI fields */
+  harvestStrategyTelemetry(pParams, pParams->indicators, pParams->baseIndicators);
+
+  /*
+   * Second-phase dynamic UI refresh (late overwrite)
+   */
+  {
+    double strategyRisk              = caculateStrategyRiskEasy(FALSE);
+    double strategyRiskNLP           = caculateStrategyRiskEasy(TRUE);
+    double riskPNL                   = caculateStrategyPNLEasy(FALSE);
+    double riskPNLNLP                = caculateStrategyPNLEasy(TRUE);
+    double strategyVolRisk           = riskPNL - strategyRisk;
+
+    double weeklyATR = 0.0, weeklyATRMax = 0.0;
+    int weeklyRead = readWeeklyATRFile(pParams->tradeSymbol, &weeklyATR, &weeklyATRMax, (BOOL)pParams->settings[IS_BACKTESTING]);
+    if (weeklyRead <= 0) {
+        weeklyATR = iAtrWholeDaysSimple(PRIMARY_RATES_INDEX, (int)pParams->settings[ATR_AVERAGING_PERIOD]);
+    }
+
+    double dailyATR = iAtr(PRIMARY_RATES_INDEX, (int)pParams->settings[ATR_AVERAGING_PERIOD], 0);
+    if (dailyATR < EPSILON) {
+      dailyATR = iAtrWholeDaysSimple(PRIMARY_RATES_INDEX, (int)pParams->settings[ATR_AVERAGING_PERIOD]);
+    }
+
+    double strategyMarketVolRisk = caculateStrategyVolRiskEasy(dailyATR);
+    double strategyMarketVolRiskNoTP = caculateStrategyVolRiskForNoTPOrdersEasy(dailyATR);
+    double accountRiskPercent = pParams->accountInfo.totalOpenTradeRiskPercent;
+
+    updateOrAddValueToUI("strategyRisk", strategyRisk);
+    updateOrAddValueToUI("strategyRiskNLP", strategyRiskNLP);
+    updateOrAddValueToUI("riskPNL", riskPNL);
+    updateOrAddValueToUI("riskPNLNLP", riskPNLNLP);
+    updateOrAddValueToUI("StrategyVolRisk", strategyVolRisk);
+    updateOrAddValueToUI("weeklyATR", weeklyATR);
+    if (weeklyRead > 0) {
+      updateOrAddValueToUI("weeklyMaxATR", weeklyATRMax);
+    }
+    updateOrAddValueToUI("dailyATR", dailyATR);
+    updateOrAddValueToUI("strategyMarketVolRisk", strategyMarketVolRisk);
+    updateOrAddValueToUI("strategyMarketVolRiskNoTP", strategyMarketVolRiskNoTP);
+    updateOrAddValueToUI("AccountRisk", accountRiskPercent);
+    updateOrAddValueToUI("pWeeklyPredictATR", weeklyATR);
+    updateOrAddValueToUI("pDailyPredictATR", dailyATR);
+  }
+
+  flushUserInterfaceValues((int)pParams->settings[STRATEGY_INSTANCE_ID], (BOOL)pParams->settings[IS_BACKTESTING]);
+
   returnCode = writeEquityLog(pParams->currentBrokerTime, pParams->accountInfo.equity, pParams);
   if(returnCode != SUCCESS)
   {

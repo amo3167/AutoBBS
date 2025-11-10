@@ -74,3 +74,20 @@ The build system has been upgraded to support modern toolchains while maintainin
    - Native C++ standard support
    - Better Visual Studio 2022 integration
    - Modern toolchain feature detection
+
+## Two-Phase Strategy UI Emission (Phase 2 Migration)
+
+Strategies populate per-tick UI values via `addValueToUI("Name", value)` during their internal logic (early phase). Some metrics (risk exposure, PnL, volatility, predictive ATR) may change after order management or late indicator updates. To ensure the final snapshot reflects end-of-tick state, the framework now performs a centralized late refresh inside `runStrategy()`:
+
+1. Early collection: Strategy code buffers initial fields (position counts, preliminary ATRs, provisional risk) using `addValueToUI` (capacity `TOTAL_UI_VALUES = 20`).
+2. Late overwrite: Framework recomputes mutable metrics and calls `updateOrAddValueToUI` to overwrite existing entries (or append if they were absent).
+3. Flush: A single call to `flushUserInterfaceValues(instanceId, isBackTesting)` persists the definitive set to disk (`*.ui`).
+
+Currently late-refreshed fields include:
+- `strategyRisk`, `strategyRiskNLP`, `riskPNL`, `riskPNLNLP`, `StrategyVolRisk`
+- `weeklyATR`, `weeklyMaxATR`, `dailyATR`
+- `strategyMarketVolRisk`, `strategyMarketVolRiskNoTP`, `AccountRisk`
+- Predictive ATR proxies: `pWeeklyPredictATR`, `pDailyPredictATR` (daily uses fallback proxy when direct predictive value is unavailable at this layer)
+
+Testing helpers (`getUIValue`, `getUICount`) were added to validate overwrite semantics without exposing internal buffers. Future additions should prefer the overwrite helper to avoid per-strategy churn. If the UI field universe grows beyond 20, raise `TOTAL_UI_VALUES` and keep header/implementation in sync.
+

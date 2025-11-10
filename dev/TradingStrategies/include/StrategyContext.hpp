@@ -213,6 +213,68 @@ public:
      */
     const Rates& getRates(BaseRatesIndexes index) const;
     
+    /**
+     * @brief Get total number of bars for specific timeframe
+     * 
+     * @param ratesIndex BaseRatesIndexes enum (DAILY, WEEKLY, HOURLY, etc.)
+     * @return int Number of bars available
+     */
+    int getBarsTotal(int ratesIndex) const;
+    
+    /**
+     * @brief Get bar time for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return time_t Bar opening time
+     */
+    time_t getTime(int ratesIndex, int shift) const;
+    
+    /**
+     * @brief Get open price for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return double Open price
+     */
+    double getOpen(int ratesIndex, int shift) const;
+    
+    /**
+     * @brief Get high price for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return double High price
+     */
+    double getHigh(int ratesIndex, int shift) const;
+    
+    /**
+     * @brief Get low price for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return double Low price
+     */
+    double getLow(int ratesIndex, int shift) const;
+    
+    /**
+     * @brief Get close price for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return double Close price
+     */
+    double getClose(int ratesIndex, int shift) const;
+    
+    /**
+     * @brief Get volume for specific timeframe and shift
+     * 
+     * @param ratesIndex BaseRatesIndexes enum
+     * @param shift Bar index (0 = current, 1 = previous, etc.)
+     * @return double Tick volume
+     */
+    double getVolume(int ratesIndex, int shift) const;
+    
     // ========================================================================
     // Order Information
     // ========================================================================
