@@ -19,7 +19,7 @@
 !/vendor/Gaul/**
 
 # Temporary files
- /tmp/
+/tmp/
 *.tmp
 *.log
 *.swp
