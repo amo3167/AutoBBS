@@ -7,11 +7,6 @@ project "AsirikuyTechnicalAnalysis"
 	"**.c", 
 	"**.hpp"
   }
-  vpaths{
-	["Header Files"] = "../../../dev/AsirikuyTechnicalAnalysis/include/**.*", 
-	["Source Files"] = "../../../dev/AsirikuyTechnicalAnalysis/src/**.*", 
-	["Unit Tests"]   = "../../../dev/AsirikuyTechnicalAnalysis/tests/**.*"
-  }
   includedirs{
     "src"
   }

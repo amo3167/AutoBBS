@@ -77,7 +77,7 @@ static AsirikuyReturnCode getOldTickVolume(int instanceId, OldTickVolume** ppOld
     }
 
     oldTickVolumeInitialized = TRUE;
-    pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"getOldTickVolume() Initialized old tick volume.");
+    fprintf(stderr, "[NOTICE] getOldTickVolume() Initialized old tick volume.\n");
   }
 
   for(i = 0; i < MAX_INSTANCES; i++)
@@ -99,7 +99,7 @@ static AsirikuyReturnCode getOldTickVolume(int instanceId, OldTickVolume** ppOld
   else
   {
     *ppOldTickVolume = NULL;
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getOldTickVolume() Failed to find oldTickVolume for instance Id: %d", instanceId);
+    fprintf(stderr, "[CRITICAL] getOldTickVolume() Failed to find oldTickVolume for instance Id: %d\n", instanceId);
     returnCode = TOO_MANY_INSTANCES;
   }
   
@@ -110,19 +110,19 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
 {
   if(pSource == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pSource = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pSource = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pDest = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pDest = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest->time == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pDest->time = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pDest->time = NULL\n");
     return NULL_POINTER;
   }
 
@@ -136,11 +136,11 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->time[destIndex] = getAdjustedBrokerTime(((Mql5Rates*)pSource)[sourceIndex].time, tzOffsets);
     }
-    if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
-    {
-      char timeString[MAX_TIME_STRING_SIZE];
-	  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() time[%d] = %s,ratesIndex=%d", destIndex, safe_timeString(timeString, pDest->time[destIndex]), ratesIndex);
-    }
+    // Debug logging - uncomment if needed
+    // {
+    //   char timeString[MAX_TIME_STRING_SIZE];
+    //   fprintf(stderr, "[DEBUG] copyBar() time[%d] = %s,ratesIndex=%d\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]), ratesIndex);
+    // }
   }
 
   if(pDest->open)
@@ -153,7 +153,7 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->open[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].open;
     }
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() open[%d] = %f,ratesIndex=%d", destIndex, pDest->open[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] copyBar() open[%d] = %f,ratesIndex=%d", destIndex, pDest->open[destIndex], ratesIndex);
   }
 
   if(pDest->high)
@@ -166,7 +166,7 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->high[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].high;
     }
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() high[%d] = %f,ratesIndex=%d", destIndex, pDest->high[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] copyBar() high[%d] = %f,ratesIndex=%d", destIndex, pDest->high[destIndex], ratesIndex);
   }
 
   if(pDest->low)
@@ -179,7 +179,7 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->low[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].low;
     }
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() low[%d] = %f,ratesIndex=%d", destIndex, pDest->low[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] copyBar() low[%d] = %f,ratesIndex=%d", destIndex, pDest->low[destIndex], ratesIndex);
   }
 
   if(pDest->close)
@@ -192,7 +192,7 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->close[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].close;
     }
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() close[%d] = %f,ratesIndex=%d", destIndex, pDest->close[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] copyBar() close[%d] = %f,ratesIndex=%d", destIndex, pDest->close[destIndex], ratesIndex);
   }
 
   if(pDest->volume)
@@ -205,7 +205,7 @@ static AsirikuyReturnCode copyBar(MQLVersion mqlVersion, const void* pSource, in
     {
       pDest->volume[destIndex] = (double)((Mql5Rates*)pSource)[sourceIndex].tick_volume;
     }
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() volume[%d] = %f,ratesIndex=%d", destIndex, pDest->volume[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] copyBar() volume[%d] = %f,ratesIndex=%d", destIndex, pDest->volume[destIndex], ratesIndex);
   }
 
   return SUCCESS;
@@ -216,7 +216,8 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
   time_t mqlTime, destTime;
   OldTickVolume* pOldTickVolume;
   AsirikuyReturnCode returnCode = getOldTickVolume(instanceId, &pOldTickVolume);
-  pan_sev_t level = PANTHEIOS_SEV_DEBUG;
+  // Pantheios removed - using standard logging
+  // pan_sev_t level = PANTHEIOS_SEV_DEBUG;
 
   //if (ratesIndex == 1) // Normally rateindex =1 means daily rate for BBS
 	 // level = PANTHEIOS_SEV_INFORMATIONAL;
@@ -229,19 +230,19 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
 
   if(pSource == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pSource = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pSource = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pDest = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pDest = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest->time == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pDest->time = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pDest->time = NULL\n");
     return NULL_POINTER;
   }
 
@@ -262,11 +263,11 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
       pDest->time[destIndex] = mqlTime;
     }
 
-    if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
-    {
-      char timeString[MAX_TIME_STRING_SIZE];
-	  pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() time[%d] = %s,ratesIndex=%d", destIndex, safe_timeString(timeString, pDest->time[destIndex]), ratesIndex);
-    }
+    // Debug logging - uncomment if needed
+    // {
+    //   char timeString[MAX_TIME_STRING_SIZE];
+    //   fprintf(stderr, "[DEBUG] mergeBar() time[%d] = %s,ratesIndex=%d\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]), ratesIndex);
+    // }
   }
 
   if(pDest->open)
@@ -282,7 +283,7 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
         pDest->open[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].open;
       }
     }
-	pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() open[%d] = %lf,ratesIndex=%d", destIndex, pDest->open[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] mergeBar() open[%d] = %lf,ratesIndex=%d", destIndex, pDest->open[destIndex], ratesIndex);
   }
 
   if(pDest->high)
@@ -302,7 +303,7 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
     {
       pDest->high[destIndex] = sourceHigh;
     }
-	pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() high[%d] = %lf,ratesIndex=%d", destIndex, pDest->high[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] mergeBar() high[%d] = %lf,ratesIndex=%d", destIndex, pDest->high[destIndex], ratesIndex);
   }
 
   if(pDest->low)
@@ -322,7 +323,7 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
     {
       pDest->low[destIndex] = sourceLow;
     }
-	pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() low[%d] = %lf,ratesIndex=%d", destIndex, pDest->low[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] mergeBar() low[%d] = %lf,ratesIndex=%d", destIndex, pDest->low[destIndex], ratesIndex);
   }
 
   if(pDest->close)
@@ -338,7 +339,7 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
         pDest->close[destIndex] = ((Mql5Rates*)pSource)[sourceIndex].close;
       }
     }
-	pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() close[%d] = %lf,ratesIndex=%d", destIndex, pDest->close[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] mergeBar() close[%d] = %lf,ratesIndex=%d", destIndex, pDest->close[destIndex], ratesIndex);
   }
 
   if(pDest->volume)
@@ -368,7 +369,7 @@ static AsirikuyReturnCode mergeBar(MQLVersion mqlVersion, int instanceId, int ra
     }
     pOldTickVolume->oldTime[ratesIndex]   = mqlTime;
     pOldTickVolume->oldVolume[ratesIndex] = sourceVolume;
-	pantheios_logprintf(level, (PAN_CHAR_T*)"mergeBar() volume[%d] = %lf,ratesIndex=%d", destIndex, pDest->volume[destIndex], ratesIndex);
+	// fprintf(stderr, "[DEBUG] mergeBar() volume[%d] = %lf,ratesIndex=%d", destIndex, pDest->volume[destIndex], ratesIndex);
   }
 
   return SUCCESS;
@@ -387,7 +388,7 @@ static AsirikuyReturnCode reprocessConvertedBar(StrategyParams* pParams,MQLVersi
     epochOffset = EPOCH_WEEK_OFFSET;
   }
   
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"reprocessConvertedBar() ratesIndex = %d, convertedRatesIndex = %d", ratesIndex, convertedRatesIndex);
+  // fprintf(stderr, "[DEBUG] "reprocessConvertedBar() ratesIndex = %d, convertedRatesIndex = %d", ratesIndex, convertedRatesIndex);
 
   returnCode = copyBar(mqlVersion, pMqlRates, ratesBufferIndex, pConvertedRates, convertedRatesIndex, tzOffsets, ratesIndex);
   if(returnCode != SUCCESS)
@@ -456,7 +457,7 @@ static AsirikuyReturnCode convertCurrentMqlBar(MQLVersion mqlVersion, StrategyPa
 
   if(mqlTime0 < 0 || mqlTime1 < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"Discarding candle with invalid timestamp");
+    fprintf(stderr, "[WARNING] Discarding candle with invalid timestamp\n");
     return SUCCESS;
   }
 
@@ -468,7 +469,7 @@ static AsirikuyReturnCode convertCurrentMqlBar(MQLVersion mqlVersion, StrategyPa
 
   if (!isValidTradingTime(pParams,mqlTime0))
   {
-	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"convertCurrentMqlBar() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, mqlTime0));
+	fprintf(stderr, "[WARNING] convertCurrentMqlBar() Discarding unusable bar. Bar time = %s\n", safe_timeString(timeString, mqlTime0));
     return SUCCESS;
   }
 
@@ -484,13 +485,13 @@ static AsirikuyReturnCode convertCurrentMqlBar(MQLVersion mqlVersion, StrategyPa
     }
   }
    
-  //Èç¹ûÖØÆôºó£¬Ê§È¥ÁËÀúÊ·µÄhour bars,Ëü¾Í²»ÄÜÖØ×éprevious daily bar. 
+  //ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ê§È¥ï¿½ï¿½ï¿½ï¿½Ê·ï¿½ï¿½hour bars,ï¿½ï¿½ï¿½Í²ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½previous daily bar. 
   if(  ((mqlTime0 + epochOffset) / TIME_FRAME_IN_SECONDS) > ((mqlTime1 + epochOffset) / TIME_FRAME_IN_SECONDS)
     && (mqlTime0 != pParams->ratesBuffers->rates[ratesIndex].time[convertedShift0Index]))
   {  
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertCurrentMqlBar() Testing .... strategyID= %d,ratesIndex=%d,mqlShift0Index=%d, mqlTime0=%s,mqlShift1Index =%d,mqlTime1=%s,convertedShift0Index=%d,converted bar time=%s", (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex, mqlShift0Index, safe_timeString(timeString, mqlTime0), mqlShift1Index, safe_timeString(timeString2, mqlTime1), convertedShift0Index, safe_timeString(timeString3, pParams->ratesBuffers->rates[ratesIndex].time[convertedShift0Index]));
+	// fprintf(stderr, "[DEBUG] convertCurrentMqlBar() Testing .... strategyID= %d,ratesIndex=%d,mqlShift0Index=%d, mqlTime0=%s,mqlShift1Index =%d,mqlTime1=%s,convertedShift0Index=%d,converted bar time=%s", (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex, mqlShift0Index, safe_timeString(timeString, mqlTime0), mqlShift1Index, safe_timeString(timeString2, mqlTime1), convertedShift0Index, safe_timeString(timeString3, pParams->ratesBuffers->rates[ratesIndex].time[convertedShift0Index]));
 
-	// ¶¯Ì¬µÄÔö¼Óbuffer
+	// ï¿½ï¿½Ì¬ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½buffer
     incrementRatesOffset((int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex);
 
 	// Add the latest one
@@ -560,7 +561,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(MQLVersion mqlVersion, StrategyPa
         pParams->ratesBuffers->rates[ratesIndex].info.isBufferFull = TRUE;
         return SUCCESS;
       }
-	  pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusuable bar. Bar time = %s", safe_timeString(timeString, mqlTime));
+	  fprintf(stderr, "[WARNING] fillEmptyRatesBuffer() Discarding unusuable bar. Bar time = %s\n", safe_timeString(timeString, mqlTime));
     
 	  if(mqlVersion == MQL4)
 		{
@@ -605,7 +606,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(MQLVersion mqlVersion, StrategyPa
         return SUCCESS;
       }
 
-    	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, mqlTime));
+    	fprintf(stderr, "[WARNING] fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s\n", safe_timeString(timeString, mqlTime));
     
 	  if(mqlVersion == MQL4)
 		{
@@ -616,11 +617,11 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(MQLVersion mqlVersion, StrategyPa
 			mqlTime = getAdjustedBrokerTime(((Mql5Rates*)pMqlRates)[mqlRatesBufferIndex].time, tzOffsets);
 		}
 	}
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Testing.... strategyID= %d,ratesIndex=%d,  mqlRatesBufferIndex =%d, mqlTime=%s, converted bar time=%s", (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex,mqlRatesBufferIndex, safe_timeString(timeString, mqlTime), safe_timeString(timeString2, pParams->ratesBuffers->rates[ratesIndex].time[convertedRatesBufferIndex]));
+	// fprintf(stderr, "[DEBUG] Testing.... strategyID= %d,ratesIndex=%d,  mqlRatesBufferIndex =%d, mqlTime=%s, converted bar time=%s", (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex,mqlRatesBufferIndex, safe_timeString(timeString, mqlTime), safe_timeString(timeString2, pParams->ratesBuffers->rates[ratesIndex].time[convertedRatesBufferIndex]));
 
     while((mqlRatesBufferIndex >= 0) && (((mqlTime + epochOffset) / TIME_FRAME_IN_SECONDS) == ((pParams->ratesBuffers->rates[ratesIndex].time[convertedRatesBufferIndex] + epochOffset) / TIME_FRAME_IN_SECONDS)))
     {
-		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"fillEmptyRatesBuffer() mergebar.....strategyID =%d, Bar time = %s, ratesIndex=%d, mqlRatesBufferIndex=%d,convertedRatesBufferIndex=%d", (int)pParams->settings[STRATEGY_INSTANCE_ID], safe_timeString(timeString, mqlTime), ratesIndex, mqlRatesBufferIndex, convertedRatesBufferIndex);
+		// fprintf(stderr, "[DEBUG] fillEmptyRatesBuffer() mergebar.....strategyID =%d, Bar time = %s, ratesIndex=%d, mqlRatesBufferIndex=%d,convertedRatesBufferIndex=%d", (int)pParams->settings[STRATEGY_INSTANCE_ID], safe_timeString(timeString, mqlTime), ratesIndex, mqlRatesBufferIndex, convertedRatesBufferIndex);
 
       returnCode = mergeBar(mqlVersion, (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex, pMqlRates, mqlRatesBufferIndex, &pParams->ratesBuffers->rates[ratesIndex], convertedRatesBufferIndex, tzOffsets);
       if(returnCode != SUCCESS)
@@ -652,7 +653,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(MQLVersion mqlVersion, StrategyPa
           return SUCCESS;
         }
 
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, mqlTime));
+		fprintf(stderr, "[WARNING] fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s\n", safe_timeString(timeString, mqlTime));
       
 		if(mqlVersion == MQL4)
 		{
@@ -676,12 +677,12 @@ AsirikuyReturnCode convertRatesArray(MQLVersion mqlVersion, StrategyParams* pPar
   {
     if(!pParams->ratesBuffers->rates[ratesIndex].info.isBufferFull)
     {
-      pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertRatesArray() Filling empty rates buffer.");
+      // fprintf(stderr, "[DEBUG] "convertRatesArray() Filling empty rates buffer.");
       return fillEmptyRatesBuffer(mqlVersion, pParams, tzOffsets, pMqlRatesInfo, pMqlRates, ratesIndex);
     }
     else
     {
-      pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertRatesArray() Converting new MQL4 bar.");
+      // fprintf(stderr, "[DEBUG] "convertRatesArray() Converting new MQL4 bar.");
       return convertCurrentMqlBar(mqlVersion, pParams, tzOffsets, pMqlRatesInfo, pMqlRates, ratesIndex);
     }
   }
@@ -725,7 +726,7 @@ AsirikuyReturnCode convertRatesArrays(
 
     if((int)pMqlRatesInfo[i].ratesArraySize < (int)(pMqlRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pMqlRatesInfo[i].requiredTimeframe / pMqlRatesInfo[i].actualTimeframe))
     {
-      pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"convertRatesArrays() failed. Not enough rates data. Mql rates index = %d, array size = %d, required = %d", i, (int)pMqlRatesInfo[i].ratesArraySize, (int)(pMqlRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pMqlRatesInfo[i].requiredTimeframe / pMqlRatesInfo[i].actualTimeframe));
+      fprintf(stderr, "[ERROR] convertRatesArrays() failed. Not enough rates data. Mql rates index = %d, array size = %d, required = %d\n", i, (int)pMqlRatesInfo[i].ratesArraySize, (int)(pMqlRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pMqlRatesInfo[i].requiredTimeframe / pMqlRatesInfo[i].actualTimeframe));
       return NOT_ENOUGH_RATES_DATA;
     }
 
@@ -986,85 +987,85 @@ AsirikuyReturnCode convertMqlParameters(
 
   if(pMqlSettings == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlSettings = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlSettings = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlTradeSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlTradeSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlTradeSymbol = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlAccountCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlAccountCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlAccountCurrency = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlBrokerName = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlRefBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlRefBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlRefBrokerName = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlCurrentBrokerTime == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlCurrentBrokerTime = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlCurrentBrokerTime = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlOpenOrdersCount == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlOpenOrdersCount = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlOpenOrdersCount = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlOrderInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlOrderInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlOrderInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlAccountInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlAccountInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlAccountInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlBidAsk == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlBidAsk = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlBidAsk = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlRatesInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlRatesInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlRatesInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlRates_0 == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlRates_0 = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlRates_0 = NULL\n");
     return NULL_POINTER;
   }
 
   if(pMqlResults == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pMqlResults = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pMqlResults = NULL\n");
     return NULL_POINTER;
   }
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertMqlParameters() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] convertMqlParameters() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -1096,7 +1097,7 @@ AsirikuyReturnCode allocateOrderInfo(StrategyParams* pParams, int orderInfoArray
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"allocateOrderInfo() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] allocateOrderInfo() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -1109,7 +1110,7 @@ AsirikuyReturnCode freeOrderInfo(StrategyParams* pParams)
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"freeOrderInfo() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] freeOrderInfo() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 

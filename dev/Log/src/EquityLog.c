@@ -1,4 +1,5 @@
 /**
+#include <stdio.h>
  * @file
  * @brief     Logs account equity to a file for use by Asirikuy statistical analysis tools.
  * 
@@ -57,11 +58,11 @@ void initEquityLog(BOOL enableEquityLog, const char* folderName)
 
   if(gEnableEquityLog)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Equity log enabled. Path = %s", gEquityLogPath);
+    fprintf(stderr, "[NOTICE] Equity log enabled. Path = %s\n", gEquityLogPath);
   }
   else
   {
-    pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Equity log disabled.");
+    fprintf(stderr, "[NOTICE] Equity log disabled.\n");
   }
 }
 

@@ -48,6 +48,7 @@
 #include "TradingWeekBoundaries.h"
 #include "OrderManagement.h"
 #include "StrategyUserInterface.h"
+#include "AsirikuyTime.h"
 
 #include "RecordBars.h"
 #include "Screening.h"
@@ -111,91 +112,91 @@ static AsirikuyReturnCode validateCommonStrategySettings(StrategyParams* pParams
 {
   if(pParams == NULL)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] validateCommonStrategySettings() failed. pParams = NULL\n\n");
     return NULL_POINTER;
   }
 
   if((int)pParams->settings[MAX_OPEN_ORDERS] <= -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. MAX_OPEN_ORDERS must be greater than 0. MAX_OPEN_ORDERS = ", (int)pParams->settings[MAX_OPEN_ORDERS]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. MAX_OPEN_ORDERS must be greater than 0. MAX_OPEN_ORDERS = ", (int)pParams->settings[MAX_OPEN_ORDERS]);
     return INVALID_PARAMETER;
   }
 
   if(((int)pParams->settings[IS_BACKTESTING] != TRUE) && ((int)pParams->settings[IS_BACKTESTING] != FALSE))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. IS_BACKTESTING must be set to 0 or 1. IS_BACKTESTING = %d", (int)pParams->settings[IS_BACKTESTING]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. IS_BACKTESTING must be set to 0 or 1. IS_BACKTESTING = %d", (int)pParams->settings[IS_BACKTESTING]);
     return INVALID_PARAMETER;
   }
 
   if(((int)pParams->settings[DISABLE_COMPOUNDING] != TRUE) && ((int)pParams->settings[DISABLE_COMPOUNDING] != FALSE))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. DISABLE_COMPOUNDING must be set to 0 or 1. DISABLE_COMPOUNDING = %d", (int)pParams->settings[DISABLE_COMPOUNDING]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. DISABLE_COMPOUNDING must be set to 0 or 1. DISABLE_COMPOUNDING = %d", (int)pParams->settings[DISABLE_COMPOUNDING]);
     return INVALID_PARAMETER;
   }
 
   if((int)pParams->settings[TIMED_EXIT_BARS] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. TIMED_EXIT_BARS must be greater than or equal to 0. TIMED_EXIT_BARS = %d", (int)pParams->settings[TIMED_EXIT_BARS]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. TIMED_EXIT_BARS must be greater than or equal to 0. TIMED_EXIT_BARS = %d", (int)pParams->settings[TIMED_EXIT_BARS]);
     return INVALID_PARAMETER;
   }
 
   if(((int)pParams->settings[OPERATIONAL_MODE] < MODE_DISABLE) || ((int)pParams->settings[OPERATIONAL_MODE] > MODE_MONITOR))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. OPERATIONAL_MODE must be set to 0, 1, or 2. OPERATIONAL_MODE = %d", (int)pParams->settings[OPERATIONAL_MODE]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. OPERATIONAL_MODE must be set to 0, 1, or 2. OPERATIONAL_MODE = %d", (int)pParams->settings[OPERATIONAL_MODE]);
     return INVALID_PARAMETER;
   }
 
   if((int)pParams->settings[STRATEGY_INSTANCE_ID] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. STRATEGY_INSTANCE_ID must be greater than or equal to 0. STRATEGY_INSTANCE_ID = ", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. STRATEGY_INSTANCE_ID must be greater than or equal to 0. STRATEGY_INSTANCE_ID = ", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
     return INVALID_PARAMETER;
   }
 
   if((int)pParams->settings[TIMEFRAME] <= -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. TIMEFRAME must be greater than 0. TIMEFRAME = %d", (int)pParams->settings[TIMEFRAME]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. TIMEFRAME must be greater than 0. TIMEFRAME = %d", (int)pParams->settings[TIMEFRAME]);
     return INVALID_PARAMETER;
   }
 
   if(pParams->settings[ACCOUNT_RISK_PERCENT] <= -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. ACCOUNT_RISK_PERCENT must be greater than 0. ACCOUNT_RISK_PERCENT = %lf", pParams->settings[ACCOUNT_RISK_PERCENT]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. ACCOUNT_RISK_PERCENT must be greater than 0. ACCOUNT_RISK_PERCENT = %lf", pParams->settings[ACCOUNT_RISK_PERCENT]);
     return INVALID_PARAMETER;
   }
 
   if(pParams->settings[MAX_DRAWDOWN_PERCENT] <= -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. MAX_DRAWDOWN_PERCENT must be greater than 0. MAX_DRAWDOWN_PERCENT = %lf", pParams->settings[MAX_DRAWDOWN_PERCENT]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. MAX_DRAWDOWN_PERCENT must be greater than 0. MAX_DRAWDOWN_PERCENT = %lf", pParams->settings[MAX_DRAWDOWN_PERCENT]);
     return INVALID_PARAMETER;
   }
 
   if(pParams->settings[MAX_SPREAD] <= -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. MAX_SPREAD must be greater than 0. MAX_SPREAD = %lf", pParams->settings[MAX_SPREAD]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. MAX_SPREAD must be greater than 0. MAX_SPREAD = %lf", pParams->settings[MAX_SPREAD]);
     return INVALID_PARAMETER;
   }
 
   if(pParams->settings[SL_ATR_MULTIPLIER] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. SL_ATR_MULTIPLIER must be greater than or equal to 0. SL_ATR_MULTIPLIER = %lf", pParams->settings[SL_ATR_MULTIPLIER]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. SL_ATR_MULTIPLIER must be greater than or equal to 0. SL_ATR_MULTIPLIER = %lf", pParams->settings[SL_ATR_MULTIPLIER]);
     return INVALID_PARAMETER;
   }
 
   if(pParams->settings[TP_ATR_MULTIPLIER] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. TP_ATR_MULTIPLIER must be greater than or equal to 0. TP_ATR_MULTIPLIER = %lf", pParams->settings[TP_ATR_MULTIPLIER]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. TP_ATR_MULTIPLIER must be greater than or equal to 0. TP_ATR_MULTIPLIER = %lf", pParams->settings[TP_ATR_MULTIPLIER]);
     return INVALID_PARAMETER;
   }
 
   if((int)pParams->settings[ATR_AVERAGING_PERIOD] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. ATR_AVERAGING_PERIOD must be greater than 0. ATR_AVERAGING_PERIOD = %d", (int)pParams->settings[ATR_AVERAGING_PERIOD]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. ATR_AVERAGING_PERIOD must be greater than 0. ATR_AVERAGING_PERIOD = %d", (int)pParams->settings[ATR_AVERAGING_PERIOD]);
     return INVALID_PARAMETER;
   }
 
   if((int)pParams->settings[ORDERINFO_ARRAY_SIZE] < -EPSILON)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateCommonStrategySettings() failed. ORDERINFO_ARRAY_SIZE must be greater than or equal to 0. ORDERINFO_ARRAY_SIZE = %d", (int)pParams->settings[ORDERINFO_ARRAY_SIZE]);
+    fprintf(stderr, "[ERROR] validateCommonStrategySettings() failed. ORDERINFO_ARRAY_SIZE must be greater than or equal to 0. ORDERINFO_ARRAY_SIZE = %d", (int)pParams->settings[ORDERINFO_ARRAY_SIZE]);
     return INVALID_PARAMETER;
   }
 
@@ -211,14 +212,14 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
   char   timeString[MAX_TIME_STRING_SIZE] = "";
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runStrategy() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] runStrategy() failed. pParams = NULL\n\n");
     return NULL_POINTER;
   }
 
   /* Check that Bid/Ask are not zero */
   if(pParams->bidAsk.bid[0] < EPSILON || pParams->bidAsk.ask[0] < EPSILON)
   {
-	pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runStrategy() failed. Bid or Ask is zero");
+	fprintf(stderr, "[CRITICAL] runStrategy() failed. Bid or Ask is zero\n\n");
     return BID_ASK_IS_ZERO;
   }
 
@@ -232,7 +233,7 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
 
 	  if (timeInfo1.tm_hour == 1 && timeInfo1.tm_min < 2)
 	  {
-		  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Start skiping tick on XAUUSD on %s", timeString);
+		  fprintf(stderr, "[INFO] Start skiping tick on XAUUSD on %s", timeString);
 		  return SUCCESS;
 	  }
 
@@ -242,7 +243,7 @@ AsirikuyReturnCode runStrategy(StrategyParams* pParams)
   {
 
     safe_timeString(timeString, pParams->currentBrokerTime);
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runStrategy() failed. Invalid trading time: %s", timeString);
+    fprintf(stderr, "[CRITICAL] runStrategy() failed. Invalid trading time: %s", timeString);
 	return SUCCESS;
   }
     
@@ -311,7 +312,7 @@ AsirikuyReturnCode clearStrategyResults(StrategyParams* pParams)
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"clearStrategyResults() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] clearStrategyResults() failed. pParams = NULL\n\n");
     return NULL_POINTER;
   }
 

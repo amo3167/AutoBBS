@@ -78,7 +78,7 @@ static AsirikuyReturnCode getOldTickVolume(int instanceId, OldTickVolume** ppOld
     }
 
     oldTickVolumeInitialized = TRUE;
-    pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"getOldTickVolume() Initialized old tick volume.");
+    fprintf(stderr, "[NOTICE] getOldTickVolume() Initialized old tick volume.\n");
   }
 
   for(i = 0; i < MAX_INSTANCES; i++)
@@ -100,7 +100,7 @@ static AsirikuyReturnCode getOldTickVolume(int instanceId, OldTickVolume** ppOld
   else
   {
     *ppOldTickVolume = NULL;
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getOldTickVolume() Failed to find oldTickVolume for instance Id: %d", instanceId);
+    fprintf(stderr, "[CRITICAL] getOldTickVolume() Failed to find oldTickVolume for instance Id: %d\n\n\n", instanceId);
     returnCode = TOO_MANY_INSTANCES;
   }
   
@@ -111,60 +111,61 @@ static AsirikuyReturnCode copyBarC(const CRates* pSource, Rates* pDest, int dest
 {
   if(pSource == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pSource = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pSource = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pDest = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pDest = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest->time == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyBar() failed. pDest->time = NULL");
+    fprintf(stderr, "[CRITICAL] copyBar() failed. pDest->time = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDest->time)
   {
     pDest->time[destIndex] = getAdjustedBrokerTime(pSource->time, tzOffsets);
-    if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
+    // Debug logging - uncomment if needed
+    // if(1)
     {
       char timeString[MAX_TIME_STRING_SIZE];
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() time[%d] = %s", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
+      // fprintf(stderr, "[DEBUG] "copyBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
     }
   }
 
   if(pDest->open)
   {
     pDest->open[destIndex] = pSource->open;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() open[%d] = %f", destIndex, pDest->open[destIndex]);
+    // fprintf(stderr, "[DEBUG] "copyBar() open[%d] = %f\n\n", destIndex, pDest->open[destIndex]);
   }
 
   if(pDest->high)
   {
     pDest->high[destIndex] = pSource->high;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() high[%d] = %f", destIndex, pDest->high[destIndex]);
+    // fprintf(stderr, "[DEBUG] "copyBar() high[%d] = %f\n\n", destIndex, pDest->high[destIndex]);
   }
 
   if(pDest->low)
   {
     pDest->low[destIndex] = pSource->low;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() low[%d] = %f", destIndex, pDest->low[destIndex]);
+    // fprintf(stderr, "[DEBUG] "copyBar() low[%d] = %f\n\n", destIndex, pDest->low[destIndex]);
   }
 
   if(pDest->close)
   {
     pDest->close[destIndex] = pSource->close;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() close[%d] = %f", destIndex, pDest->close[destIndex]);
+    // fprintf(stderr, "[DEBUG] "copyBar() close[%d] = %f\n\n", destIndex, pDest->close[destIndex]);
   }
 
   if(pDest->volume)
   {
     pDest->volume[destIndex] = pSource->volume;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"copyBar() volume[%d] = %f", destIndex, pDest->volume[destIndex]);
+    // fprintf(stderr, "[DEBUG] "copyBar() volume[%d] = %f\n\n", destIndex, pDest->volume[destIndex]);
   }
 
   return SUCCESS;
@@ -177,25 +178,25 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
   AsirikuyReturnCode returnCode = getOldTickVolume(instanceId, &pOldTickVolume);
   if(returnCode != SUCCESS)
   {
-    logAsirikuyError("mergeBar()", returnCode);
+    logAsirikuyError("mergeBar()\n\n", returnCode);
     return returnCode;
   }
 
   if(pSource == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pSource = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pSource = NULL");
     return NULL_POINTER;
   }
 
   if(pDest == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pDest = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pDest = NULL");
     return NULL_POINTER;
   }
 
   if(pDest->time == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"mergeBar() failed. pDest->time = NULL");
+    fprintf(stderr, "[CRITICAL] mergeBar() failed. pDest->time = NULL");
     return NULL_POINTER;
   }
 
@@ -209,10 +210,11 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
       pDest->time[destIndex] = CTime;
     }
 
-    if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
+    // Debug logging - uncomment if needed
+    // if(1)
     {
       char timeString[MAX_TIME_STRING_SIZE];
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() time[%d] = %s", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
+      // fprintf(stderr, "[DEBUG] "mergeBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
     }
   }
 
@@ -222,7 +224,7 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
     {
       pDest->open[destIndex] = pSource->open;
     }
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() open[%d] = %lf", destIndex, pDest->open[destIndex]);
+    // fprintf(stderr, "[DEBUG] "mergeBar() open[%d] = %lf\n\n", destIndex, pDest->open[destIndex]);
   }
 
   if(pDest->high)
@@ -231,7 +233,7 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
     {
       pDest->high[destIndex] = pSource->high;
     }
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() high[%d] = %lf", destIndex, pDest->high[destIndex]);
+    // fprintf(stderr, "[DEBUG] "mergeBar() high[%d] = %lf\n\n", destIndex, pDest->high[destIndex]);
   }
 
   if(pDest->low)
@@ -240,7 +242,7 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
     {
       pDest->low[destIndex] = pSource->low;
     }
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() low[%d] = %lf", destIndex, pDest->low[destIndex]);
+    // fprintf(stderr, "[DEBUG] "mergeBar() low[%d] = %lf\n\n", destIndex, pDest->low[destIndex]);
   }
 
   if(pDest->close)
@@ -249,7 +251,7 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
     {
       pDest->close[destIndex] = pSource->close;
     }
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() close[%d] = %lf", destIndex, pDest->close[destIndex]);
+    // fprintf(stderr, "[DEBUG] "mergeBar() close[%d] = %lf\n\n", destIndex, pDest->close[destIndex]);
   }
 
   if(pDest->volume)
@@ -268,7 +270,7 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
     }
     pOldTickVolume->oldTime[ratesIndex]   = CTime;
     pOldTickVolume->oldVolume[ratesIndex] = pSource->volume;
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"mergeBar() volume[%d] = %lf", destIndex, pDest->volume[destIndex]);
+    // fprintf(stderr, "[DEBUG] "mergeBar() volume[%d] = %lf\n\n", destIndex, pDest->volume[destIndex]);
   }
 
   return SUCCESS;
@@ -287,12 +289,12 @@ static AsirikuyReturnCode reprocessConvertedBar(StrategyParams* pParams,int inst
     epochOffset = EPOCH_WEEK_OFFSET;
   }
   
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"reprocessConvertedBar() ratesIndex = %d, convertedRatesIndex = %d", ratesIndex, convertedRatesIndex);
+  // fprintf(stderr, "[DEBUG] reprocessConvertedBar() ratesIndex = %d, convertedRatesIndex = %d\n", ratesIndex, convertedRatesIndex);
 
   returnCode = copyBarC(&pCRates[ratesBufferIndex], pConvertedRates, convertedRatesIndex, tzOffsets);
   if(returnCode != SUCCESS)
   {
-    logAsirikuyError("reprocessConvertedBar()", returnCode);
+    logAsirikuyError("reprocessConvertedBar()\n\n", returnCode);
     return returnCode;
   }
 
@@ -313,7 +315,7 @@ static AsirikuyReturnCode reprocessConvertedBar(StrategyParams* pParams,int inst
     returnCode = mergeBar(instanceId, ratesIndex, &pCRates[i], pConvertedRates, convertedRatesIndex, tzOffsets);
     if(returnCode != SUCCESS)
     {
-      logAsirikuyError("reprocessConvertedBar()", returnCode);
+      logAsirikuyError("reprocessConvertedBar()\n\n", returnCode);
       return returnCode;
     }
   }
@@ -336,7 +338,7 @@ static AsirikuyReturnCode convertCurrentCBar(StrategyParams* pParams, TZOffsets*
 
    if (CTime0 < 0 || CTime1 < 0)
   {
-	   pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Discarding candle with invalid timestamp");
+	   // fprintf(stderr, "[DEBUG] Discarding candle with invalid timestamp\n");
 	  return SUCCESS;
   }
 
@@ -348,7 +350,7 @@ static AsirikuyReturnCode convertCurrentCBar(StrategyParams* pParams, TZOffsets*
 
   if (!isValidTradingTime(pParams,CTime0))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertCurrentCBar() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, CTime0));
+    // fprintf(stderr, "[DEBUG] "convertCurrentCBar() Discarding unusable bar. Bar time = %s\n\n", safe_timeString(timeString, CTime0));
     return SUCCESS;
   }
 
@@ -365,14 +367,14 @@ static AsirikuyReturnCode convertCurrentCBar(StrategyParams* pParams, TZOffsets*
     returnCode = copyBarC(&pCRates[CShift0Index], &pParams->ratesBuffers->rates[ratesIndex], convertedShift0Index, tzOffsets);
     if(returnCode != SUCCESS)
     {
-      logAsirikuyError("convertCurrentCBar()", returnCode);
+      logAsirikuyError("convertCurrentCBar()\n\n", returnCode);
       return returnCode;
     }
 
 	returnCode = reprocessConvertedBar(pParams,(int)pParams->settings[STRATEGY_INSTANCE_ID], pCRates, ratesIndex, CShift1Index, &pParams->ratesBuffers->rates[ratesIndex], (convertedShift0Index - 1), tzOffsets);
     if(returnCode != SUCCESS)
     {
-      logAsirikuyError("convertCurrentCBar()", returnCode);
+      logAsirikuyError("convertCurrentCBar()\n\n", returnCode);
       return returnCode;
     }
   }
@@ -381,7 +383,7 @@ static AsirikuyReturnCode convertCurrentCBar(StrategyParams* pParams, TZOffsets*
     returnCode = mergeBar((int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex, &pCRates[CShift0Index], &pParams->ratesBuffers->rates[ratesIndex], convertedShift0Index, tzOffsets);
     if(returnCode != SUCCESS)
     {
-      logAsirikuyError("convertCurrentCBar()", returnCode);
+      logAsirikuyError("convertCurrentCBar()\n\n", returnCode);
       return returnCode;
     }
   }
@@ -420,13 +422,13 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(StrategyParams* pParams, TZOffset
 
 	  CTime = getAdjustedBrokerTime(pCRates[CRatesBufferIndex].time, tzOffsets);
 
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusuable bar. Bar time = %s", safe_timeString(timeString, CTime));
+      // fprintf(stderr, "[DEBUG] "fillEmptyRatesBuffer() Discarding unusuable bar. Bar time = %s\n\n", safe_timeString(timeString, CTime));
     }
 
 	returnCode = copyBarC(&pCRates[CRatesBufferIndex], &pParams->ratesBuffers->rates[ratesIndex], convertedRatesBufferIndex, tzOffsets);
     if(returnCode != SUCCESS)
     {
-      logAsirikuyError("fillEmptyRatesBuffer()", returnCode);
+      logAsirikuyError("fillEmptyRatesBuffer()\n\n", returnCode);
       return returnCode;
     }
 
@@ -448,7 +450,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(StrategyParams* pParams, TZOffset
 
 	  CTime = getAdjustedBrokerTime(pCRates[CRatesBufferIndex].time, tzOffsets);
 
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, CTime));
+      // fprintf(stderr, "[DEBUG] "fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s\n\n", safe_timeString(timeString, CTime));
     }
 
     while((CRatesBufferIndex >= 0) && (((CTime + epochOffset) / TIME_FRAME_IN_SECONDS) == ((pParams->ratesBuffers->rates[ratesIndex].time[convertedRatesBufferIndex] + epochOffset) / TIME_FRAME_IN_SECONDS)))
@@ -456,7 +458,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(StrategyParams* pParams, TZOffset
       returnCode = mergeBar((int)pParams->settings[STRATEGY_INSTANCE_ID], ratesIndex, &pCRates[CRatesBufferIndex], &pParams->ratesBuffers->rates[ratesIndex], convertedRatesBufferIndex, tzOffsets);
       if(returnCode != SUCCESS)
       {
-        logAsirikuyError("fillEmptyRatesBuffer()", returnCode);
+        logAsirikuyError("fillEmptyRatesBuffer()\n\n", returnCode);
         return returnCode;
       }
       
@@ -475,7 +477,7 @@ static AsirikuyReturnCode fillEmptyRatesBuffer(StrategyParams* pParams, TZOffset
           pParams->ratesBuffers->rates[ratesIndex].info.isBufferFull = TRUE;
           return SUCCESS;
         }
-        pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s", safe_timeString(timeString, CTime));
+        // fprintf(stderr, "[DEBUG] "fillEmptyRatesBuffer() Discarding unusable bar. Bar time = %s\n\n", safe_timeString(timeString, CTime));
 		
 		CTime = getAdjustedBrokerTime(pCRates[CRatesBufferIndex].time, tzOffsets);
 	  }
@@ -492,12 +494,12 @@ AsirikuyReturnCode convertRatesArrayC(StrategyParams* pParams, TZOffsets* tzOffs
   {
     if(!pParams->ratesBuffers->rates[ratesIndex].info.isBufferFull)
     {
-      pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertRatesArray() Filling empty rates buffer.");
+      // fprintf(stderr, "[DEBUG] "convertRatesArray() Filling empty rates buffer.");
       return fillEmptyRatesBuffer(pParams, tzOffsets, pCRatesInfo, pCRates, ratesIndex);
     }
     else
     {
-      pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"convertRatesArray() Converting new C bar.");
+      // fprintf(stderr, "[DEBUG] "convertRatesArray() Converting new C bar.");
       return convertCurrentCBar(pParams, tzOffsets, pCRatesInfo, pCRates, ratesIndex);
     }
   }
@@ -540,7 +542,7 @@ AsirikuyReturnCode convertRatesArraysC(
 
     if((int)pCRatesInfo[i].ratesArraySize < (int)(pCRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pCRatesInfo[i].requiredTimeframe / pCRatesInfo[i].actualTimeframe))
     {
-      pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"convertRatesArrays() failed. Not enough rates data. C rates index = %d, array size = %d, required = %d", i, (int)pCRatesInfo[i].ratesArraySize, (int)(pCRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pCRatesInfo[i].requiredTimeframe / pCRatesInfo[i].actualTimeframe));
+      fprintf(stderr, "[ERROR] convertRatesArrays() failed. Not enough rates data. C rates index = %d, array size = %d, required = %d\n\n", i, (int)pCRatesInfo[i].ratesArraySize, (int)(pCRatesInfo[i].totalBarsRequired * WEEKEND_BAR_MULTIPLIER * pCRatesInfo[i].requiredTimeframe / pCRatesInfo[i].actualTimeframe));
       return NOT_ENOUGH_RATES_DATA;
     }
 
@@ -556,7 +558,7 @@ AsirikuyReturnCode convertRatesArraysC(
   result = allocateRates(&pParams->ratesBuffers, (int)pParams->settings[STRATEGY_INSTANCE_ID], ratesInfo);
   if(result != SUCCESS)
   {
-    logAsirikuyError("convertRatesArrays()", result);
+    logAsirikuyError("convertRatesArrays()\n\n", result);
     return result;
   }
 
@@ -565,7 +567,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[0], pCRates_0, 0);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index0 ", result);
+      logAsirikuyError("convertRatesArrays() index0 \n\n", result);
       return result;
     }
   }
@@ -575,7 +577,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[1], pCRates_1, 1);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index1 ", result);
+      logAsirikuyError("convertRatesArrays() index1 \n\n", result);
       return result;
     }
   }
@@ -585,7 +587,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[2], pCRates_2, 2);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index2 ", result);
+      logAsirikuyError("convertRatesArrays() index2 \n\n", result);
       return result;
     }
   }
@@ -595,7 +597,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[3], pCRates_3, 3);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index3 ", result);
+      logAsirikuyError("convertRatesArrays() index3 \n\n", result);
       return result;
     }
   }
@@ -605,7 +607,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[4], pCRates_4, 4);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index4 ", result);
+      logAsirikuyError("convertRatesArrays() index4 \n\n", result);
       return result;
     }
   }
@@ -615,7 +617,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[5], pCRates_5, 5);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index5 ", result);
+      logAsirikuyError("convertRatesArrays() index5 \n\n", result);
       return result;
     }
   }
@@ -625,7 +627,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[6], pCRates_6, 6);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index6 ", result);
+      logAsirikuyError("convertRatesArrays() index6 \n\n", result);
       return result;
     }
   }
@@ -635,7 +637,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[7], pCRates_7, 7);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index7 ", result);
+      logAsirikuyError("convertRatesArrays() index7 \n\n", result);
       return result;
     }
   }
@@ -645,7 +647,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[8], pCRates_8, 8);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index8 ", result);
+      logAsirikuyError("convertRatesArrays() index8 \n\n", result);
       return result;
     }
   }
@@ -655,7 +657,7 @@ AsirikuyReturnCode convertRatesArraysC(
     result = convertRatesArrayC(pParams, pTZOffsets, &pCRatesInfo[9], pCRates_9, 9);
     if(result != SUCCESS)
     {
-      logAsirikuyError("convertRatesArrays() index9 ", result);
+      logAsirikuyError("convertRatesArrays() index9 \n\n", result);
       return result;
     }
   }
@@ -800,109 +802,109 @@ AsirikuyReturnCode convertCParameters(
 
   if(pCSettings == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCSettings = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCSettings = NULL");
     return NULL_POINTER;
   }
 
   if(pCTradeSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCTradeSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCTradeSymbol = NULL");
     return NULL_POINTER;
   }
 
   if(pCAccountCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCAccountCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCAccountCurrency = NULL");
     return NULL_POINTER;
   }
 
   if(pCBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCBrokerName = NULL");
     return NULL_POINTER;
   }
 
   if(pCRefBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCRefBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCRefBrokerName = NULL");
     return NULL_POINTER;
   }
 
   if(pCCurrentBrokerTime == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCCurrentBrokerTime = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCCurrentBrokerTime = NULL");
     return NULL_POINTER;
   }
 
   if(pCOpenOrdersCount == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCOpenOrdersCount = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCOpenOrdersCount = NULL");
     return NULL_POINTER;
   }
 
   if(pCOrderInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCOrderInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCOrderInfo = NULL");
     return NULL_POINTER;
   }
 
   if(pCAccountInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCAccountInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCAccountInfo = NULL");
     return NULL_POINTER;
   }
 
   if(pCBidAsk == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCBidAsk = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCBidAsk = NULL");
     return NULL_POINTER;
   }
 
   if(pCRatesInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCRatesInfo = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCRatesInfo = NULL");
     return NULL_POINTER;
   }
 
   if(pCRates_0 == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCRates_0 = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCRates_0 = NULL");
     return NULL_POINTER;
   }
 
   if(pCResults == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCResults = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCResults = NULL");
     return NULL_POINTER;
   }
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pParams = NULL");
     return NULL_POINTER;
   }
 
   if(pCTradeSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCTradeSymbol->string = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCTradeSymbol->string = NULL");
     return NULL_POINTER;
   }
 
   if(pCAccountCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCAccountCurrency->string = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCAccountCurrency->string = NULL");
     return NULL_POINTER;
   }
 
   if(pCBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCBrokerName->string = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCBrokerName->string = NULL");
     return NULL_POINTER;
   }
 
   if(pCRefBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"convertCParameters() failed. pCRefBrokerName->string = NULL");
+    fprintf(stderr, "[CRITICAL] convertCParameters() failed. pCRefBrokerName->string = NULL");
     return NULL_POINTER;
   }
 
@@ -919,7 +921,7 @@ AsirikuyReturnCode convertCParameters(
   returnCode = getTimeOffsets((time_t)*pCCurrentBrokerTime, &pParams->accountInfo, (BOOL)pParams->settings[IS_BACKTESTING], (int)pParams->settings[STRATEGY_INSTANCE_ID], &tzOffsets);
   if(returnCode != SUCCESS)
   {
-    logAsirikuyError("convertCParameters()", returnCode);
+    logAsirikuyError("convertCParameters()\n\n", returnCode);
     return returnCode;
   }
   
@@ -932,7 +934,7 @@ AsirikuyReturnCode allocateOrderInfoC(StrategyParams* pParams, int orderInfoArra
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"allocateOrderInfo() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] allocateOrderInfo() failed. pParams = NULL");
     return NULL_POINTER;
   }
 
@@ -945,7 +947,7 @@ AsirikuyReturnCode freeOrderInfoC(StrategyParams* pParams)
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"freeOrderInfo() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] freeOrderInfo() failed. pParams = NULL");
     return NULL_POINTER;
   }
 

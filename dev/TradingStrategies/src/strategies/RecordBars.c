@@ -75,7 +75,7 @@ AsirikuyReturnCode runRecordBars(StrategyParams* pParams)
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runRecordBars() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] runRecordBars() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -86,11 +86,11 @@ AsirikuyReturnCode runRecordBars(StrategyParams* pParams)
   sprintf(timeframeString, "%d", (int)pParams->settings[TIMEFRAME]);
   strcat(buffer, tempFilePath);
   strcat(buffer, pParams->tradeSymbol);
-  strcat(buffer, "_");
+  strcat(buffer, "_\n");
   strcat(buffer, timeframeString);
   strcat(buffer, extension);
 
-  fp = fopen(buffer,"a");
+  fp = fopen(buffer,"a\n");
   fseek(fp,0, SEEK_END);                
   
   switch( (int)parameter(RECORD_MODE))

@@ -54,6 +54,9 @@
 #define ELLIPTICAL_SL 0
 #define ELLIPTICAL_TP 1
 
+// Forward declaration
+static int backup(char * source_file);
+
 int totalOpenOrders(StrategyParams* pParams, OrderType orderType)
 {
   int i, total = 0;
@@ -152,7 +155,7 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
   /* If the quote symbol's base matches the deposit currency (like a USD account trading the USDJPY pair) then we multiply for 1/quoteSymbol.*/
   if((strcmp(pParams->accountInfo.currency, baseConversionCurrency) == 0))
   {
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"conversionRateBid= %lf, conversionRateAsk = %lf",conversionRateBid,conversionRateAsk );
+	fprintf(stderr, "[DEBUG] conversionRateBid= %lf, conversionRateAsk = %lf", conversionRateBid,conversionRateAsk);
 	if (conversionRateAsk <= 0) // something wrong on MT4 feed
 		conversionRateAsk = pParams->bidAsk.ask[0];	
 	return(lossInQuoteCurrency / conversionRateAsk);
@@ -167,7 +170,7 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
     return(lossInQuoteCurrency * conversionRateBid);
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"maxLossPerLot() failed. Order size calculation will not be accurate. Account currency = %s, Trade symbol = %s.", pParams->accountInfo.currency, pParams->tradeSymbol);
+  fprintf(stderr, "[ERROR] maxLossPerLot() failed. Order size calculation will not be accurate. Account currency = %s, Trade symbol = %s.", pParams->accountInfo.currency, pParams->tradeSymbol);
   return lossInQuoteCurrency;
 }
 
@@ -188,7 +191,7 @@ double calculateOrderSizeWithSpecificRisk(const StrategyParams* pParams, OrderTy
 	orderSize = 0.01 * risk * equity / mLP;
 	orderSize = max(0.01, orderSize);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Risk = %lf, Equity = %lf, maxLossPerLot =%lf,OrderSize = %lf", risk, equity, mLP, orderSize);
+	fprintf(stderr, "[INFO] Risk = %lf, Equity = %lf, maxLossPerLot =%lf,OrderSize = %lf", risk, equity, mLP, orderSize);
 	return orderSize;
 
 }
@@ -211,7 +214,7 @@ double calculateOrderSize(const StrategyParams* pParams, OrderType orderType, do
   orderSize = 0.01 * pParams->settings[ACCOUNT_RISK_PERCENT] * equity / mLP;
   orderSize = max(0.01, orderSize);
     
-  pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"Risk = %lf, Equity = %lf, maxLossPerLot =%lf,OrderSize = %lf", pParams->settings[ACCOUNT_RISK_PERCENT], equity, mLP, orderSize);
+  fprintf(stderr, "[WARNING] Risk = %lf, Equity = %lf, maxLossPerLot =%lf,OrderSize = %lf", pParams->settings[ACCOUNT_RISK_PERCENT], equity, mLP, orderSize);
   return orderSize;
 
 }
@@ -276,7 +279,7 @@ static double calculateMarginRequired(const StrategyParams* pParams, OrderType o
     return(lotSize * conversionBid * pParams->accountInfo.contractSize / pParams->accountInfo.leverage);
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"accurateMarginRequired() failed. Margin protection is not active. Account currency = %s, Trade symbol = %s.", pParams->accountInfo.currency, pParams->tradeSymbol);
+  fprintf(stderr, "[ERROR] accurateMarginRequired() failed. Margin protection is not active. Account currency = %s, Trade symbol = %s.", pParams->accountInfo.currency, pParams->tradeSymbol);
   return 0;
 }
 
@@ -322,14 +325,14 @@ AsirikuyReturnCode checkInternalSL(StrategyParams* pParams, int ratesIndex, int 
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"checkInternalSL() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] checkInternalSL() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
   if(hasEntrySignal(tradingSignals) || hasUpdateSignal(tradingSignals))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"checkInternalSL() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[WARNING] checkInternalSL() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
   }
 
   shift0Index  = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
@@ -345,7 +348,7 @@ AsirikuyReturnCode checkInternalSL(StrategyParams* pParams, int ratesIndex, int 
     if(pParams->orderInfo[i].stopLoss == 0)
     {
       safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-      pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"checkInternalSL() Broker SL = 0. The internal SL cannot be calculated. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+      fprintf(stderr, "[WARNING] checkInternalSL() Broker SL = 0. The internal SL cannot be calculated. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
       continue;
     }
 
@@ -355,7 +358,7 @@ AsirikuyReturnCode checkInternalSL(StrategyParams* pParams, int ratesIndex, int 
       if((internalTradeOpenPrice - currentPrice) >= internalSL)
       {
         safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Internal SL): Close BUY. InstanceID = %d, BarTime = %s, InternalTradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, internalTradeOpenPrice, currentPrice, internalSL);
+        fprintf(stderr, "[INFO] TradeSignal(Internal SL): Close BUY. InstanceID = %d, BarTime = %s, InternalTradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, internalTradeOpenPrice, currentPrice, internalSL);
         addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
       }
     }
@@ -365,7 +368,7 @@ AsirikuyReturnCode checkInternalSL(StrategyParams* pParams, int ratesIndex, int 
       if((currentPrice - internalTradeOpenPrice) >= internalSL)
       {
         safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Internal SL): Close SELL. InstanceID = %d, BarTime = %s, InternalTradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, internalTradeOpenPrice, currentPrice, internalSL);
+        fprintf(stderr, "[INFO] TradeSignal(Internal SL): Close SELL. InstanceID = %d, BarTime = %s, InternalTradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, internalTradeOpenPrice, currentPrice, internalSL);
         addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
       }
     }
@@ -384,14 +387,14 @@ AsirikuyReturnCode checkInternalTP(StrategyParams* pParams, int ratesIndex, int 
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"checkInternalTP() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] checkInternalTP() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
   if(hasEntrySignal(tradingSignals) || hasUpdateSignal(tradingSignals))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"checkInternalTP() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[WARNING] checkInternalTP() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
   }
 
   shift0Index  = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
@@ -407,7 +410,7 @@ AsirikuyReturnCode checkInternalTP(StrategyParams* pParams, int ratesIndex, int 
     if(pParams->orderInfo[i].takeProfit == 0)
     {
       safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-      pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"checkInternalTP() Broker TP = 0. The internal TP cannot be calculated. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+      fprintf(stderr, "[WARNING] checkInternalTP() Broker TP = 0. The internal TP cannot be calculated. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
       continue;
     }
 
@@ -417,7 +420,7 @@ AsirikuyReturnCode checkInternalTP(StrategyParams* pParams, int ratesIndex, int 
       if((currentPrice - internalTradeOpenPrice) >= internalTP)
       {
         safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Internal TP)   : Close BUY. InstanceID = %d, BarTime = %s, TradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pParams->orderInfo[i].openPrice, currentPrice, internalTP);
+        fprintf(stderr, "[INFO] TradeSignal(Internal TP)   : Close BUY. InstanceID = %d, BarTime = %s, TradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pParams->orderInfo[i].openPrice, currentPrice, internalTP);
         addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
       }
     }
@@ -427,7 +430,7 @@ AsirikuyReturnCode checkInternalTP(StrategyParams* pParams, int ratesIndex, int 
       if((internalTradeOpenPrice - currentPrice) >= internalTP)
       {
         safe_timeString(timeString, pParams->ratesBuffers->rates[ratesIndex].time[shift0Index]);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Internal TP)   : Close SELL. InstanceID = %d, BarTime = %s, TradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pParams->orderInfo[i].openPrice, currentPrice, internalTP);
+        fprintf(stderr, "[INFO] TradeSignal(Internal TP)   : Close SELL. InstanceID = %d, BarTime = %s, TradeOpenPrice = %lf, CurrentBarOpenPrice = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pParams->orderInfo[i].openPrice, currentPrice, internalTP);
         addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
       }
     }
@@ -448,7 +451,7 @@ AsirikuyReturnCode checkTimedExit(StrategyParams* pParams, int ratesIndex, int r
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"checkTimedExit() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] checkTimedExit() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -457,7 +460,7 @@ AsirikuyReturnCode checkTimedExit(StrategyParams* pParams, int ratesIndex, int r
   
   if(hasEntrySignal(tradingSignals) || hasUpdateSignal(tradingSignals))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"checkTimedExit() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[WARNING] checkTimedExit() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
   }
 
   for(i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
@@ -483,13 +486,13 @@ AsirikuyReturnCode checkTimedExit(StrategyParams* pParams, int ratesIndex, int r
       if(pParams->orderInfo[i].type == BUY)
       {
         safe_timeString(timeString, virtualOrderEntryTime);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Timed exit)    : Close BUY. InstanceID = %d, virtual order entry time = %s", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+        fprintf(stderr, "[INFO] TradeSignal(Timed exit)    : Close BUY. InstanceID = %d, virtual order entry time = %s", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
         addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
       }
       else if(pParams->orderInfo[i].type == SELL)
       {
         safe_timeString(timeString, virtualOrderEntryTime);
-        pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Timed exit)    : Close SELL. InstanceID = %d, virtual order entry time = %s", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+        fprintf(stderr, "[INFO] TradeSignal(Timed exit)    : Close SELL. InstanceID = %d, virtual order entry time = %s", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
         addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
       }
     }
@@ -505,17 +508,17 @@ AsirikuyReturnCode closeLongTrade(StrategyParams* pParams, int resultsIndex)
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"closeLongTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] closeLongTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
   if(hasEntrySignal(tradingSignals) || hasUpdateSignal(tradingSignals))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"closeLongTrade() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[WARNING] closeLongTrade() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Exit criteria) : Close BUY. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+  fprintf(stderr, "[INFO] TradeSignal(Exit criteria) : Close BUY. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
 	addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
 
@@ -528,17 +531,17 @@ AsirikuyReturnCode closeShortTrade(StrategyParams* pParams, int resultsIndex)
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"closeShortTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] closeShortTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
   if(hasEntrySignal(tradingSignals) || hasUpdateSignal(tradingSignals))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"closeShortTrade() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+    fprintf(stderr, "[WARNING] closeShortTrade() An entry or update signal already exists. This function should be called before generating entry or update signals. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Exit criteria) : Close SELL. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+  fprintf(stderr, "[INFO] TradeSignal(Exit criteria) : Close SELL. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
 	addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
 
@@ -551,7 +554,7 @@ AsirikuyReturnCode setStops(StrategyParams* pParams, int ratesIndex, int results
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"setStops() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] setStops() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -584,13 +587,13 @@ static AsirikuyReturnCode validateNewTrade(StrategyParams* pParams, BOOL* pIsNew
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"validateNewTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] validateNewTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pIsNewTradeAllowed == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"validateNewTrade() failed. pIsNewTradeAllowed = NULL");
+    fprintf(stderr, "[CRITICAL] validateNewTrade() failed. pIsNewTradeAllowed = NULL\n");
     return NULL_POINTER;
   }
 
@@ -603,7 +606,7 @@ static AsirikuyReturnCode validateNewTrade(StrategyParams* pParams, BOOL* pIsNew
 
   /*if(pParams->accountInfo.largestDrawdownPercent >= pParams->settings[MAX_DRAWDOWN_PERCENT])
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateNewTrade() Maximum drawdown exceeded. Drawdown = %lf%%, Maximum = %lf%%", pParams->accountInfo.largestDrawdownPercent, pParams->settings[MAX_DRAWDOWN_PERCENT]);
+    fprintf(stderr, "[ERROR] validateNewTrade() Maximum drawdown exceeded. Drawdown = %lf%%, Maximum = %lf%%", pParams->accountInfo.largestDrawdownPercent, pParams->settings[MAX_DRAWDOWN_PERCENT]);
     return WORST_CASE_SCENARIO;
   }*/
 
@@ -616,7 +619,7 @@ static AsirikuyReturnCode validateNewTrade(StrategyParams* pParams, BOOL* pIsNew
 
   if((pParams->bidAsk.ask[0] - pParams->bidAsk.bid[0]) > pParams->settings[MAX_SPREAD])
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"validateNewTrade() Maximum spread exceeded. Spread = %lf, Maximum = %lf", pParams->bidAsk.ask[0] - pParams->bidAsk.bid[0], pParams->settings[MAX_SPREAD]);
+    fprintf(stderr, "[ERROR] validateNewTrade() Maximum spread exceeded. Spread = %lf, Maximum = %lf", pParams->bidAsk.ask[0] - pParams->bidAsk.bid[0], pParams->settings[MAX_SPREAD]);
     return SPREAD_TOO_WIDE;
   }
 
@@ -632,7 +635,7 @@ AsirikuyReturnCode openOrUpdateLongTrade(StrategyParams* pParams, int ratesIndex
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"openOrUpdateLongTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] openOrUpdateLongTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -663,14 +666,14 @@ AsirikuyReturnCode openOrUpdateLongTrade(StrategyParams* pParams, int ratesIndex
 
   if(totalOpenOrders(pParams, BUY) == 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Entry criteria): Close SELL & Open BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+    fprintf(stderr, "[INFO] TradeSignal(Entry criteria): Close SELL & Open BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_OPEN_BUY, &tradingSignals);
 
 	setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
   }
   else
   {
-    pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Entry criteria): Close SELL & Update BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+    fprintf(stderr, "[INFO] TradeSignal(Entry criteria): Close SELL & Update BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_UPDATE_BUY, &tradingSignals);
   }
 
@@ -688,7 +691,7 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"openOrUpdateShortTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] openOrUpdateShortTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -719,7 +722,7 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
 
   if(totalOpenOrders(pParams, SELL) == 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Entry criteria): Close BUY & Open SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+    fprintf(stderr, "[INFO] TradeSignal(Entry criteria): Close BUY & Open SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_OPEN_SELL, &tradingSignals);
 
 	//only setLastOrderUpdateTime on open a new trade
@@ -728,7 +731,7 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
   }
   else
   {
-    pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Entry criteria): Close BUY & Update SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+    fprintf(stderr, "[INFO] TradeSignal(Entry criteria): Close BUY & Update SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_UPDATE_SELL, &tradingSignals);
   }
   
@@ -749,7 +752,7 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
 	
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"areOrdersCorrect() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] areOrdersCorrect() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -768,13 +771,13 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
 
     if((pParams->orderInfo[i].takeProfit == 0) && (takeProfit != 0))
     {
-      pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"areOrdersCorrect() TP detected to be 0, assuming modification failure, re-running system on bar to correct", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+      fprintf(stderr, "[WARNING] areOrdersCorrect() TP detected to be 0, assuming modification failure, re-running system on bar to correct", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
       return FALSE;
     }
 
     if((pParams->orderInfo[i].stopLoss == 0) && (stopLoss != 0))
     {
-      pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"areOrdersCorrect() SL detected to be 0, assuming modification failure, re-running system on bar to correct", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+      fprintf(stderr, "[WARNING] areOrdersCorrect() SL detected to be 0, assuming modification failure, re-running system on bar to correct", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
       return FALSE;
     }
   }
@@ -786,16 +789,16 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
 	strcat(buffer, instanceIDName);
 	strcat(buffer, extension);
    
-  fp = fopen(buffer,"r");
+  fp = fopen(buffer, "r");
 
   if(fp != NULL)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"areOrdersCorrect() Order error message found, re-running system ");	
+    fprintf(stderr, "[CRITICAL] areOrdersCorrect() Order error message found, re-running system\n");	
     fclose(fp);	
 
 	// backup the failure order file	
 	if (backup(buffer) <0)
-		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Fail to backup file %s ", buffer);
+		fprintf(stderr, "[ERROR] Fail to backup file %s ", buffer);
 
 	
     remove(buffer);
@@ -805,29 +808,29 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
 	return TRUE;
 }
 
-int backup(char * source_file)
+static int backup(char * source_file)
 {
 	char ch;
 	char target_file[MAX_FILE_PATH_CHARS] = "";
 	FILE *source, *target;
 
 	strcat(target_file, source_file);
-	strcat(target_file, ".bak");
+	strcat(target_file, ".bak\n");
 
-	source = fopen(source_file, "r");
+	source = fopen(source_file, "r\n");
 
 	if (source == NULL)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Fail to load source file %s", source_file);
+		fprintf(stderr, "[ERROR] Fail to load source file %s", source_file);
 		return -1;
 	}
 
-	target = fopen(target_file, "w");
+	target = fopen(target_file, "w\n");
 
 	if (target == NULL)
 	{
 		fclose(source);		
-		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Fail to load target file %s", target_file);
+		fprintf(stderr, "[ERROR] Fail to load target file %s", target_file);
 		return -1;
 	}
 
@@ -867,7 +870,7 @@ int logOrderFailFile(FILE *pFile)
 	}
 
 	/* the whole file is now loaded in the memory buffer. */
-	pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)buffer);
+	fprintf(stderr, "[CRITICAL] buffer error\n");
 
 	// terminate	
 	free(buffer);
@@ -884,11 +887,11 @@ int getOrderAge(StrategyParams* pParams, int ratesIndex)
 
   virtualOrderEntryTime = getInstanceState((int)pParams->settings[STRATEGY_INSTANCE_ID])->lastOrderUpdateTime;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Testing12 : InstanceID = %d, virtualOrderEntryTime = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID],virtualOrderEntryTime);
+  fprintf(stderr, "[INFO] Testing12 : InstanceID = %d, virtualOrderEntryTime = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID],virtualOrderEntryTime);
 
   returnCode = barsToPreviousTime(pParams->ratesBuffers->rates[ratesIndex].time, virtualOrderEntryTime, shift0Index, &barsSinceVirtualOrderEntry);
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Testing22223....Kantu System InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+  fprintf(stderr, "[INFO] Testing22223....Kantu System InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
 
   if(returnCode != SUCCESS)
   {
@@ -923,7 +926,7 @@ AsirikuyReturnCode updateLongTrade(StrategyParams* pParams, int ratesIndex, int 
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"updateLongTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] updateLongTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -938,7 +941,7 @@ AsirikuyReturnCode updateLongTrade(StrategyParams* pParams, int ratesIndex, int 
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Only Update): Update BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+  fprintf(stderr, "[INFO] TradeSignal(Only Update): Update BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
   addTradingSignal(SIGNAL_UPDATE_BUY, &tradingSignals);
 
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
@@ -953,7 +956,7 @@ AsirikuyReturnCode updateShortTrade(StrategyParams* pParams, int ratesIndex, int
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"updateShortTrade() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] updateShortTrade() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
@@ -968,7 +971,7 @@ AsirikuyReturnCode updateShortTrade(StrategyParams* pParams, int ratesIndex, int
 
   tradingSignals = (int)pParams->results[resultsIndex].tradingSignals;
 
-  pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TradeSignal(Only Update): Update SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
+  fprintf(stderr, "[INFO] TradeSignal(Only Update): Update SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
   addTradingSignal(SIGNAL_UPDATE_SELL, &tradingSignals);
 
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
@@ -1022,7 +1025,7 @@ AsirikuyReturnCode trailOpenTrades(StrategyParams* pParams, int ratesIndex, doub
 			(pParams->orderInfo[i].type == BUY))
 		{
 
-			pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Trail BUY Stop. new SL = %lf, old SL = %lf, old TP = %lf, ask = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.ask[0]-trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.ask[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
+			fprintf(stderr, "[INFO] Trail BUY Stop. new SL = %lf, old SL = %lf, old TP = %lf, ask = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.ask[0]-trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.ask[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
 			pParams->results[j].brokerSL   = trailDistance;
 			pParams->results[j].internalSL = 0;
 
@@ -1034,7 +1037,7 @@ AsirikuyReturnCode trailOpenTrades(StrategyParams* pParams, int ratesIndex, doub
 			(pParams->orderInfo[i].type == SELL))
 		{	
 			
-			pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"Trail SELL Stop. new SL = %lf, old SL = %lf, old TP = %lf, bid = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.bid[0]+trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.bid[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
+			fprintf(stderr, "[INFO] Trail SELL Stop. new SL = %lf, old SL = %lf, old TP = %lf, bid = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.bid[0]+trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.bid[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
 			pParams->results[j].brokerSL   = trailDistance;
 			pParams->results[j].internalSL = 0;
 
@@ -1147,14 +1150,14 @@ double CalculateEllipticalStopLoss(StrategyParams* pParams, double target, int m
 
   ellipticalStopLoss = cumsd - y ;
 
- // pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"SL -- cumsd = %lf y = %lf var= %10.10lf", cumsd, y, variance);
+ // fprintf(stderr, "[INFO] SL -- cumsd = %lf y = %lf var= %10.10lf", cumsd, y, variance);
 
   return (ellipticalStopLoss);
 }
 
 double CalculateEllipticalTakeProfit(StrategyParams* pParams, double target, int maxHoldingTime, double z, int orderBarsAge)
 {
-  // Print ("FdF.Inst.BBridge.Calc");
+  // Print ("FdF.Inst.BBridge.Calc\n");
    double variance;
    double ellipticalTakeProfit;
    double cumsd, y;
@@ -1170,7 +1173,7 @@ double CalculateEllipticalTakeProfit(StrategyParams* pParams, double target, int
 
    ellipticalTakeProfit = cumsd - y;
 
- // pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"TP -- cumsd = %lf y = %lf var = %10.10lf, maxhold = %d", cumsd, y, variance, maxHoldingTime, orderBarsAge);
+ // fprintf(stderr, "[INFO] TP -- cumsd = %lf y = %lf var = %10.10lf, maxhold = %d", cumsd, y, variance, maxHoldingTime, orderBarsAge);
 
 //   Print (target, " ", sl, " ", cumsd);
    return (ellipticalTakeProfit);

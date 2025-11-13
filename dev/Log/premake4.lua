@@ -7,11 +7,7 @@ project "Log"
 	"**.c", 
 	"**.hpp"
   }
-  vpaths{
-	["Header Files"] = "../../../dev/Log/include/**.*", 
-	["Source Files"] = "../../../dev/Log/src/**.*", 
-	["Unit Tests"]   = "../../../dev/Log/tests/**.*"
-  }
+  -- vpaths not supported in premake4 4.3
   includedirs{
     "src"
   }

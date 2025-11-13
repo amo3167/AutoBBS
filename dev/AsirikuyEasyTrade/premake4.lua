@@ -6,11 +6,8 @@ project "AsirikuyEasyTrade"
 	"**.hpp", 
 	"**.cpp"
   }
-  vpaths{
-	["Header Files"] = "../../../dev/AsirikuyEasyTrade/include/**.*", 
-	["Source Files"] = "../../../dev/AsirikuyEasyTrade/src/**.*", 
-	["Unit Tests"]   = "../../../dev/AsirikuyEasyTrade/tests/**.*"
-  }
   includedirs{
     "src"
   }
+  -- Enable C++11 for Boost compatibility
+  buildoptions{"-std=c++11"}

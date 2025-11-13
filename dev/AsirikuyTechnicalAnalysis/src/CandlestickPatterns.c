@@ -55,31 +55,31 @@ BOOL detectThreeBlackCrows(double atrMultiplier, double atr, const double* pOpen
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeBlackCrows() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeBlackCrows() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeBlackCrows() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeBlackCrows() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 4)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"threeBlackCrows() failed. arraySize < 4");
+    fprintf(stderr, "[ERROR] threeBlackCrows() failed. arraySize < 4\n");
     return FALSE;
   }
 
@@ -111,31 +111,31 @@ BOOL detectThreeWhiteSoldiers(double atrMultiplier, double atr, const double* pO
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeWhiteSoldiers() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeWhiteSoldiers() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeWhiteSoldiers() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectThreeWhiteSoldiers() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 4)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"threeWhiteSoldiers() failed. arraySize < 4");
+    fprintf(stderr, "[ERROR] threeWhiteSoldiers() failed. arraySize < 4\n");
     return FALSE;
   }
 
@@ -165,31 +165,31 @@ BOOL detectHangingMan(double atrMultiplier, double atr, const double* pOpen, con
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHangingMan() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHangingMan() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHangingMan() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHangingMan() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 2)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"hangingMan() failed. arraySize < 2");
+    fprintf(stderr, "[ERROR] hangingMan() failed. arraySize < 2\n");
     return FALSE;
   }
 
@@ -213,31 +213,31 @@ BOOL detectHammer(double atrMultiplier, double atr, const double* pOpen, const d
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHammer() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectHammer() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHammer() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectHammer() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHammer() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectHammer() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectHammer() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectHammer() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 2)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"hammer() failed. arraySize < 2");
+    fprintf(stderr, "[ERROR] hammer() failed. arraySize < 2\n");
     return FALSE;
   }
 
@@ -262,31 +262,31 @@ int detectBearishEngulfing(double atrMultiplier, double atr, const double* pOpen
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishEngulfing() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishEngulfing() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishEngulfing() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishEngulfing() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"bearishEngulfing() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] bearishEngulfing() failed. arraySize < 3\n");
     return FALSE;
   }
 
@@ -316,31 +316,31 @@ BOOL detectBullishEngulfing(double atrMultiplier, double atr, const double* pOpe
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishEngulfing() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishEngulfing() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishEngulfing() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishEngulfing() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"bullishEngulfing() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] bullishEngulfing() failed. arraySize < 3\n");
     return FALSE;
   }
 
@@ -370,19 +370,19 @@ BOOL detectBearishRapidTp(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishRapidTp() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishRapidTp() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBearishRapidTp() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectBearishRapidTp() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"bearishRapidTp() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] bearishRapidTp() failed. arraySize < 3\n");
     return FALSE;
   }
 
@@ -405,19 +405,19 @@ BOOL detectBullishRapidTp(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishRapidTp() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishRapidTp() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectBullishRapidTp() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectBullishRapidTp() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"bullishRapidTp() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] bullishRapidTp() failed. arraySize < 3\n");
     return FALSE;
   }
 
@@ -440,31 +440,31 @@ BOOL detectDarkCloudCover(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectDarkCloudCover() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectDarkCloudCover() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectDarkCloudCover() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectDarkCloudCover() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"darkCloudCover() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] darkCloudCover() failed. arraySize < 3\n");
     return FALSE;
   }
 
@@ -490,31 +490,31 @@ BOOL detectPiercing(double atrMultiplier, double atr, const double* pOpen, const
 
   if(pOpen == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectPiercing() failed. pOpen = NULL");
+    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pOpen = NULL\n");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectPiercing() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectPiercing() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"detectPiercing() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"piercing() failed. arraySize < 3");
+    fprintf(stderr, "[ERROR] piercing() failed. arraySize < 3\n");
     return FALSE;
   }
 

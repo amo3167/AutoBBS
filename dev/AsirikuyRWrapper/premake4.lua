@@ -6,7 +6,3 @@ project "AsirikuyRWrapper"
 	"**.hpp", 
 	"**.cpp"
   }
-  vpaths{
-	["Header Files"] = "**.hpp", 
-	["Source Files"] = "**.cpp", 
-  }

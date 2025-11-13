@@ -58,9 +58,10 @@
 #include <assert.h>
 #include <limits.h>
 
-#include <pantheios/pantheios.h>
-#include <pantheios/backends/bec.file.h>
-#include <pantheios/frontends/fe.simple.h>
+// Pantheios removed - using standard fprintf for logging instead
+// #include <pantheios/pantheios.h>
+// #include <pantheios/backends/bec.file.h>
+// #include <pantheios/frontends/fe.simple.h>
 
 #endif /* PRECOMPILED_H_ */
  

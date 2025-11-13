@@ -6,9 +6,11 @@
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "base.h"
+#include "AsirikuyTime.h"
 #include "ComLib.h"
 #include "StrategyUserInterface.h"
 #include "InstanceStates.h"
+#include <stdio.h>
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
@@ -166,14 +168,14 @@ void profitManagement_base(StrategyParams* pParams, Indicators* pIndicators, Bas
 
 	if (pIndicators->entrySignal != 0 && pIndicators->strategyRiskWithoutLockedProfit  < pIndicators->strategyMaxRisk)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, strategyRisk %lf£º strategyRiskWithoutLockedProfit %lf, skip this entry signal=%d",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, strategyRisk %lfï¿½ï¿½ strategyRiskWithoutLockedProfit %lf, skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->strategyMaxRisk, pIndicators->strategyRiskWithoutLockedProfit, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
 
 	if (pIndicators->riskPNL <  pIndicators->limitRiskPNL && pIndicators->entrySignal != 0)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, PNL riks %lf£ºriskPNLWithoutLockedProfit %lf, skip this entry signal=%d",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, PNL riks %lfï¿½ï¿½riskPNLWithoutLockedProfit %lf, skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->riskPNL, pIndicators->riskPNLWithoutLockedProfit, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -206,7 +208,7 @@ void profitManagementWeekly(StrategyParams* pParams, Indicators* pIndicators, Ba
 		&& pParams->bidAsk.ask[0] > pBase_Indicators->weeklyR2
 		&& pIndicators->riskPNL > targetPNL)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, PNL riks %lf£ºriskPNLWithoutLockedProfit %lf",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, PNL riks %lfï¿½ï¿½riskPNLWithoutLockedProfit %lf",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->riskPNL, pIndicators->riskPNLWithoutLockedProfit);
 
 		closeWinningPositionsEasy(pIndicators->riskPNL, targetPNL);
@@ -215,7 +217,7 @@ void profitManagementWeekly(StrategyParams* pParams, Indicators* pIndicators, Ba
 		&& pParams->bidAsk.bid[0] < pBase_Indicators->weeklyS2
 		&& pIndicators->riskPNL > targetPNL)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, PNL riks %lf£ºriskPNLWithoutLockedProfit %lf",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, PNL riks %lfï¿½ï¿½riskPNLWithoutLockedProfit %lf",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->riskPNL, pIndicators->riskPNLWithoutLockedProfit);
 		closeWinningPositionsEasy(pIndicators->riskPNL, targetPNL);
 	}
@@ -242,7 +244,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 
 	if (noTPOrderDaysNumber >= 4 && pIndicators->entrySignal != 0)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, SamePricePendingNoTPOrdersDays %d, skip this entry signal=%d",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, SamePricePendingNoTPOrdersDays %d, skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, noTPOrderDaysNumber, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -252,7 +254,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 	{
 		if (pIndicators->entrySignal != 0)
 		{
-			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, over dailyR3 skip this entry signal=%d",
+			fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, over dailyR3 skip this entry signal=%d",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 			pIndicators->entrySignal = 0;
 		}
@@ -263,7 +265,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 	{
 		if (pIndicators->entrySignal != 0)
 		{
-			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, under dailyS3 skip this entry signal=%d",
+			fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, under dailyS3 skip this entry signal=%d",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 			pIndicators->entrySignal = 0;
 		}
@@ -279,7 +281,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 		//pIndicators->tradeMode = 0;
 		if (pIndicators->entrySignal != 0)
 		{
-			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, over weeklyR2 skip this entry signal=%d",
+			fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, over weeklyR2 skip this entry signal=%d",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 			pIndicators->entrySignal = 0;
 		}
@@ -291,7 +293,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 		//pIndicators->tradeMode = 0;
 		if (pIndicators->entrySignal != 0)
 		{
-			pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, under weeklyS2 skip this entry signal=%d",
+			fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, under weeklyS2 skip this entry signal=%d",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 			pIndicators->entrySignal = 0;
 		}
@@ -317,7 +319,7 @@ void profitManagement(StrategyParams* pParams, Indicators* pIndicators, Base_Ind
 	//pIndicators->strategyMaxDD = pIndicators->riskPNL - pIndicators->strategyRisk;
 	//if (pIndicators->strategyMaxDD > parameter(AUTOBBS_MAX_STRATEGY_RISK) * 3)
 	//{
-	//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, Max DD %lf",
+	//	fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, Max DD %lf",
 	//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->strategyMaxDD);
 
 	//	closeWinningPositionsEasy(pIndicators->riskPNL, pIndicators->riskPNL);
@@ -332,13 +334,13 @@ AsirikuyReturnCode handleTradeExits(StrategyParams* pParams, Indicators* pIndica
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeExits() failed. pParams = NULL\n\n");
 		return NULL_POINTER;
 	}
 
 	if (pIndicators == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pIndicators = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeExits() failed. pIndicators = NULL\n\n");
 		return NULL_POINTER;
 	}
 
@@ -391,7 +393,7 @@ void traceLatestOpenStopLoss(StrategyParams* pParams, Indicators* pIndicators, B
 	safe_gmtime(&timeInfo1, currentTime);
 	safe_timeString(timeString, currentTime);
 
-	//¼ì²éÊÇ²»ÊÇÒÑ¾­Ôø¾­¹ýÁË 30µã
+	//ï¿½ï¿½ï¿½ï¿½Ç²ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 30ï¿½ï¿½
 	if (pParams->orderInfo[0].ticket != 0 && pParams->orderInfo[0].isOpen == TRUE)
 	{
 		openTime = pParams->orderInfo[0].openTime;
@@ -405,16 +407,16 @@ void traceLatestOpenStopLoss(StrategyParams* pParams, Indicators* pIndicators, B
 		{
 			if (pParams->orderInfo[0].type == BUY)
 			{
-				// ¿ªÊ¼¸ú×ÙÖ¹Ëð£¨Ö¹Ó¯£©
+				// ï¿½ï¿½Ê¼ï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½Ö¹Ó¯ï¿½ï¿½
 				if (pBase_Indicators->dailyTrend_Phase != RANGE_PHASE && high - pParams->orderInfo[0].openPrice >= minTP)
 				{
 
 					takePrice = pParams->orderInfo[0].takeProfit - pParams->bidAsk.ask[0];
 					//stopLoss = pParams->bidAsk.ask[0] - (high - traceSL);
-					//Æ½±££º
+					//Æ½ï¿½ï¿½ï¿½ï¿½
 					stopLoss = pParams->bidAsk.ask[0] - pParams->orderInfo[0].openPrice;
 
-					pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, starting tracing SL for trend orders. dailyTrend_Phase =%ld,floating profit = %lf,takePrice=%lf,stopLoss=%lf",
+					fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, starting tracing SL for trend orders. dailyTrend_Phase =%ld,floating profit = %lf,takePrice=%lf,stopLoss=%lf",
 						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->dailyTrend_Phase, high - pParams->bidAsk.ask[0], takePrice, stopLoss);
 
 					if (takePrice > 0 && stopLoss> 0)
@@ -429,10 +431,10 @@ void traceLatestOpenStopLoss(StrategyParams* pParams, Indicators* pIndicators, B
 				{
 					takePrice = pParams->bidAsk.bid[0] - pParams->orderInfo[0].takeProfit;
 					//stopLoss = low + traceSL - pParams->bidAsk.bid[0];
-					//Æ½±££º
+					//Æ½ï¿½ï¿½ï¿½ï¿½
 					stopLoss = pParams->orderInfo[0].openPrice - pParams->bidAsk.bid[0];
 
-					pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, starting tracing SL for trend orders. dailyTrend_Phase =%ld,floating profit = %lf,takePrice=%lf,stopLoss=%lf",
+					fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, starting tracing SL for trend orders. dailyTrend_Phase =%ld,floating profit = %lf,takePrice=%lf,stopLoss=%lf",
 						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->dailyTrend_Phase, pParams->bidAsk.bid[0] - low, takePrice, stopLoss);
 
 					if (takePrice > 0 && stopLoss> 0)
@@ -476,8 +478,8 @@ BOOL isNextdayMACDPostiveBar2(StrategyParams* pParams, int orderIndex,int startS
 	
 	diffHours = difftime(currentTime, orderOpenTime) / (60 * 60);
 
-	//¼Û¸ñ·½ÏòÏà·´
-	//±ØíšÊÇÏÂÒ»Ìì
+	//ï¿½Û¸ï¿½ï¿½ï¿½ï¿½à·´
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
 	if (
 		((timeInfo1.tm_year == timeInfo2.tm_year && timeInfo1.tm_yday == timeInfo2.tm_yday && timeInfo1.tm_hour == 23 && diffHours > 20)
 		|| ((timeInfo1.tm_year != timeInfo2.tm_year || timeInfo1.tm_yday != timeInfo2.tm_yday) && diffHours > 22 && diffHours < 26)
@@ -521,8 +523,8 @@ BOOL isNextdayMACDPostiveBar(int startShift)
 	//else
 	//	trend1 = DOWN;
 
-	//¼Û¸ñ·½ÏòÏà·´
-	//±ØíšÊÇÏÂÒ»Ìì
+	//ï¿½Û¸ï¿½ï¿½ï¿½ï¿½à·´
+	//ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò»ï¿½ï¿½
 	//it need to have a range 
 	if (
 		preDayRange * preDayRange1 < 0
@@ -590,7 +592,7 @@ int weeklyTrend4HSwingSignal(StrategyParams* pParams, Indicators* pIndicators, B
 	if (pIndicators->atr_euro_range == 0)
 		pIndicators->atr_euro_range = pBase_Indicators->pWeeklyPredictATR *0.4;
 
-	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, high_4H %lf£º low_4H %lf, close_4H=%lf, pWeeklyPredictATR=%lf,pWeeklyPredictMaxATR=%lf,movement=%lf,atr_euro_range=%lf",
+	fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, high_4H %lfï¿½ï¿½ low_4H %lf, close_4H=%lf, pWeeklyPredictATR=%lf,pWeeklyPredictMaxATR=%lf,movement=%lf,atr_euro_range=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, high_4H, low_4H, close_4H, pBase_Indicators->pWeeklyPredictATR, pBase_Indicators->pWeeklyPredictMaxATR, movement, pIndicators->atr_euro_range);
 
 
@@ -629,7 +631,7 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 	{
 		takePrice = pIndicators->takePrice;
 
-		pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"ModifyOrders: takePrice = %lf,takePrice=%lf", takePrice, pIndicators->takePrice);
+		fprintf(stderr, "[INFO] ModifyOrders: takePrice = %lf,takePrice=%lf\n", takePrice, pIndicators->takePrice);
 
 	}
 	
@@ -672,7 +674,7 @@ AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators
 					//stopLoss2 = fabs(pIndicators->entryPrice - pIndicators->bbsStopPrice_primary) + pIndicators->adjust;
 					modifyTradeEasy_DayTrading(SELL, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, pIndicators->stopMovingBackSL);
 				}
-				//else if ((int)parameter(AUTOBBS_TREND_MODE) == 13) //ÔÚ¿ª²Öºó£¬TPÊÇµÍµãµ½¸ßµãµÄ¾àÀë¡£
+				//else if ((int)parameter(AUTOBBS_TREND_MODE) == 13) //ï¿½Ú¿ï¿½ï¿½Öºï¿½TPï¿½ÇµÍµãµ½ï¿½ßµï¿½Ä¾ï¿½ï¿½ë¡£
 				//{
 				//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR / 3);
 				//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode);
@@ -832,7 +834,7 @@ BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicator
 		//safe_gmtime(&adjustTimeInfo, adjustTime);
 		//if (adjustTimeInfo.tm_mon == 11)
 		{
-			strcpy(pIndicators->status, "Filter Martin holiday.");
+			strcpy(pIndicators->status, "Filter Martin holiday.\n\n");
 			isFilter = TRUE;
 		}
 
@@ -841,46 +843,46 @@ BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicator
 	if (timeInfo1.tm_mon == 1 && timeInfo1.tm_wday == 1
 		&& timeInfo1.tm_mday >= 2 * 7 && timeInfo1.tm_mday <= 3 * 7)
 	{
-		strcpy(pIndicators->status, "Filter Washington holiday.");
+		strcpy(pIndicators->status, "Filter Washington holiday.\n\n");
 		isFilter = TRUE;
 	}
 	//Good Friday holiday from KeyDate file
 	if (XAUUSD_IsKeyDate(pParams, pIndicators, pBase_Indicators))
 	{
-		strcpy(pIndicators->status, "Filter GoodFriday holiday or adjusted US Independent day.");
+		strcpy(pIndicators->status, "Filter GoodFriday holiday or adjusted US Independent day.\n\n");
 		isFilter = TRUE;
 	}
 	//Memorial holiday Last Monday
 	if (timeInfo1.tm_mon == 4 && timeInfo1.tm_wday == 1
 		&& timeInfo1.tm_mday >= 31 - 7 && timeInfo1.tm_mday <= 31)
 	{
-		strcpy(pIndicators->status, "Filter Memorial holiday.");
+		strcpy(pIndicators->status, "Filter Memorial holiday.\n\n");
 		isFilter = TRUE;
 	}
 	//US Independent day holiday on 04/07
 	if (timeInfo1.tm_mon == 6 && timeInfo1.tm_mday == 4)
 	{
-		strcpy(pIndicators->status, "Filter US Independent day .");
+		strcpy(pIndicators->status, "Filter US Independent day .\n\n");
 		isFilter = TRUE;
 	}
 	//Labour holiday 1st Monday
 	if (timeInfo1.tm_mon == 8 && timeInfo1.tm_wday == 1
 		&& timeInfo1.tm_mday >= 1 && timeInfo1.tm_mday <= 7)
 	{
-		strcpy(pIndicators->status, "Filter Labour holiday.");
+		strcpy(pIndicators->status, "Filter Labour holiday.\n\n");
 		isFilter = TRUE;
 	}
 	//Thanksgiving holiday 4st Thursday on NOV
 	if (timeInfo1.tm_mon == 10 && timeInfo1.tm_wday == 4
 		&& timeInfo1.tm_mday >= 3 * 7 && timeInfo1.tm_mday <= 4 * 7)
 	{
-		strcpy(pIndicators->status, "Filter thanksgiving holiday.");
+		strcpy(pIndicators->status, "Filter thanksgiving holiday.\n\n");
 		isFilter = TRUE;
 	}
 	//filter christmas eve and new year eve
 	if (timeInfo1.tm_mon == 11 && (timeInfo1.tm_mday == 24 || timeInfo1.tm_mday == 31))
 	{
-		strcpy(pIndicators->status, "Filter Christmas and New Year Eve.");
+		strcpy(pIndicators->status, "Filter Christmas and New Year Eve.\n\n");
 		isFilter = TRUE;
 	}
 

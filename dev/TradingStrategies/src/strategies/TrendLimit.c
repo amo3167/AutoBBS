@@ -6,6 +6,7 @@
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "base.h"
+#include "AsirikuyTime.h"
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
@@ -26,6 +27,11 @@ typedef struct indicators_t
 	double adjust;
 } Indicators;
 
+// Forward declarations
+static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+
 AsirikuyReturnCode runTrendLimit(StrategyParams* pParams)
 {
 	AsirikuyReturnCode returnCode = SUCCESS;
@@ -37,7 +43,7 @@ AsirikuyReturnCode runTrendLimit(StrategyParams* pParams)
 	
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runTrendLimit() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] runTrendLimit() failed. pParams = NULL\n");
 		return NULL_POINTER;
 	}
 
@@ -88,19 +94,19 @@ static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeEntries() failed. pParams = NULL\n");
 		return NULL_POINTER;
 	}
 
 	if (pIndicators == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pIndicators = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeEntries() failed. pIndicators = NULL\n");
 		return NULL_POINTER;
 	}
 
 	if (pBase_Indicators == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pBase_Indicators = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeEntries() failed. pBase_Indicators = NULL\n");
 		return NULL_POINTER;
 	}
 
@@ -110,11 +116,11 @@ static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators
 		stopLoss = fabs(pParams->bidAsk.ask[0] - pBase_Indicators->dailyS + pIndicators->adjust);
 		takePrice = 0;
 		
-		//Èç¹ûÒÑ¾­¿ª²Ö£¬¾ÍÐèÒª¸ú×ÙÖ¹Ëð¡£
+		//ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½
 		base_ModifyOrders(pParams, BUY, stopLoss, -1);
 
 
-		//Ö»ÓÐÂú×ã3Ìì£¬»òÕß3ÖÜ¹æÔòµÄ¹Ø¼üKÍ»ÆÆ£¬²ÅÄÜÊ¹ÓÃFin»Ø²âÈë³¡¡£
+		//Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3ï¿½ì£¬ï¿½ï¿½ï¿½ï¿½3ï¿½Ü¹ï¿½ï¿½ï¿½Ä¹Ø¼ï¿½KÍ»ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Finï¿½Ø²ï¿½ï¿½ë³¡ï¿½ï¿½
 		if (pBase_Indicators->daily3RulesTrend == UP)
 		{
 			//Fin 38.2%				
@@ -141,10 +147,10 @@ static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators
 		takePrice = 0;
 
 
-		//Èç¹ûÒÑ¾­¿ª²Ö£¬¾ÍÐèÒª¸ú×ÙÖ¹Ëð¡£
+		//ï¿½ï¿½ï¿½ï¿½Ñ¾ï¿½ï¿½ï¿½ï¿½Ö£ï¿½ï¿½ï¿½ï¿½ï¿½Òªï¿½ï¿½ï¿½ï¿½Ö¹ï¿½ï¿½
 		base_ModifyOrders(pParams, SELL, stopLoss, -1);
 
-		//Ö»ÓÐÂú×ã3Ìì£¬»òÕß3ÖÜ¹æÔòµÄ¹Ø¼üKÍ»ÆÆ£¬²ÅÄÜÊ¹ÓÃFin»Ø²âÈë³¡¡£
+		//Ö»ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½3ï¿½ì£¬ï¿½ï¿½ï¿½ï¿½3ï¿½Ü¹ï¿½ï¿½ï¿½Ä¹Ø¼ï¿½KÍ»ï¿½Æ£ï¿½ï¿½ï¿½ï¿½ï¿½Ê¹ï¿½ï¿½Finï¿½Ø²ï¿½ï¿½ë³¡ï¿½ï¿½
 		if (pBase_Indicators->daily3RulesTrend == DOWN)
 		{
 			//Fin 38.2%				

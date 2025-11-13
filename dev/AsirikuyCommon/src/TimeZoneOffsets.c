@@ -65,31 +65,31 @@ static AsirikuyReturnCode checkTZValidity(time_t brokerTime, time_t referenceTim
   
   if(!isMatchingTime(adjustedLocalTime, referenceTime))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() Local Timezone mismatch");
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() Local Timezone mismatch");
+    fprintf(stderr, "[ERROR] checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
+    fprintf(stderr, "[ERROR] checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
     return LOCAL_TZ_MISMATCH;
   }
   else if(!isMatchingTime(adjustedBrokerTime, referenceTime))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() Broker Timezone mismatch");
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() Broker Timezone mismatch");
+    fprintf(stderr, "[ERROR] checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
+    fprintf(stderr, "[ERROR] checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
+    fprintf(stderr, "[ERROR] checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
     return BROKER_TZ_MISMATCH;
   }
-  else if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
+  else if(1)  // Always log debug messages (replaced Pantheios check)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
+    fprintf(stderr, "[DEBUG] checkTZValidity() Local time(UTC)      = %s", safe_timeString(timeString, localTimeUTC));
+    fprintf(stderr, "[DEBUG] checkTZValidity() broker time          = %s", safe_timeString(timeString, brokerTime));
+    fprintf(stderr, "[DEBUG] checkTZValidity() reference time       = %s", safe_timeString(timeString, referenceTime));
+    fprintf(stderr, "[DEBUG] checkTZValidity() adjusted local time  = %s", safe_timeString(timeString, adjustedLocalTime));
+    fprintf(stderr, "[DEBUG] checkTZValidity() adjusted broker time = %s", safe_timeString(timeString, adjustedBrokerTime));
   }
   
   return SUCCESS;
@@ -103,13 +103,13 @@ AsirikuyReturnCode calculateOffsets(time_t currentTime, int *pTZOffsets, Timezon
 
   if(pTZOffsets == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateTimeOffsets() failed. pTZOffsets = NULL");
+    fprintf(stderr, "[CRITICAL] calculateTimeOffsets() failed. pTZOffsets = NULL");
     return NULL_POINTER;
   }
 
   if(pTZInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateTimeOffsets() failed. pTZInfo = NULL");
+    fprintf(stderr, "[CRITICAL] calculateTimeOffsets() failed. pTZInfo = NULL");
     return NULL_POINTER;
   }
 
@@ -138,13 +138,13 @@ AsirikuyReturnCode getTimeOffsets(time_t currentBrokerTime, AccountInfo* pAccoun
 
   if(pAccountInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getTimeOffsets() failed. pAccountInfo = NULL");
+    fprintf(stderr, "[CRITICAL] getTimeOffsets() failed. pAccountInfo = NULL");
     return NULL_POINTER;
   }
 
   if(pTZOffsets == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getTimeOffsets() failed. pTZOffsets = NULL");
+    fprintf(stderr, "[CRITICAL] getTimeOffsets() failed. pTZOffsets = NULL");
     return NULL_POINTER;
   }
   
@@ -169,7 +169,7 @@ AsirikuyReturnCode getTimeOffsets(time_t currentBrokerTime, AccountInfo* pAccoun
     return returnCode;
   }
   
-  pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getTimeOffsets() Calculating local time offsets.");
+  fprintf(stderr, "[DEBUG] getTimeOffsets() Calculating local time offsets.");
   returnCode = calculateOffsets(currentBrokerTime, pTZOffsets->localTZOffsets, localTZ);
   if(returnCode != SUCCESS)
   {
@@ -177,7 +177,7 @@ AsirikuyReturnCode getTimeOffsets(time_t currentBrokerTime, AccountInfo* pAccoun
     return returnCode;
   }
   
-  pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getTimeOffsets() Calculating broker time offsets.");
+  fprintf(stderr, "[DEBUG] getTimeOffsets() Calculating broker time offsets.");
   returnCode = calculateOffsets(currentBrokerTime, pTZOffsets->brokerTZOffsets, brokerTZ);
   if(returnCode != SUCCESS)
   {
@@ -185,7 +185,7 @@ AsirikuyReturnCode getTimeOffsets(time_t currentBrokerTime, AccountInfo* pAccoun
     return returnCode;
   }
   
-  pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getTimeOffsets() Calculating reference time offsets.");
+  fprintf(stderr, "[DEBUG] getTimeOffsets() Calculating reference time offsets.");
   returnCode = calculateOffsets(currentBrokerTime, pTZOffsets->referenceTZOffsets, referenceTZ);
   if(returnCode != SUCCESS)
   {
@@ -213,19 +213,19 @@ time_t getAdjustedBrokerTime(time_t brokerTime, TZOffsets* pTZOffsets)
 
   if(pTZOffsets == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getAdjustedBrokerTime() failed. pTZOffsets = NULL");
+    fprintf(stderr, "[CRITICAL] getAdjustedBrokerTime() failed. pTZOffsets = NULL");
     return NULL_POINTER;
   }
   
   safe_gmtime(&timeInfo, brokerTime);
   adjustedBrokerTime += ((pTZOffsets->referenceTZOffsets[timeInfo.tm_yday] - pTZOffsets->brokerTZOffsets[timeInfo.tm_yday]) * SECONDS_PER_HOUR);
 
-  if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
+  if(1)  // Always log debug messages (replaced Pantheios check)
   {
     char sourceTime[MAX_TIME_STRING_SIZE] = "";
     char destTime[MAX_TIME_STRING_SIZE] = "";
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getAdjustedBrokerTime() Day of year = %d, Reference offset = %d. Broker offset = %d", timeInfo.tm_yday, pTZOffsets->referenceTZOffsets[timeInfo.tm_yday], pTZOffsets->brokerTZOffsets[timeInfo.tm_yday]);
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getAdjustedBrokerTime() Original time = %s. Adjusted time = %s", safe_timeString(sourceTime, brokerTime), safe_timeString(destTime, adjustedBrokerTime));
+    fprintf(stderr, "[DEBUG] getAdjustedBrokerTime() Day of year = %d, Reference offset = %d. Broker offset = %d", timeInfo.tm_yday, pTZOffsets->referenceTZOffsets[timeInfo.tm_yday], pTZOffsets->brokerTZOffsets[timeInfo.tm_yday]);
+    fprintf(stderr, "[DEBUG] getAdjustedBrokerTime() Original time = %s. Adjusted time = %s", safe_timeString(sourceTime, brokerTime), safe_timeString(destTime, adjustedBrokerTime));
   }
 
   return adjustedBrokerTime;
@@ -238,19 +238,19 @@ time_t getAdjustedLocalTime(time_t localTimeUTC, TZOffsets* pTZOffsets)
 
   if(pTZOffsets == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getAdjustedLocalTime() failed. pTZOffsets = NULL");
+    fprintf(stderr, "[CRITICAL] getAdjustedLocalTime() failed. pTZOffsets = NULL");
     return NULL_POINTER;
   }
 
   safe_gmtime(&timeInfo, localTimeUTC);
   adjustedLocalTime += (pTZOffsets->referenceTZOffsets[timeInfo.tm_yday] * SECONDS_PER_HOUR);
 
-  if(pantheios_fe_simple_getSeverityCeiling() >= PANTHEIOS_SEV_DEBUG)
+  if(1)  // Always log debug messages (replaced Pantheios check)
   {
     char sourceTime[MAX_TIME_STRING_SIZE] = "";
     char destTime[MAX_TIME_STRING_SIZE] = "";
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getAdjustedLocalTime() Day of year = %d, Reference offset = %d. Local offset = %d", timeInfo.tm_yday, pTZOffsets->referenceTZOffsets[timeInfo.tm_yday], pTZOffsets->localTZOffsets[timeInfo.tm_yday]);
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getAdjustedLocalTime() Original time = %s. Adjusted time = %s", safe_timeString(sourceTime, localTimeUTC), safe_timeString(destTime, adjustedLocalTime));
+    fprintf(stderr, "[DEBUG] getAdjustedLocalTime() Day of year = %d, Reference offset = %d. Local offset = %d", timeInfo.tm_yday, pTZOffsets->referenceTZOffsets[timeInfo.tm_yday], pTZOffsets->localTZOffsets[timeInfo.tm_yday]);
+    fprintf(stderr, "[DEBUG] getAdjustedLocalTime() Original time = %s. Adjusted time = %s", safe_timeString(sourceTime, localTimeUTC), safe_timeString(destTime, adjustedLocalTime));
   }
 
   return adjustedLocalTime;

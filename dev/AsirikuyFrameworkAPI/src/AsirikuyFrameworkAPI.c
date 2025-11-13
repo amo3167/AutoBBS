@@ -38,6 +38,11 @@
 
 #include "Precompiled.h"
 
+#if defined __APPLE__ || defined __linux__
+  #include <sys/time.h>
+  #include <unistd.h>
+#endif
+
 #include <ta_libc.h>
 
 #include "AsirikuyFrameworkAPI.h"
@@ -56,7 +61,8 @@
 
 #define LOG_FILENAME "AsirikuyFramework.log"
 
-const PAN_CHAR_T PANTHEIOS_FE_PROCESS_IDENTITY[] = PANTHEIOS_LITERAL_STRING("AsirikuyFramework");
+// Pantheios removed - using standard fprintf for logging
+// const PAN_CHAR_T PANTHEIOS_FE_PROCESS_IDENTITY[] = PANTHEIOS_LITERAL_STRING("AsirikuyFramework");
 
 static void seedRand()
 {
@@ -90,7 +96,8 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
   TA_RetCode retCode;
   AsirikuyConfig config;
   char brokerTZPath[MAX_FILE_PATH_CHARS] = "";
-  char pantheiosLogPath[MAX_FILE_PATH_CHARS] = "";
+  // Pantheios removed - using standard fprintf for logging
+  // char pantheiosLogPath[MAX_FILE_PATH_CHARS] = "";
 
   if(!initialized)
   {
@@ -117,7 +124,8 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
   }
 
   strcpy(config.configFileName, pAsirikuyConfig);
-  config.loggingConfig.severityLevel = PANTHEIOS_SEV_NOTICE;
+  // Pantheios removed - severity level no longer needed
+  // config.loggingConfig.severityLevel = PANTHEIOS_SEV_NOTICE;
   config.ratesBufferExtension = DEFAULT_RATES_BUF_EXT;
   result = parseConfigFile(&config);
   if(result != SUCCESS)
@@ -128,15 +136,15 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
 
   seedRand();
 
-  strcat(pantheiosLogPath, config.loggingConfig.logFolder);
-  strcat(pantheiosLogPath, "/");
-  strcat(pantheiosLogPath, pAccountName);
-  strcat(pantheiosLogPath, LOG_FILENAME);
-
-  pantheios_init();
-  pantheios_be_file_setFilePath((PAN_CHAR_T*)pantheiosLogPath, 0, 0, PANTHEIOS_BEID_ALL);
-  pantheios_fe_simple_setSeverityCeiling(config.loggingConfig.severityLevel);
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Pantheios initialized.");
+  // Pantheios removed - using standard fprintf for logging
+  // strcat(pantheiosLogPath, config.loggingConfig.logFolder);
+  // strcat(pantheiosLogPath, "/");
+  // strcat(pantheiosLogPath, pAccountName);
+  // strcat(pantheiosLogPath, LOG_FILENAME);
+  // pantheios_init();
+  // pantheios_be_file_setFilePath((PAN_CHAR_T*)pantheiosLogPath, 0, 0, PANTHEIOS_BEID_ALL);
+  // pantheios_fe_simple_setSeverityCeiling(config.loggingConfig.severityLevel);
+  fprintf(stderr, "[NOTICE] AsirikuyFramework initialized.\n");
 
   retCode = TA_Initialize();
   if(retCode != TA_SUCCESS)
@@ -145,7 +153,7 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
     initializing = FALSE;
     return (int)TA_LIB_ERROR;
   }
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"TA-Lib initialized.");
+  fprintf(stderr, "[NOTICE] TA-Lib initialized.\n");
 
   strcat(brokerTZPath, config.configFilePaths.configFolderPath);
   strcat(brokerTZPath, "/");
@@ -157,11 +165,11 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
     initializing = FALSE;
     return (int)result;
   }
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Loaded broker timezone configuration.");
+  fprintf(stderr, "[NOTICE] Loaded broker timezone configuration.\n");
 
   setExtendedBufferSize(config.ratesBufferExtension);
   resetAllRatesBuffers();
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Rates buffers initialized.");
+  fprintf(stderr, "[NOTICE] Rates buffers initialized.\n");
 
   initEquityLog(config.loggingConfig.enableEquityLog, config.loggingConfig.logFolder);
   initializeInstanceStates(config.tempFileFolderPath);
@@ -171,14 +179,14 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
   setNtpUpdateInterval(config.ntpConfig.updateInterval);
   setNtpTimeout(config.ntpConfig.timeout);
   setTotalNtpReferenceTimes(config.ntpConfig.totalReferenceTimes);
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"NTPClient initialized.");
+  fprintf(stderr, "[NOTICE] NTPClient initialized.\n");
 
   setTempFileFolderPath(config.tempFileFolderPath);
   setTradingWeekBoundaries(config.cropMondayHours, config.cropFridayHours);
 
   initialized  = TRUE;
   initializing = FALSE;
-  pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Framework initialization complete.");
+  fprintf(stderr, "[NOTICE] Framework initialization complete.\n");
   return (int)SUCCESS;
 }
 
@@ -202,7 +210,7 @@ static int initInstance(int instanceId, int isTesting, char* pAsirikuyConfig, ch
     loadInstanceState(instanceId);
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Initialized instance ID: %d.", instanceId);
+  fprintf(stderr, "[NOTICE] Initialized instance ID: %d.\n", instanceId);
 
   return returnCode;
 }

@@ -126,10 +126,10 @@ private:
 
   static volatile NTPClient*     instance_;
 
-  boost::asio::io_service        io_service_;
+  boost::asio::io_context        io_context_;
   boost::asio::ip::udp::socket   socket_;
   boost::asio::ip::udp::resolver resolver_;
-  boost::asio::deadline_timer    deadline_;
+  boost::asio::steady_timer      deadline_;
   
   boost::mutex                   randomMutex_;
   boost::mutex                   queryMutex_;

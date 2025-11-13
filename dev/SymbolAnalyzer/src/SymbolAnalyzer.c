@@ -207,7 +207,7 @@ static const char g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CU
 	"AFN", "971", "2", "Afghan afghani", "Afghanistan",
 	"ALL", "008", "2", "Albanian lek", "Albania",
 	"AMD", "051", "2", "Armenian dram", "Armenia",
-	"ANG", "532", "2", "Netherlands Antillean guilder/florin", "	Curaçao, Sint Maarten",
+	"ANG", "532", "2", "Netherlands Antillean guilder/florin", "	Curaï¿½ao, Sint Maarten",
 	"AOA", "973", "2", "Angolan kwanza", "Angola",
 	"ARS", "032", "2", "Argentine peso", "Argentina",
 	"AUD", "036", "2", "Australian dollar", "Australia, Australian Antarctic Territory, Christmas Island, Cocos (Keeling) Islands, Heard and McDonald Islands, Kiribati, Nauru, Norfolk Island, Tuvalu",
@@ -338,7 +338,7 @@ static const char g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CU
 	"SLL", "694", "0", "Sierra Leonean Leone", "Sierra Leone",
 	"SOS", "706", "2", "Somali shilling", "Somalia",
 	"SRD", "968", "2", "Surinam dollar", "Suriname",
-	"STD", "678", "0", "São Tom?and Príncipe Dobra", "São Tom?and Príncipe",
+	"STD", "678", "0", "Sï¿½o Tom?and Prï¿½ncipe Dobra", "Sï¿½o Tom?and Prï¿½ncipe",
 	"SYP", "760", "2", "Syrian pound", "Syria",
 	"SZL", "748", "2", "Lilangeni", "Swaziland",
 	"THB", "764", "2", "Thai baht", "Thailand",
@@ -357,7 +357,7 @@ static const char g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CU
 	"USS", "998", "2", "United States dollar (same day) (funds code) (one source claims it is no longer used, but it is still on the ISO 4217-MA list)", "United States",
 	"UYU", "858", "2", "Uruguayan Peso", "Uruguayo, Uruguay",
 	"UZS", "860", "2", "Uzbekistan som", "Uzbekistan",
-	"VEF", "937", "2", "Venezuelan bolívar fuerte", "Venezuela",
+	"VEF", "937", "2", "Venezuelan bolï¿½var fuerte", "Venezuela",
 	"VND", "704", "0", "Vietnamese dong", "Vietnam",
 	"VUV", "548", "0", "Vanuatu Vatu", "Vanuatu",
 	"WST", "882", "2", "Samoan tala", "Samoa",
@@ -371,7 +371,7 @@ static const char g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CU
 	"XCD", "951", "2", "East Caribbean dollar", "Anguilla, Antigua and Barbuda, Dominica, Grenada, Montserrat, Saint Kitts and Nevis, Saint Lucia, Saint Vincent and the Grenadines",
 	"XDR", "960", "0", "Special Drawing Rights", "International Monetary Fund",
 	"XFU", "Nil", "0", "UIC franc (special settlement currency)", "International Union of Railways",
-	"XOF", "952", "0", "CFA Franc BCEAO", "Benin, Burkina Faso, Côte d\'Ivoire, Guinea-Bissau, Mali, Niger, Senegal, Togo",
+	"XOF", "952", "0", "CFA Franc BCEAO", "Benin, Burkina Faso, Cï¿½te d\'Ivoire, Guinea-Bissau, Mali, Niger, Senegal, Togo",
 	"XPD", "964", "0", "Palladium (one troy ounce)", "",
 	"XPF", "953", "0", "CFP franc", "French Polynesia, New Caledonia, Wallis and Futuna",
 	"XPT", "962", "0", "Platinum (one troy ounce)", "",
@@ -401,43 +401,43 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
 	//TODO:
 	//Override US500, NAS100 and SportCrude 
 	//if (strcmp(pSymbol, "NAS100") == 0 || strcmp(pSymbol, "US500") == 0 || strcmp(pSymbol, "SpotCrude") == 0) {
-	//	strcat(pSymbol, "USD");
+	//	strcat(pSymbol, "USD\n\n");
 	//	pantheios_logputs(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"convert Symbol. pSymbol = %s", pSymbol);
 	//}
 
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   else
   {
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"parseSymbol() pSymbol = %s", pSymbol);
+    fprintf(stderr, "[DEBUG] parseSymbol() pSymbol = %s", pSymbol);
   }
   if(pPrefix == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pPrefix = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pPrefix = NULL\n\n");
     return NULL_POINTER;
   }
   if(pBaseCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pBaseCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pBaseCurrency = NULL\n\n");
     return NULL_POINTER;
   }
   if(pSeparator == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pSeparator = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pSeparator = NULL\n\n");
     return NULL_POINTER;
   }
   if(pQuoteCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pQuoteCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pQuoteCurrency = NULL\n\n");
     return NULL_POINTER;
   }
   if(pSuffix == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseSymbol() failed. pSuffix = NULL");
+    fprintf(stderr, "[CRITICAL] parseSymbol() failed. pSuffix = NULL\n\n");
     return NULL_POINTER;
   }
 
@@ -479,7 +479,7 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
   /* Did we fail to find a second currency offset? If so exit now to avoid undefined behaviour */
 	if(quoteCurrencyOffset < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseSymbol() failed. Unknown symbol. pSymbol = %s", pSymbol);
+    fprintf(stderr, "[ERROR] parseSymbol() failed. Unknown symbol. pSymbol = %s", pSymbol);
 		return UNKNOWN_SYMBOL;
   }
 
@@ -490,7 +490,7 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
   /* If any of these values are below 0 it means pSymbol is too short. Exit now to avoid a potential memory access violation */
   if(prefixLength < 0 || suffixLength < 0 || separatorLength < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseSymbol() failed. Symbol too short. pSymbol = %s", pSymbol);
+    fprintf(stderr, "[ERROR] parseSymbol() failed. Symbol too short. pSymbol = %s", pSymbol);
 		return SYMBOL_TOO_SHORT;
   }
 
@@ -503,8 +503,7 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
 	memcpy(pSeparator, pSymbol + baseCurrencyOffset + strlen(pBaseCurrency), separatorLength);
 	pSeparator[separatorLength] = '\0';
 
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, 
-    (PAN_CHAR_T*)"parseSymbol() succeeded. pPrefix = %s, pBaseCurrency = %s, pSeparator = %s, pQuoteCurrency = %s, pSuffix = %s", 
+  fprintf(stderr, "[DEBUG] parseSymbol() succeeded. pPrefix = %s, pBaseCurrency = %s, pSeparator = %s, pQuoteCurrency = %s, pSuffix = %s\n", 
     pPrefix, pBaseCurrency, pSeparator, pQuoteCurrency, pSuffix);
 
 	return SUCCESS;
@@ -518,13 +517,13 @@ AsirikuyReturnCode normalizeSymbol(char* pSymbol)
   /* If pSymbol is NULL exit now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"normalizeSymbol() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] normalizeSymbol() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"normalizeSymbol() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] normalizeSymbol() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
@@ -533,7 +532,7 @@ AsirikuyReturnCode normalizeSymbol(char* pSymbol)
   strncpy(&pSymbol[3], quoteCurrency, 3);
   pSymbol[6] = '\0';
 
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"normalizeSymbol() succeeded. pSymbol = %s", pSymbol);
+  fprintf(stderr, "[DEBUG] normalizeSymbol() succeeded. pSymbol = %s", pSymbol);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -545,7 +544,7 @@ AsirikuyReturnCode normalizeCurrency(char* pCurrency)
   /* If pCurrency is NULL exit now to avoid a memory access violation */
   if(pCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"normalizeCurrency() failed. pCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] normalizeCurrency() failed. pCurrency = NULL\n\n");
     return NULL_POINTER;
   }
   //g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CURRENCY_INFO_STRING_SIZE]
@@ -554,13 +553,13 @@ AsirikuyReturnCode normalizeCurrency(char* pCurrency)
 		if(strstr(pCurrency, g_currencies[i][0]) != NULL)
 		{
       strcpy(pCurrency, g_currencies[i][0]);
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"normalizeCurrency() succeeded. pCurrency = %s", pCurrency);
+      fprintf(stderr, "[DEBUG] normalizeCurrency() succeeded. pCurrency = %s", pCurrency);
       return SUCCESS;
     }
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"normalizeCurrency() %s is not a recognized currency, defaulting to \"USD\". This may occur when using cent accounts on some brokers.", pCurrency);
-  strcpy(pCurrency, "USD");
+  fprintf(stderr, "[WARNING] normalizeCurrency() %s is not a recognized currency, defaulting to \"USD\". This may occur when using cent accounts on some brokers.", pCurrency);
+  strcpy(pCurrency, "USD\n\n");
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -574,22 +573,22 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getConversionSymbols() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getConversionSymbols() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pAccountCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getConversionSymbols() failed. pAccountCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] getConversionSymbols() failed. pAccountCurrency = NULL\n\n");
     return NULL_POINTER;
   }
   if(pBaseConversionSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getConversionSymbols() failed. pBaseConversionSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getConversionSymbols() failed. pBaseConversionSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pQuoteConversionSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getConversionSymbols() failed. pQuoteConversionSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getConversionSymbols() failed. pQuoteConversionSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   
@@ -609,7 +608,7 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 	{
 		if(strcmp(g_currencyPairs[i][BASE_CURRENCY], baseCurrency) == 0 && strcmp(g_currencyPairs[i][QUOTE_CURRENCY], pAccountCurrency) == 0)
 		{
-			strcpy(pBaseConversionSymbol, "");
+			strcpy(pBaseConversionSymbol, "\n\n");
 			strcat(pBaseConversionSymbol, prefix);
 			strcat(pBaseConversionSymbol, baseCurrency);
 			strcat(pBaseConversionSymbol, separator);
@@ -620,7 +619,7 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 
 		if(strcmp(g_currencyPairs[i][BASE_CURRENCY], pAccountCurrency) == 0 && strcmp(g_currencyPairs[i][QUOTE_CURRENCY], baseCurrency) == 0)
 		{
-			strcpy(pBaseConversionSymbol, "");
+			strcpy(pBaseConversionSymbol, "\n\n");
 			strcat(pBaseConversionSymbol, prefix);
 			strcat(pBaseConversionSymbol, pAccountCurrency);
 			strcat(pBaseConversionSymbol, separator);
@@ -631,7 +630,7 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 
 		if(strcmp(g_currencyPairs[i][BASE_CURRENCY], pAccountCurrency) == 0 && strcmp(g_currencyPairs[i][QUOTE_CURRENCY], quoteCurrency) == 0)
 		{
-			strcpy(pQuoteConversionSymbol, "");
+			strcpy(pQuoteConversionSymbol, "\n\n");
 			strcat(pQuoteConversionSymbol, prefix);
 			strcat(pQuoteConversionSymbol, pAccountCurrency);
 			strcat(pQuoteConversionSymbol, separator);
@@ -642,7 +641,7 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 
 		if(strcmp(g_currencyPairs[i][BASE_CURRENCY], quoteCurrency) == 0 && strcmp(g_currencyPairs[i][QUOTE_CURRENCY], pAccountCurrency) == 0)
 		{
-			strcpy(pQuoteConversionSymbol, "");
+			strcpy(pQuoteConversionSymbol, "\n\n");
 			strcat(pQuoteConversionSymbol, prefix);
 			strcat(pQuoteConversionSymbol, quoteCurrency);
 			strcat(pQuoteConversionSymbol, separator);
@@ -654,7 +653,7 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 		if(foundBaseConversionSymbol && foundQuoteConversionSymbol)
     {
       /* Both symbols have been found. Exit early */
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getConversionSymbols() succeeded. pBaseConversionSymbol = %s, pQuoteConversionSymbol = %s", pBaseConversionSymbol, pQuoteConversionSymbol);
+      fprintf(stderr, "[DEBUG] getConversionSymbols() succeeded. pBaseConversionSymbol = %s, pQuoteConversionSymbol = %s", pBaseConversionSymbol, pQuoteConversionSymbol);
 			return SUCCESS;
     }
 	}
@@ -662,12 +661,12 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 	if(foundBaseConversionSymbol || foundQuoteConversionSymbol)
 	{
     /* Only one of the conversion symbols needs to be found. Exit successful. */
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getConversionSymbols() succeeded but only 1 conversion symbol was found. pBaseConversionSymbol = %s, pQuoteConversionSymbol = %s", pBaseConversionSymbol, pQuoteConversionSymbol);
+    fprintf(stderr, "[DEBUG] getConversionSymbols() succeeded but only 1 conversion symbol was found. pBaseConversionSymbol = %s, pQuoteConversionSymbol = %s", pBaseConversionSymbol, pQuoteConversionSymbol);
 	  return SUCCESS;
   }
 
   /* Failed to find any conversion symbols. Exit with failure. */
-  pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getConversionSymbols() failed. Unable to find any conversion symbols.");
+  fprintf(stderr, "[ERROR] getConversionSymbols() failed. Unable to find any conversion symbols.\n\n");
 	return NO_CONVERSION_SYMBOLS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -679,23 +678,23 @@ AsirikuyReturnCode getCurrencyPairPrefix(const char* pSymbol, char* pPrefix)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairPrefix() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairPrefix() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pPrefix == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairPrefix() failed. pPrefix = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairPrefix() failed. pPrefix = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyPairPrefix() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] getCurrencyPairPrefix() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
   strcpy(pPrefix, prefix);
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyPairPrefix() succeeded. pSymbol = %s, pPrefix = %s", pSymbol, pPrefix);
+  fprintf(stderr, "[DEBUG] getCurrencyPairPrefix() succeeded. pSymbol = %s, pPrefix = %s", pSymbol, pPrefix);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -707,23 +706,23 @@ AsirikuyReturnCode getBaseCurrency(const char* pSymbol, char* pBaseCurrency)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getBaseCurrency() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getBaseCurrency() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pBaseCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getBaseCurrency() failed. pBaseCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] getBaseCurrency() failed. pBaseCurrency = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getBaseCurrency() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] getBaseCurrency() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
   strcpy(pBaseCurrency, baseCurrency);
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getBaseCurrency() succeeded. pSymbol = %s, pBaseCurrency = %s", pSymbol, pBaseCurrency);
+  fprintf(stderr, "[DEBUG] getBaseCurrency() succeeded. pSymbol = %s, pBaseCurrency = %s", pSymbol, pBaseCurrency);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -735,23 +734,23 @@ AsirikuyReturnCode getCurrencyPairSeparator(const char* pSymbol, char* pSeparato
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairSeparator() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairSeparator() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pSeparator == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairSeparator() failed. pSeparator = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairSeparator() failed. pSeparator = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyPairSeparator() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] getCurrencyPairSeparator() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
 	strcpy(pSeparator, separator);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyPairSeparator() succeeded. pSymbol = %s, pSeparator = %s", pSymbol, pSeparator);
+	fprintf(stderr, "[DEBUG] getCurrencyPairSeparator() succeeded. pSymbol = %s, pSeparator = %s", pSymbol, pSeparator);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -763,23 +762,23 @@ AsirikuyReturnCode getQuoteCurrency(const char* pSymbol, char* pQuoteCurrency)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getQuoteCurrency() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getQuoteCurrency() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pQuoteCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getQuoteCurrency() failed. pQuoteCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] getQuoteCurrency() failed. pQuoteCurrency = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getQuoteCurrency() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] getQuoteCurrency() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
   strcpy(pQuoteCurrency, quoteCurrency);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getQuoteCurrency() succeeded. pSymbol = %s, pQuoteCurrency = %s", pSymbol, pQuoteCurrency);
+	fprintf(stderr, "[DEBUG] getQuoteCurrency() succeeded. pSymbol = %s, pQuoteCurrency = %s", pSymbol, pQuoteCurrency);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -791,23 +790,23 @@ AsirikuyReturnCode getCurrencyPairSuffix(const char* pSymbol, char* pSuffix)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairSuffix() failed. pSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairSuffix() failed. pSymbol = NULL\n\n");
     return NULL_POINTER;
   }
   if(pSuffix == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyPairSuffix() failed. pSuffix = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyPairSuffix() failed. pSuffix = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(SUCCESS != parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix))
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyPairSuffix() failed. Unable to parse symbol.");
+    fprintf(stderr, "[ERROR] getCurrencyPairSuffix() failed. Unable to parse symbol.\n\n");
     return UNKNOWN_SYMBOL;
   }
 
 	strcpy(pSuffix, suffix);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyPairSuffix() succeeded. pSymbol = %s, pSuffix = %s", pSymbol, pSuffix);
+	fprintf(stderr, "[DEBUG] getCurrencyPairSuffix() succeeded. pSymbol = %s, pSuffix = %s", pSymbol, pSuffix);
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -820,27 +819,27 @@ AsirikuyReturnCode getCurrencyInfo(char* pCurrencyCode, char* pCurrencyNumber, c
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pCurrencyCode == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyInfo() failed. pCurrencyCode = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyInfo() failed. pCurrencyCode = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyNumber == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyInfo() failed. pCurrencyNumber = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyInfo() failed. pCurrencyNumber = NULL\n\n");
     return NULL_POINTER;
   }
   if(pDigitsAfterDecimal == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyInfo() failed. pDigitsAfterDecimal = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyInfo() failed. pDigitsAfterDecimal = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyInfo() failed. pCurrencyName = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyInfo() failed. pCurrencyName = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyLocations == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyInfo() failed. pCurrencyLocations = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyInfo() failed. pCurrencyLocations = NULL\n\n");
     return NULL_POINTER;
   }
   
@@ -859,15 +858,14 @@ AsirikuyReturnCode getCurrencyInfo(char* pCurrencyCode, char* pCurrencyNumber, c
 			strcpy(pCurrencyName, g_currencies[i][CURRENCY_NAME]);
 			strcpy(pCurrencyLocations, g_currencies[i][CURRENCY_LOCATIONS]);
 
-			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, 
-        (PAN_CHAR_T*)"getCurrencyInfo() succeeded. pCurrencyCode = %s, pCurrencyNumber = %s, pDigitsAfterDecimal = %s, pCurrencyName = %s, pCurrencyLocations = %s", 
+			fprintf(stderr, "[DEBUG] getCurrencyInfo() succeeded. pCurrencyCode = %s, pCurrencyNumber = %s, pDigitsAfterDecimal = %s, pCurrencyName = %s, pCurrencyLocations = %s\n", 
         pCurrencyCode, pCurrencyNumber, pDigitsAfterDecimal, pCurrencyName, pCurrencyLocations);
 
       return SUCCESS;
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyInfo() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
+	fprintf(stderr, "[ERROR] getCurrencyInfo() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
   return INVALID_CURRENCY;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -880,12 +878,12 @@ AsirikuyReturnCode getCurrencyNumber(char* pCurrencyCode, char* pCurrencyNumber)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pCurrencyCode == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyNumber() failed. pCurrencyCode = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyNumber() failed. pCurrencyCode = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyNumber == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyNumber() failed. pCurrencyNumber = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyNumber() failed. pCurrencyNumber = NULL\n\n");
     return NULL_POINTER;
   }
   
@@ -901,12 +899,12 @@ AsirikuyReturnCode getCurrencyNumber(char* pCurrencyCode, char* pCurrencyNumber)
 		{
 			strcpy(pCurrencyNumber, g_currencies[i][CURRENCY_NUMBER]);
 
-			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyNumber() succeeded. pCurrencyCode = %s, pCurrencyNumber = %s", pCurrencyCode, pCurrencyNumber);
+			fprintf(stderr, "[DEBUG] getCurrencyNumber() succeeded. pCurrencyCode = %s, pCurrencyNumber = %s", pCurrencyCode, pCurrencyNumber);
       return SUCCESS;
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyNumber() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
+	fprintf(stderr, "[ERROR] getCurrencyNumber() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
   return INVALID_CURRENCY;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -919,12 +917,12 @@ AsirikuyReturnCode getNumDigitsAfterDecimal(char* pCurrencyCode, char* pDigitsAf
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pCurrencyCode == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getNumDigitsAfterDecimal() failed. pCurrencyCode = NULL");
+    fprintf(stderr, "[CRITICAL] getNumDigitsAfterDecimal() failed. pCurrencyCode = NULL\n\n");
     return NULL_POINTER;
   }
   if(pDigitsAfterDecimal == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getNumDigitsAfterDecimal() failed. pDigitsAfterDecimal = NULL");
+    fprintf(stderr, "[CRITICAL] getNumDigitsAfterDecimal() failed. pDigitsAfterDecimal = NULL\n\n");
     return NULL_POINTER;
   }
   
@@ -940,12 +938,12 @@ AsirikuyReturnCode getNumDigitsAfterDecimal(char* pCurrencyCode, char* pDigitsAf
 		{
 			strcpy(pDigitsAfterDecimal, g_currencies[i][DIGITS_AFTER_DECIMAL]);
 			
-			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getNumDigitsAfterDecimal() succeeded. pCurrencyCode = %s, pDigitsAfterDecimal = %s", pCurrencyCode, pDigitsAfterDecimal);
+			fprintf(stderr, "[DEBUG] getNumDigitsAfterDecimal() succeeded. pCurrencyCode = %s, pDigitsAfterDecimal = %s", pCurrencyCode, pDigitsAfterDecimal);
       return SUCCESS;
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getNumDigitsAfterDecimal() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
+	fprintf(stderr, "[ERROR] getNumDigitsAfterDecimal() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
   return INVALID_CURRENCY;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -958,12 +956,12 @@ AsirikuyReturnCode getCurrencyName(char* pCurrencyCode, char* pCurrencyName)
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pCurrencyCode == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyName() failed. pCurrencyCode = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyName() failed. pCurrencyCode = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyName() failed. pCurrencyName = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyName() failed. pCurrencyName = NULL\n\n");
     return NULL_POINTER;
   }
   
@@ -979,12 +977,12 @@ AsirikuyReturnCode getCurrencyName(char* pCurrencyCode, char* pCurrencyName)
 		{
 			strcpy(pCurrencyName, g_currencies[i][CURRENCY_NAME]);
 			
-			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyName() succeeded. pCurrencyCode = %s, pCurrencyName = %s", pCurrencyCode, pCurrencyName);
+			fprintf(stderr, "[DEBUG] getCurrencyName() succeeded. pCurrencyCode = %s, pCurrencyName = %s", pCurrencyCode, pCurrencyName);
       return SUCCESS;
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyName() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
+	fprintf(stderr, "[ERROR] getCurrencyName() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
   return INVALID_CURRENCY;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -997,12 +995,12 @@ AsirikuyReturnCode getCurrencyLocations(char* pCurrencyCode, char* pCurrencyLoca
   /* If any pointers are NULL return now to avoid a memory access violation */
   if(pCurrencyCode == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyLocations() failed. pCurrencyCode = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyLocations() failed. pCurrencyCode = NULL\n\n");
     return NULL_POINTER;
   }
   if(pCurrencyLocations == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getCurrencyLocations() failed. pCurrencyLocations = NULL");
+    fprintf(stderr, "[CRITICAL] getCurrencyLocations() failed. pCurrencyLocations = NULL\n\n");
     return NULL_POINTER;
   }
 
@@ -1018,12 +1016,12 @@ AsirikuyReturnCode getCurrencyLocations(char* pCurrencyCode, char* pCurrencyLoca
 		{
 			strcpy(pCurrencyLocations, g_currencies[i][CURRENCY_LOCATIONS]);
 			
-			pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getCurrencyLocations() succeeded. pCurrencyCode = %s, pCurrencyLocations = %s", pCurrencyCode, pCurrencyLocations);
+			fprintf(stderr, "[DEBUG] getCurrencyLocations() succeeded. pCurrencyCode = %s, pCurrencyLocations = %s", pCurrencyCode, pCurrencyLocations);
       return SUCCESS;
 		}
 	}
 
-	pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getCurrencyLocations() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
+	fprintf(stderr, "[ERROR] getCurrencyLocations() failed. Invalid currency. pCurrencyCode = %s", pCurrencyCode);
   return INVALID_CURRENCY;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/

@@ -156,19 +156,19 @@ AsirikuyReturnCode getDSTStartEndDays(time_t currentTime, TimezoneInfo* pTzInfo,
 
   if(pTzInfo == NULL)
   {
-    pantheios::logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getDSTStartEndDays() failed. pTzInfo = NULL");
+    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pTzInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDstStartDay == NULL)
   {
-    pantheios::logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getDSTStartEndDays() failed. pDstStartDay = NULL");
+    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pDstStartDay = NULL\n");
     return NULL_POINTER;
   }
 
   if(pDstEndDay == NULL)
   {
-    pantheios::logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getDSTStartEndDays() failed. pDstEndDay = NULL");
+    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pDstEndDay = NULL\n");
     return NULL_POINTER;
   }
 
@@ -177,12 +177,12 @@ AsirikuyReturnCode getDSTStartEndDays(time_t currentTime, TimezoneInfo* pTzInfo,
   dstStartTime  = createTime(currentYear, pTzInfo->startMonth, pTzInfo->startNth, pTzInfo->startDay, pTzInfo->startHour);
   safe_gmtime(&timeInfo, dstStartTime);
   *pDstStartDay = timeInfo.tm_yday;
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getDSTStartEndDays() DST start time = %s. DST start day = %d", safe_timeString(timeString, dstStartTime), *pDstStartDay);
+  fprintf(stderr, "[DEBUG] getDSTStartEndDays() DST start time = %s. DST start day = %d\n", safe_timeString(timeString, dstStartTime), *pDstStartDay);
 
   dstEndTime    = createTime(currentYear, pTzInfo->endMonth, pTzInfo->endNth, pTzInfo->endDay, pTzInfo->endHour);
   safe_gmtime(&timeInfo, dstEndTime);
   *pDstEndDay   = timeInfo.tm_yday;
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getDSTStartEndDays() DST end time = %s. DST end day = %d", safe_timeString(timeString, dstEndTime), *pDstEndDay);
+  fprintf(stderr, "[DEBUG] getDSTStartEndDays() DST end time = %s. DST end day = %d\n", safe_timeString(timeString, dstEndTime), *pDstEndDay);
 
   return SUCCESS;
 }

@@ -10,17 +10,10 @@ project "AsirikuyFrameworkAPI"
 	"**.xml", 
 	"**.hpp"
   }
-  vpaths{
-	["Header Files/*"] = "../../../dev/AsirikuyFrameworkAPI/include/**.*", 
-	["Source Files/*"] = "../../../dev/AsirikuyFrameworkAPI/src/**.*", 
-	["Resource Files"] = "../../../dev/AsirikuyFrameworkAPI/res/**.*", 
-	["Config Files"]   = "../../../dev/AsirikuyFrameworkAPI/config/**.*", 
-	["Unit Tests"]     = "../../../dev/AsirikuyFrameworkAPI/tests/**.*"
-  }
   includedirs{
     "src"
   }
-  uses "NTPClient"
+  links{ "NTPClient" }
   configuration{"windows"}
     links{ 
 	  "MiniXML", 
@@ -45,10 +38,6 @@ project "AsirikuyFrameworkAPI"
 	  "TALib_common", 
 	  "TALib_abstract", 
 	  "TALib_func",
-	  "Pantheios_frontend",
-	  "Pantheios_backend",
-	  "Pantheios_utils", 
-	  "Pantheios_core",
 	  "dSFMT",
 	  "FANN"
     }
@@ -91,10 +80,6 @@ project "AsirikuyFrameworkAPI"
 	  "FANN",	
 	  "dSFMT",	  
 	  "NTPClient",
-	  "Pantheios_core",
-	  "Pantheios_frontend",
-	  "Pantheios_backend",
-	  "Pantheios_utils",
 	  "curl",
 	  "boost_prg_exec_monitor",
 	  "boost_regex",

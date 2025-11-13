@@ -64,37 +64,37 @@ AsirikuyReturnCode calculateKeltnerChannels(const double* pHigh, const double* p
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutUpper == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pOutUpper = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutUpper = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutMiddle == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pOutMiddle = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutMiddle = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutLower == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateKeltnerChannels() failed. pOutLower = NULL");
+    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutLower = NULL\n");
     return NULL_POINTER;
   }
 
@@ -138,25 +138,25 @@ AsirikuyReturnCode calculateUltimateOscillator(const double* pHigh, const double
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateUltimateOscillator() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateUltimateOscillator() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateUltimateOscillator() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutUltimateOscillator == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateUltimateOscillator() failed. pOutUltimateOscillator = NULL");
+    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pOutUltimateOscillator = NULL\n");
     return NULL_POINTER;
   }
 

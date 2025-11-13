@@ -195,13 +195,13 @@ AsirikuyReturnCode addOrderEntrySignal(OrderType orderType, StrategyParams* pPar
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderEntrySignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderEntrySignal() failed. pParams = NULL\n\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderEntrySignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderEntrySignal() failed. pTradingSignals = NULL\n\n");
     return NULL_POINTER;
   }
 
@@ -240,13 +240,13 @@ AsirikuyReturnCode addOrderExitSignal(OrderType orderType, StrategyParams* pPara
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderExitSignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderExitSignal() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderExitSignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderExitSignal() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -258,13 +258,13 @@ AsirikuyReturnCode addOrderUpdateSignal(OrderType orderType, StrategyParams* pPa
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderUpdateSignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderUpdateSignal() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"addOrderUpdateSignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] addOrderUpdateSignal() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -276,13 +276,13 @@ AsirikuyReturnCode removeOrderEntrySignal(OrderType orderType, StrategyParams* p
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderEntrySignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderEntrySignal() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderEntrySignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderEntrySignal() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -294,7 +294,7 @@ AsirikuyReturnCode removeAllOrderEntrySignals(int* pTradingSignals)
 {
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeAllOrderEntrySignals() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeAllOrderEntrySignals() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -312,13 +312,13 @@ AsirikuyReturnCode removeOrderExitSignal(OrderType orderType, StrategyParams* pP
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderExitSignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderExitSignal() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderExitSignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderExitSignal() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -330,7 +330,7 @@ AsirikuyReturnCode removeAllOrderExitSignals(int* pTradingSignals)
 {
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeAllOrderExitSignals() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeAllOrderExitSignals() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -348,13 +348,13 @@ AsirikuyReturnCode removeOrderUpdateSignal(OrderType orderType, StrategyParams* 
 {
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderUpdateSignal() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderUpdateSignal() failed. pParams = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeOrderUpdateSignal() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeOrderUpdateSignal() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 
@@ -366,7 +366,7 @@ AsirikuyReturnCode removeAllOrderUpdateSignals(int* pTradingSignals)
 {
   if(pTradingSignals == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeAllOrderUpdateSignals() failed. pTradingSignals = NULL");
+    fprintf(stderr, "[CRITICAL] removeAllOrderUpdateSignals() failed. pTradingSignals = NULL\n");
     return NULL_POINTER;
   }
 

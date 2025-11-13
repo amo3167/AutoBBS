@@ -1,4 +1,5 @@
 /**
+#include <stdio.h>
  * @file
  * @brief     Common logging functions used by multiple projects.
  * 
@@ -145,7 +146,7 @@ void initExtendedEntryBarLog(BOOL enableEntryBarLog, int barNumber, const char* 
   }
   else
   {
-    pantheios_logputs(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"Entry bar log is not enabled.");
+    fprintf(stderr, "[NOTICE] Entry bar log is not enabled.\n");
   }
 
 
@@ -190,7 +191,7 @@ void recordData(StrategyParams* pParams, int positionType)
     last_newline = strrchr(buff, '\n'); // find last occurrence of newlinw 
     last_line = last_newline+1;         // jump to it
 
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"last line in entry bar log = %s", last_line);
+	fprintf(stderr, "[DEBUG] last line in entry bar log = %s", last_line);
 
 	}
 
@@ -199,7 +200,7 @@ void recordData(StrategyParams* pParams, int positionType)
 	for (i=0;i<gBarNumber;i++){
 
 	safe_gmtime(&timeInfo, openTime(shift));
-	//pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"%d", size);
+	//fprintf(stderr, "[CRITICAL] %d", size);
 
 	sprintf(inside,"%d,", timeInfo.tm_hour);
 	strcat(line, inside);
@@ -294,7 +295,7 @@ void recordData(StrategyParams* pParams, int positionType)
 
 	sprintf(final, "%s\n", line);
 
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"Line to add to entry bar log = %s", final);
+	fprintf(stderr, "[DEBUG] Line to add to entry bar log = %s", final);
 
 	if (strncmp(final , last_line, 20))
 	fprintf(fp, "%s\n", line);
@@ -309,13 +310,13 @@ char* asirikuyReturnCodeToString(AsirikuyReturnCode returnCode, char* pBuffer, i
 {
   if(pBuffer == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"asirikuyReturnCodeToString() failed. pBuffer = NULL");
+    fprintf(stderr, "[CRITICAL] asirikuyReturnCodeToString() failed. pBuffer = NULL");
     return pBuffer;
   }
 
   if(bufferLength < MAX_ERROR_STRING_SIZE)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"asirikuyReturnCodeToString() failed. bufferLength < MAX_ERROR_STRING_SIZE");
+    fprintf(stderr, "[ERROR] asirikuyReturnCodeToString() failed. bufferLength < MAX_ERROR_STRING_SIZE");
     return pBuffer;
   }
 
@@ -361,13 +362,13 @@ char* taRetCodeToString(TA_RetCode retCode, char* pBuffer, int bufferLength)
 {
   if(pBuffer == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"taRetCodeToString() failed. pBuffer = NULL");
+    fprintf(stderr, "[CRITICAL] taRetCodeToString() failed. pBuffer = NULL");
     return pBuffer;
   }
 
   if(bufferLength < MAX_ERROR_STRING_SIZE)
   {
-    pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"taRetCodeToString() failed. bufferLength < MAX_ERROR_STRING_SIZE");
+    fprintf(stderr, "[ERROR] taRetCodeToString() failed. bufferLength < MAX_ERROR_STRING_SIZE");
     return pBuffer;
   }
 
@@ -404,7 +405,7 @@ AsirikuyReturnCode logAsirikuyError(const char* pFunctionName, AsirikuyReturnCod
 
   if(pFunctionName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"logAsirikuyError() failed. pFunctionName = NULL");
+    fprintf(stderr, "[CRITICAL] logAsirikuyError() failed. pFunctionName = NULL\n");
     return NULL_POINTER;
   }
 
@@ -412,7 +413,7 @@ AsirikuyReturnCode logAsirikuyError(const char* pFunctionName, AsirikuyReturnCod
   strcpy(errorBuf, pFunctionName);
   strcat(errorBuf, errorCodeBuf);
   strcat(errorBuf, " ");
-  pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)errorBuf);
+  fprintf(stderr, "[ERROR] %s\n", errorBuf);
 
   return returnCode;
 }
@@ -424,7 +425,7 @@ AsirikuyReturnCode logTALibError(const char* pFunctionName, TA_RetCode code)
 
   if(pFunctionName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"logTALibError() failed. pFunctionName = NULL");
+    fprintf(stderr, "[CRITICAL] logTALibError() failed. pFunctionName = NULL\n");
     return NULL_POINTER;
   }
 
@@ -432,7 +433,7 @@ AsirikuyReturnCode logTALibError(const char* pFunctionName, TA_RetCode code)
   strcpy(errorBuf, pFunctionName);
   strcat(errorBuf, errorCodeBuf);
   strcat(errorBuf, " ");
-  pantheios_logputs(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)errorBuf);
+  fprintf(stderr, "[ERROR] %s\n", errorBuf);
 
   return TA_LIB_ERROR;
 }

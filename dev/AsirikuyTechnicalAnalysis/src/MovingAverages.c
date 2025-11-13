@@ -47,19 +47,19 @@ AsirikuyReturnCode calculateAverageRange(const double* pHigh, const double* pLow
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageRange() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageRange() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutAverageRange == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageRange() failed. pOutAverageRange = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pOutAverageRange = NULL\n");
     return NULL_POINTER;
   }
 
@@ -92,25 +92,25 @@ AsirikuyReturnCode calculateAverageTypicalPrice(const double* pHigh, const doubl
 
   if(pHigh == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageTypicalPrice() failed. pHigh = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pHigh = NULL\n");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageTypicalPrice() failed. pLow = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pLow = NULL\n");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageTypicalPrice() failed. pClose = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pClose = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutAverageTypicalPrice == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"calculateAverageTypicalPrice() failed. pOutAverageTypicalPrice = NULL");
+    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pOutAverageTypicalPrice = NULL\n");
     return NULL_POINTER;
   }
 

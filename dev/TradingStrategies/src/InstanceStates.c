@@ -38,6 +38,7 @@
 #include "Precompiled.h"
 #include "InstanceStates.h"
 #include "CriticalSection.h"
+#include <stdio.h>
 #include "EasyTradeCWrapper.hpp"
 
 #define INSTANCE_STATES_FILENAME_EXTENSION ".state"
@@ -100,29 +101,29 @@ void loadInstanceState(int instanceId)
 
   if(instanceIndex < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"loadInstanceState() Failed. InstanceIndex < 0");
+    fprintf(stderr, "[ERROR] loadInstanceState() Failed. InstanceIndex < 0\n\n\n\n\n\n");
     return;
   }
 
   strcpy(path, gInstanceStatesFolder);
-  strcat(path, "/");
+  strcat(path, "/\n\n\n\n\n");
   sprintf(instanceIdString,  "%d", instanceId);
   strcat(path, instanceIdString);
   strcat(path, INSTANCE_STATES_FILENAME_EXTENSION);
 
-  file = fopen(path, "rb");
+  file = fopen(path, "rb\n");
   if(!file)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"loadInstanceState() %s does not exist yet. There is no state to load.", path);
+    fprintf(stderr, "[NOTICE] loadInstanceState() %s does not exist yet. There is no state to load.\n", path);
     initializeInstanceState(instanceIndex);
     return;
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"loadInstanceState() Loading instance state from %s", path);
+  fprintf(stderr, "[NOTICE] loadInstanceState() Loading instance state from %s\n", path);
   fread(&gInstanceStates[instanceIndex], sizeof(InstanceState), 1, file);
   fclose(file);
 
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"loadInstanceState() InstanceId = %d, States Index = %d, instance ID = %d, Is parameter space loaded = %d, Last order update time = %d, Last Run time = %d, ", instanceId, instanceIndex, gInstanceStates[instanceIndex].instanceId, gInstanceStates[instanceIndex].isParameterSpaceLoaded, gInstanceStates[instanceIndex].lastOrderUpdateTime, gInstanceStates[instanceIndex].lastRunTime);
+  fprintf(stderr, "[DEBUG] loadInstanceState() InstanceId = %d, States Index = %d, instance ID = %d, Is parameter space loaded = %d, Last order update time = %d, Last Run time = %d\n", instanceId, instanceIndex, gInstanceStates[instanceIndex].instanceId, gInstanceStates[instanceIndex].isParameterSpaceLoaded, gInstanceStates[instanceIndex].lastOrderUpdateTime, gInstanceStates[instanceIndex].lastRunTime);
 }
 
 InstanceState* getInstanceState(int instanceId)
@@ -131,7 +132,7 @@ InstanceState* getInstanceState(int instanceId)
 
   if(instanceIndex < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getInstanceState() failed. Unable to find state variables for instance ID: %d", instanceId);
+    fprintf(stderr, "[CRITICAL] getInstanceState() failed. Unable to find state variables for instance ID: %d\n", instanceId);
     return NULL;
   }
 
@@ -147,19 +148,19 @@ static void backupInstanceState(int instanceId)
 
   if(instanceIndex < 0)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"backupInstanceState() Failed. InstanceIndex < 0");
+    fprintf(stderr, "[ERROR] backupInstanceState() Failed. InstanceIndex < 0\n\n\n\n\n");
     return;
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"backupInstanceState() InstanceId = %d, States Index = %d, instance ID = %d, Is parameter space loaded = %d, Last order update time = %d, Last Run time = %d, ", instanceId, instanceIndex, gInstanceStates[instanceIndex].instanceId, gInstanceStates[instanceIndex].isParameterSpaceLoaded, gInstanceStates[instanceIndex].lastOrderUpdateTime, gInstanceStates[instanceIndex].lastRunTime);
+  fprintf(stderr, "[DEBUG] backupInstanceState() InstanceId = %d, States Index = %d, instance ID = %d, Is parameter space loaded = %d, Last order update time = %d, Last Run time = %d, ", instanceId, instanceIndex, gInstanceStates[instanceIndex].instanceId, gInstanceStates[instanceIndex].isParameterSpaceLoaded, gInstanceStates[instanceIndex].lastOrderUpdateTime, gInstanceStates[instanceIndex].lastRunTime);
 
   strcpy(path, gInstanceStatesFolder);
-  strcat(path, "/");
+  strcat(path, "/\n\n\n\n\n");
   sprintf(instanceIdString, "%d", instanceId);
   strcat(path, instanceIdString);
   strcat(path, INSTANCE_STATES_FILENAME_EXTENSION);
 
-  file = fopen(path, "wb");
+  file = fopen(path, "wb\n\n\n\n\n");
   if(file)
   {
     fwrite(&gInstanceStates[instanceIndex], sizeof(InstanceState), 1, file);
@@ -167,7 +168,7 @@ static void backupInstanceState(int instanceId)
   }
   else
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"backupInstanceState() Failed to open %s. Cannot backup instance states.", path);
+    fprintf(stderr, "[ERROR] backupInstanceState() Failed to open %s. Cannot backup instance states.", path);
   }
 }
 
@@ -187,7 +188,7 @@ BOOL hasInstanceRunOnCurrentBar(int instanceId, time_t barTime, BOOL isBackTesti
     {
       if(gInstanceStates[i].instanceId == -1)
       {
-        pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"hasInstanceRunOnCurrentBar() Instance has no run time stored yet. InstanceId = %d, States Index = %d, Bar time = %d", instanceId, i, barTime);
+        fprintf(stderr, "[DEBUG] hasInstanceRunOnCurrentBar() Instance has no run time stored yet. InstanceId = %d, States Index = %d, Bar time = %d", instanceId, i, barTime);
         gInstanceStates[i].instanceId = instanceId;
         gInstanceStates[i].lastRunTime = (__time32_t)barTime;
         if(!isBackTesting)
@@ -202,13 +203,13 @@ BOOL hasInstanceRunOnCurrentBar(int instanceId, time_t barTime, BOOL isBackTesti
       {
         if(gInstanceStates[i].lastRunTime == barTime)
         {
-          pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"hasInstanceRunOnCurrentBar() Instance has already run on this bar. InstanceId = %d, States Index = %d, Last run time = %d, Bar time = %d", instanceId, i, gInstanceStates[i].lastRunTime, barTime);
+          fprintf(stderr, "[DEBUG] hasInstanceRunOnCurrentBar() Instance has already run on this bar. InstanceId = %d, States Index = %d, Last run time = %d, Bar time = %d", instanceId, i, gInstanceStates[i].lastRunTime, barTime);
           leaveCriticalSection();
           return TRUE;
         }
         else
         {
-          pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"hasInstanceRunOnCurrentBar() Instance has not yet run on this bar. InstanceId = %d, States Index = %d, Last run time = %d, Bar time = %d", instanceId, i, gInstanceStates[i].lastRunTime, barTime);
+          fprintf(stderr, "[DEBUG] hasInstanceRunOnCurrentBar() Instance has not yet run on this bar. InstanceId = %d, States Index = %d, Last run time = %d, Bar time = %d", instanceId, i, gInstanceStates[i].lastRunTime, barTime);
           gInstanceStates[i].lastRunTime = (__time32_t)barTime;
           if(!isBackTesting)
           {
@@ -234,7 +235,7 @@ BOOL hasOrderOpenedOnCurrentBar(StrategyParams* pParams)
 
   if(pParams == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"hasOrderOpenedOnCurrentBar() failed. pParams = NULL");
+    fprintf(stderr, "[CRITICAL] hasOrderOpenedOnCurrentBar() failed. pParams = NULL\n\n\n\n\n");
     return NULL_POINTER;
   }
 

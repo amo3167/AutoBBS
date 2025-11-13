@@ -6,11 +6,7 @@ project "UnitTests"
     "**.hpp", 
 	"**.cpp"
   }
-  vpaths{
-    ["Header Files"] = "**.hpp", 
-	["Source Files"] = "**.cpp"
-  }
-  uses "NTPClient"
+  links{ "NTPClient" }
   includedirs{
     "../AsirikuyCommon/tests", 
     "../AsirikuyFrameworkAPI/tests", 

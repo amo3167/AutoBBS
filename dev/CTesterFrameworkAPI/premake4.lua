@@ -20,10 +20,6 @@ project "CTesterFrameworkAPI"
   libdirs{
 	"../../bin/**"
   }
-  vpaths{
-	["Header Files"] = "include/**.h", 
-	["Source Files"] = "src/**.c"
-  }
   configuration{"not windows"}
     excludes {
       "src/**.def"

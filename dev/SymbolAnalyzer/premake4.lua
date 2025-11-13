@@ -7,11 +7,6 @@ project "SymbolAnalyzer"
 	"**.c", 
 	"**.hpp"
   }
-  vpaths{
-	["Header Files"] = "../../../dev/SymbolAnalyzer/include/**.*", 
-	["Source Files"] = "../../../dev/SymbolAnalyzer/src/**.*", 
-	["Unit Tests"]   = "../../../dev/SymbolAnalyzer/tests/**.*"
-  }
   includedirs{
     "src"
   }

@@ -4,6 +4,8 @@
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "base.h"
+#include "AsirikuyTime.h"
+#include "InstanceStates.h"
 #include "ComLib.h"
 #include "SwingStrategy.h"
 #include "TrendStrategy.h"
@@ -11,6 +13,30 @@
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSEF
+
+// Forward declarations (these functions are defined in SwingStrategy.c and TrendStrategy.c)
+void splitBuyOrders_MultiDays_GBPJPY_Swing(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitSellOrders_MultiDays_GBPJPY_Swing(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitBuyOrders_Ichimoko_Daily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss);
+void splitSellOrders_Ichimoko_Daily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss);
+void splitBuyOrders_4HSwing_Shellington(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss);
+void splitSellOrders_4HSwing_Shellington(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double atr, double stopLoss);
+void splitBuyOrders_MACD_BEILI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitSellOrders_MACD_BEILI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitBuyOrders_Daily_Swing_ExecutionOnly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitSellOrders_Daily_Swing_ExecutionOnly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitBuyRangeOrders(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitSellRangeOrders(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+void splitBuyOrders_Ichimoko_Weekly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
+AsirikuyReturnCode workoutExecutionTrend_WeeklyATR_Prediction(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_DayTrading_ExecutionOnly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_Limit_BBS_LongTerm(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_MACD_Daily_New(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_ShortTerm(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_ASI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index_Regression_Test(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Weekly_Index(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
 static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss)
 {
@@ -23,7 +49,7 @@ static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Bas
 			splitBuyOrders_LongTerm(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 			break;
 		case 4:
-			splitBuyOrders_Limit(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+			splitBuyOrders_Limit(pParams, pIndicators, pBase_Indicators, 0, takePrice_primary, stopLoss);
 			break;
 		case 5:
 			break;
@@ -81,10 +107,10 @@ static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Bas
 			splitBuyOrders_MACDWeekly(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 			break;
 		case 26:
-			splitBuyOrders_Ichimoko_Daily(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+			splitBuyOrders_Ichimoko_Daily(pParams, pIndicators, pBase_Indicators, pBase_Indicators->pDailyATR, stopLoss);
 			break;
 		case 27:
-			splitBuyOrders_4HSwing_Shellington(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+			splitBuyOrders_4HSwing_Shellington(pParams, pIndicators, pBase_Indicators, pBase_Indicators->pDailyATR, stopLoss);
 			break;
 		case 28:
 			splitBuyOrders_MACD_BEILI(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -98,7 +124,7 @@ static void splitBuyOrders(StrategyParams* pParams, Indicators* pIndicators, Bas
 			splitBuyOrders_ShortTerm_New(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 			break;
 		case 32:
-			splitBuyRangeOrders(pParams, pIndicators, pBase_Indicators);
+			splitBuyRangeOrders(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 			break;
 		case 33:
 			splitBuyOrders_Ichimoko_Weekly(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -118,8 +144,8 @@ static void splitSellOrders(StrategyParams* pParams, Indicators* pIndicators, Ba
 	case 3:
 		splitSellOrders_LongTerm(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
-	case 4:
-		splitSellOrders_Limit(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		case 4:
+			splitSellOrders_Limit(pParams, pIndicators, pBase_Indicators, 0, takePrice_primary, stopLoss);
 		break;
 	case 5:
 		break;
@@ -190,7 +216,7 @@ static void splitSellOrders(StrategyParams* pParams, Indicators* pIndicators, Ba
 		splitSellOrders_ShortTerm_New(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 32:
-		splitSellRangeOrders(pParams, pIndicators, pBase_Indicators);
+		splitSellRangeOrders(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	}
 }
@@ -316,7 +342,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && pParams->accountInfo.totalOpenTradeRiskPercent < parameter(AUTOBBS_MAX_ACCOUNT_RISK) * -1) //if account risk is more than 3%, stop entring trades.
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, Over max riks %lf�� skip this entry signal=%d",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s, Over max riks %lf�� skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, parameter(AUTOBBS_MAX_ACCOUNT_RISK), pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -324,7 +350,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	//Filter out macro trend
 	if (pIndicators->side != 0 && pIndicators->entrySignal != 0 && pIndicators->side != pIndicators->entrySignal)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,Againt Side =%ld�� skip this entry signal=%d",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s,Againt Side =%ld�� skip this entry signal=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->side, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
 	}
@@ -332,7 +358,7 @@ static AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicat
 	//// Dont enter trade on the new day bar, it is too risky and not reliable.
 	//if (pIndicators->entrySignal != 0 && timeInfo.tm_hour == startHour && timeInfo.tm_min == 0)
 	//{
-	//	pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s Not allowed to trade on the firt bar of new day�� skip this entry signal=%d",
+	//	fprintf(stderr, "[WARNING] System InstanceID = %d, BarTime = %s Not allowed to trade on the firt bar of new day�� skip this entry signal=%d",
 	//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 	//	pIndicators->entrySignal = 0;
 	//}
@@ -669,7 +695,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 	pIndicators->virtualBalanceTopup = (double)parameter(AUTOBBS_VIRTUAL_BALANCE_TOPUP);
 	if (pIndicators->virtualBalanceTopup > 0)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d, top up equity %lf ",
+		fprintf(stderr, "[WARNING] System InstanceID = %d, top up equity %lf ",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], pIndicators->virtualBalanceTopup);
 		//update totalOpenTradeRiskPercent
 		originEquity = pParams->accountInfo.equity;
@@ -690,7 +716,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 
 	memset(pIndicators->status, '\0', MAX_OUTPUT_ERROR_STRING_SIZE);
 
-	strcpy(pIndicators->status, "No Error");
+	strcpy(pIndicators->status, "No Error\n\n");
 
 	workoutExecutionTrend(pParams, pIndicators, pBase_Indicators);
 
@@ -705,13 +731,13 @@ static AsirikuyReturnCode handleTradeEntries(StrategyParams* pParams, Indicators
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeEntries() failed. pParams = NULL\n\n");
 		return NULL_POINTER;
 	}
 
 	if (pIndicators == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeEntries() failed. pIndicators = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeEntries() failed. pIndicators = NULL\n\n");
 		return NULL_POINTER;
 	}
 
@@ -778,17 +804,17 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runAutoBBS() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] runAutoBBS() failed. pParams = NULL\n\n");
 		return NULL_POINTER;
 	}
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 
 	if (strcmp(timeString, "09/03/23 01:00") == 0)
-		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, "hit a point");
+		fprintf(stderr, "[DEBUG] hit a point\n");
 
 	if (strcmp(timeString, "22/11/21 15:00") == 0)
-		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, "hit a point");
+		fprintf(stderr, "[DEBUG] hit a point\n");
 
 	if ((int)parameter(AUTOBBS_TREND_MODE) == 16) // GBPJPY Daily Swing strategy, �����ֻ��Ҫ���ڵ�ָ��?
 		base_Indicators.strategy_mode = 0;
@@ -809,7 +835,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 		)
 		)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_WARNING, (PAN_CHAR_T*)"System InstanceID = %d,BarTime = %s: validate time failure.", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+		fprintf(stderr, "[WARNING] System InstanceID = %d,BarTime = %s: validate time failure.", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
 		return SUCCESS;
 	}
 
@@ -819,7 +845,7 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	if ((int)parameter(AUTOBBS_MACRO_TREND) * (int)parameter(AUTOBBS_ONE_SIDE) < 0)
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"Invalid paramenter config: System InstanceID = %d, BarTime = %s, AUTOBBS_MACRO_TREND= %d��AUTOBBS_ONE_SIDE=%d",
+		fprintf(stderr, "[ERROR] Invalid paramenter config: System InstanceID = %d, BarTime = %s, AUTOBBS_MACRO_TREND= %d��AUTOBBS_ONE_SIDE=%d",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, (int)parameter(AUTOBBS_MACRO_TREND), (int)parameter(AUTOBBS_ONE_SIDE));
 		return INVALID_CONFIG;
 	}
@@ -834,13 +860,13 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 	setUIValues(pParams, &indicators, &base_Indicators);
 
 
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_primary=%ld,BBStopPrice_primary=%lf, BBSIndex_primary = %ld",
+	fprintf(stderr, "[DEBUG] System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_primary=%ld,BBStopPrice_primary=%lf, BBSIndex_primary = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_primary, indicators.bbsStopPrice_primary, indicators.bbsIndex_primary);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,bbsTrend_secondary=%ld,BBStopPrice_secondary=%lf, bbsIndex_secondary = %ld",
+	fprintf(stderr, "[DEBUG] System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,bbsTrend_secondary=%ld,BBStopPrice_secondary=%lf, bbsIndex_secondary = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_secondary, indicators.bbsStopPrice_secondary, indicators.bbsIndex_secondary);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_1H=%ld,BBStopPrice_1H=%lf, BBSIndex_1H = %ld",
+	fprintf(stderr, "[DEBUG] System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_1H=%ld,BBStopPrice_1H=%lf, BBSIndex_1H = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_1H, indicators.bbsStopPrice_1H, indicators.bbsIndex_1H);
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_4H=%ld,BBStopPrice_4H=%lf, BBSIndex_4H = %ld",
+	fprintf(stderr, "[DEBUG] System InstanceID = %d, BarTime = %s, ExecutionTrend = %ld,BBSTrend_4H=%ld,BBStopPrice_4H=%lf, BBSIndex_4H = %ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_4H, indicators.bbsStopPrice_4H, indicators.bbsIndex_4H);
 
 	returnCode = handleTradeExits(pParams, &indicators);

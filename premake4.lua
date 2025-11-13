@@ -16,16 +16,21 @@ else
       printf("Set the environment variable BOOST_ROOT first!")
       return
   else
-    cwd = os.getcwd()
-    os.chdir(boostdir)
-    if os.get() == "windows" and not os.isfile("b2.exe") then
-      os.outputof("bootstrap.bat")
-    elseif os.get() ~= "windows" and not os.isfile("./b2") then
-      printf("Bootstrapping boost library...")
-      os.outputof("chmod +x ./bootstrap.sh && chmod +x ./tools/build/v2/engine/build.sh")
-      os.outputof("./bootstrap.sh")
+    -- Only bootstrap if boost directory exists and b2 is not present
+    -- Skip bootstrap in Docker or if boost directory doesn't exist
+    if os.isdir(boostdir) then
+      cwd = os.getcwd()
+      os.chdir(boostdir)
+      if os.get() == "windows" and not os.isfile("b2.exe") then
+        if os.execute then
+          os.execute("bootstrap.bat")
+        end
+      elseif os.get() ~= "windows" and not os.isfile("./b2") then
+        -- Skip bootstrap in Docker - boost should already be built
+        -- This is just for generating build files, not building
+      end
+      os.chdir(cwd)
     end
-    os.chdir(cwd)
   end
   -- The main definition of the solution starts here
   solution "AsirikuyFramework"
@@ -43,7 +48,7 @@ else
 					"/usr/lib/R/site-library/RInside/include"}
 	end
 	includedirs{
-      boostdir,
+      boostdir .. "/include",
 	  "vendor/STLSoft/include", 
 	  "vendor/Pantheios/include", 
 	  "vendor/Pantheios/include/pantheios/backends", 
@@ -109,13 +114,22 @@ else
 	
     -- Global build settings
 	flags{"StaticRuntime", "Unsafe"}
+	-- STLSoft configuration (needed for cross-compilation)
+	-- For 32-bit builds, use LLP64 model (Windows-like: int=4, long=4, long long=8)
+	defines{
+		"__LLP64__",
+		"_STLSOFT_SIZEOF_SHORT=2",
+		"_STLSOFT_SIZEOF_INT=4",
+		"_STLSOFT_SIZEOF_LONG=4",
+		"_STLSOFT_SIZEOF_LONG_LONG=8"
+	}
     -- Build type specific settings
     configuration{"Debug"}
       flags{"Symbols"}
 	  defines{"DEBUG", "_DEBUG"}
     configuration{"Release"}
 	  defines{"NDEBUG"}
-	  flags{"OptimizeSize", "NoFramePointer", "NoIncrementalLink"}
+	  flags{"OptimizeSize", "NoFramePointer"}
     -- OS specific settings
 	configuration{"windows"}
       includedirs{
@@ -132,6 +146,12 @@ else
       includedirs{"/opt/local/include"}
       libdirs{"/opt/local/lib"}
 	  defines{"DARWIN", "unix", "UNIX"}
+    configuration{"macosx", "x32"}
+      -- Override default architecture for 32-bit builds on macOS
+      -- Remove unsupported armv4t architecture flag by setting ARCH to empty
+      -- premake4 will use this to override the default ARCH variable
+      buildoptions{"-m32"}
+      -- Note: ARCH variable is set by premake4, we need to override it in the Makefile
     configuration{"linux", "x32"}
       buildoptions{"-march=i686"}
     configuration{"linux", "x64"}
@@ -199,21 +219,22 @@ else
     end
 	
 	-- Projects
-	include "vendor/MiniXML"
-	include "vendor/dSFMT"
-	include "vendor/FANN"
-	include "vendor/TALib"
-	include "vendor/Pantheios"
-	include "vendor/Shark"
-	include "vendor/DevIL"
-	include "vendor/Jasper"
-	include "vendor/LibJPEG"
-	include "vendor/LibMNG"
-	include "vendor/LibPNG"
-	include "vendor/LittleCMS"
-	include "vendor/Zlib"
-	include "vendor/Gaul"
-	include "vendor/Waffles"
+	-- Vendor libraries (include only if they exist)
+	if os.isdir("vendor/MiniXML") then include "vendor/MiniXML" end
+	if os.isdir("vendor/dSFMT") then include "vendor/dSFMT" end
+	if os.isdir("vendor/FANN") then include "vendor/FANN" end
+	if os.isdir("vendor/TALib") then include "vendor/TALib" end
+	if os.isdir("vendor/Pantheios") then include "vendor/Pantheios" end
+	if os.isdir("vendor/Shark") then include "vendor/Shark" end
+	if os.isdir("vendor/DevIL") then include "vendor/DevIL" end
+	if os.isdir("vendor/Jasper") then include "vendor/Jasper" end
+	if os.isdir("vendor/LibJPEG") then include "vendor/LibJPEG" end
+	if os.isdir("vendor/LibMNG") then include "vendor/LibMNG" end
+	if os.isdir("vendor/LibPNG") then include "vendor/LibPNG" end
+	if os.isdir("vendor/LittleCMS") then include "vendor/LittleCMS" end
+	if os.isdir("vendor/Zlib") then include "vendor/Zlib" end
+	if os.isdir("vendor/Gaul") then include "vendor/Gaul" end
+	if os.isdir("vendor/Waffles") then include "vendor/Waffles" end
 	include "dev/AsirikuyCommon"
 	include "dev/Log"
 	include "dev/SymbolAnalyzer"
@@ -226,6 +247,6 @@ else
 	include "dev/CTesterFrameworkAPI"
 	include "dev/UnitTests"
     if os.get() == "windows" then
-	  include "vendor/curl"
+	  if os.isdir("vendor/curl") then include "vendor/curl" end
     end
 end

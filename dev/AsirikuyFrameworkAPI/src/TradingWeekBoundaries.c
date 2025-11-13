@@ -75,7 +75,7 @@ BOOL isOutsideTradingBoundaries(StrategyParams* pParams,time_t time)
 
 	if (timeStructure->tm_hour < startHour  )
 	{
-		pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"isOutsideTradingBoundaries() PassedDate = %s", timeString);
+		fprintf(stderr, "[DEBUG] isOutsideTradingBoundaries() PassedDate = %s\n", timeString);
 		return TRUE;
 	}
 
@@ -97,7 +97,7 @@ BOOL isOutsideTradingWeekBoundaries(time_t time)
 
 	safe_timeString(timeString, time);
 
-	pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"isOutsideTradingWeekBoundaries() PassedDate = %s Day of week: %d, Hour: %d", timeString, timeStructure->tm_wday, timeStructure->tm_hour);
+	fprintf(stderr, "[DEBUG] isOutsideTradingWeekBoundaries() PassedDate = %s Day of week: %d, Hour: %d\n", timeString, timeStructure->tm_wday, timeStructure->tm_hour);
 
 	if((timeStructure->tm_wday == MONDAY) && (timeStructure->tm_hour < gCropMondayHours))
   {

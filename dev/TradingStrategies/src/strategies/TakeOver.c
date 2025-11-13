@@ -5,15 +5,14 @@
 #include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "base.h"
+#include "AsirikuyTime.h"
+#include "InstanceStates.h"
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
 
-typedef enum trend_t
-{
-	UP = 1,
-	DOWN = -1
-}trend;
+// trend_t is already defined in base.h, using that one
 
 typedef enum additionalSettings_t
 {
@@ -43,6 +42,11 @@ typedef struct indicators_t
 	int dsl_type;
 } Indicators;
 
+// Forward declarations
+static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators, OrderType orderType);
+
 typedef enum exitDslTypes_t
 {
 	EXIT_DSL_NONE = 0,
@@ -64,7 +68,7 @@ AsirikuyReturnCode runTakeOver(StrategyParams* pParams)
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runTakeOver() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] runTakeOver() failed. pParams = NULL\n");
 		return NULL_POINTER;
 	}
 
@@ -74,11 +78,11 @@ AsirikuyReturnCode runTakeOver(StrategyParams* pParams)
 
 	setUIValues(pParams, &indicators);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s,BBSTrend=%ld,BBStopPrice=%lf, BBSIndex = %ld", 
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s,BBSTrend=%ld,BBStopPrice=%lf, BBSIndex = %ld", 
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.bbsTrend, indicators.bbsStopPrice, indicators.bbsIndex);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, preHigh = %lf,preLow=%lf, preClose = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, preHigh = %lf,preLow=%lf, preClose = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.preHigh, indicators.preLow, indicators.preClose);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, buySLP = %lf,sellSLP=%lf, DSL= %d",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, buySLP = %lf,sellSLP=%lf, DSL= %d",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.buyStopLossPrice, indicators.sellStopLossPrice, indicators.dsl_type);
 	
 
@@ -216,13 +220,13 @@ static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pInd
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeExits() failed. pParams = NULL\n");
 		return NULL_POINTER;
 	}
 
 	if (pIndicators == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"handleTradeExits() failed. pIndicators = NULL");
+		fprintf(stderr, "[CRITICAL] handleTradeExits() failed. pIndicators = NULL\n");
 		return NULL_POINTER;
 	}
 

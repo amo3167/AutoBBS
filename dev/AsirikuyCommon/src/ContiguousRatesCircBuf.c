@@ -93,7 +93,7 @@ static void resetRatesOffset(int instanceIndex, int ratesIndex)
   int oldIndex, newIndex, oldOffset = gRatesBuffers[instanceIndex].bufferOffsets[ratesIndex];
   gRatesBuffers[instanceIndex].bufferOffsets[ratesIndex] = 0;
 
-  //pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"resetRatesOffset() instanceId = %d, ratesIndex = %d, oldOffset = %d", gRatesBuffers[instanceIndex].instanceId, ratesIndex, oldOffset);
+  //fprintf(stderr, (PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"resetRatesOffset() instanceId = %d, ratesIndex = %d, oldOffset = %d", gRatesBuffers[instanceIndex].instanceId, ratesIndex, oldOffset);
 
   /* Shift the pointers to the front of the buffers */
   if(pRates->time)   
@@ -307,7 +307,7 @@ AsirikuyReturnCode incrementRatesOffset(int instanceId, int ratesIndex)
 
   if(instanceIndex >= MAX_INSTANCES)
   {
-    pantheios_logprintf(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"incrementRatesOffset() failed. instanceId: %d does not have a rates buffer allocated", instanceId);
+    fprintf(stderr, "[CRITICAL] incrementRatesOffset() failed. instanceId: %d does not have a rates buffer allocated\n", instanceId);
     return UNKNOWN_INSTANCE_ID;
   }
 
@@ -331,13 +331,13 @@ AsirikuyReturnCode copyRatesBuffer(Rates* pDest, Rates* pSrc)
 {
   if(pDest == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyRatesPointers() failed. pDest = NULL");
+    fprintf(stderr, "[CRITICAL] copyRatesPointers() failed. pDest = NULL\n");
     return NULL_POINTER;
   }
 
   if(pSrc == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"copyRatesPointers() failed. pSrc = NULL");
+    fprintf(stderr, "[CRITICAL] copyRatesPointers() failed. pSrc = NULL\n");
     return NULL_POINTER;
   }
 

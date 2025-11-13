@@ -46,9 +46,10 @@
 #include "NTPClient.hpp"
 #include "CriticalSection.h"
 #include "EasyTradeCWrapper.hpp"
+#include <chrono>
 
 using boost::asio::ip::udp;
-using boost::asio::deadline_timer;
+using boost::asio::steady_timer;
 using namespace boost::gregorian;
 using namespace boost::local_time;
 using namespace boost::posix_time;
@@ -65,7 +66,7 @@ NTPClient* NTPClient::getInstance()
     if(instance_ == NULL)
     {
       instance_ = new NTPClient();
-      pantheios::logprintf(PANTHEIOS_SEV_NOTICE, (PAN_CHAR_T*)"NTPClient has been instantiated");
+      fprintf(stderr, "[NOTICE] NTPClient has been instantiated\n");
     }
     leaveCriticalSection();
   }
@@ -101,7 +102,7 @@ time_t NTPClient::queryRandomNTPServer()
     updateTime_      = local_time;
   }
 
-  pantheios::logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"NTPClient::queryRandomNTPServer() NTP time = %ld.", local_time + localTimeOffset_);
+  fprintf(stderr, "[DEBUG] NTPClient::queryRandomNTPServer() NTP time = %ld.\n", local_time + localTimeOffset_);
   return local_time + localTimeOffset_;
 }
 
@@ -121,8 +122,9 @@ time_t NTPClient::queryNTPServer(const char* ntpServer)
   try
   {
     boost::system::error_code ec;
-    udp::resolver::query      query(udp::v4(), ntpServer, "ntp");
-    udp::endpoint             receiver = *resolver_.resolve(query);
+    auto results = resolver_.resolve(udp::v4(), ntpServer, "ntp", ec);
+    boost::asio::detail::throw_error(ec, "resolve");
+    udp::endpoint             receiver = *results.begin();
     udp::endpoint             sender;
     boost::uint8_t            data[NTP_PACKET_SIZE];
     
@@ -141,17 +143,15 @@ time_t NTPClient::queryNTPServer(const char* ntpServer)
     socket_.send_to(boost::asio::buffer(data), receiver);
 
     // Set a timeout for the async_receive_from operation.
-    deadline_.expires_from_now(boost::posix_time::milliseconds(ntpTimeout_), ec);
-    boost::asio::detail::throw_error(ec, "expires_from_now");
+    deadline_.expires_after(std::chrono::milliseconds(ntpTimeout_));
     deadline_.async_wait(boost::bind(&NTPClient::handleTimeout, this));
 
     // Listen for a response from the server.
     socket_.async_receive_from(boost::asio::buffer(data), sender, boost::bind(&NTPClient::done, this));
 
     // Wait until a response is recieved or the timeout duration is reached.
-    io_service_.reset();
-    io_service_.run(ec);
-    boost::asio::detail::throw_error(ec, "run");
+    io_context_.restart();
+    io_context_.run();
 
     // Use the first 32 bits of the transmit timestamp in host byte order.
     ntp_time = ntohl(*(uint32_t*)&data[XMIT_TS_INDEX]);
@@ -162,26 +162,26 @@ time_t NTPClient::queryNTPServer(const char* ntpServer)
       ntp_time -= uint32_t(SECONDS_1900_TO_1970);
     }
 
-    pantheios::logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"NTPClient::queryNTPServer() ntp_time = %d.", ntp_time);
+    fprintf(stderr, "[DEBUG] NTPClient::queryNTPServer() ntp_time = %d.\n", ntp_time);
   }
   catch(std::exception exc)
   {
-    pantheios::logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"NTPClient::queryNTPServer() Caught Exception: %s, Server: %s", exc.what(), ntpServer);
+    fprintf(stderr, "[ERROR] NTPClient::queryNTPServer() Caught Exception: %s, Server: %s\n", exc.what(), ntpServer);
     done();
   }
   catch(...)
   {
-    pantheios::logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"NTPClient::queryNTPServer() Caught Exception. Server: %s", ntpServer);
+    fprintf(stderr, "[ERROR] NTPClient::queryNTPServer() Caught Exception. Server: %s\n", ntpServer);
     done();
   }
 
   return ntp_time;
 }
 
-NTPClient::NTPClient() : io_service_(),
-  socket_(io_service_),
-  resolver_(io_service_),
-  deadline_(io_service_),
+NTPClient::NTPClient() : io_context_(),
+  socket_(io_context_),
+  resolver_(io_context_),
+  deadline_(io_context_),
   randomMutex_(),
   queryMutex_(),
   updateTime_(0),
@@ -212,20 +212,15 @@ char* NTPClient::generateServerName(char serverName[TIME_SERVER_NAME_LENGTH])
 
 void NTPClient::handleTimeout()
 {
-  if(deadline_.expires_at() <= deadline_timer::traits_type::now())
-  {
-    pantheios::logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"NTPClient::handleTimeout() A request to an NTP server timed out.");
-    done();
-  }
-
-  deadline_.async_wait(boost::bind(&NTPClient::handleTimeout, this));
+  fprintf(stderr, "[DEBUG] NTPClient::handleTimeout() A request to an NTP server timed out.\n");
+  done();
 }
 
 void NTPClient::done()
 {
   deadline_.cancel();
-  deadline_.expires_at(boost::posix_time::pos_infin);
-  io_service_.stop();
+  deadline_.expires_at(std::chrono::steady_clock::time_point::max());
+  io_context_.stop();
 }
 
 void NTPClient::handleLocalClockAdjustment(time_t localTime)

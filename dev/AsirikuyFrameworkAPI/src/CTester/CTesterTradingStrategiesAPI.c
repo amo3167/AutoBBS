@@ -71,22 +71,22 @@ static AsirikuyReturnCode verifyPointers(
 {
   if(pInTradeSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInTradeSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInTradeSymbol = NULL\n");
     return NULL_POINTER;
   }
   if(pInAccountCurrency == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInAccountCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInAccountCurrency = NULL\n");
     return NULL_POINTER;
   }
   if(pInBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInBrokerName = NULL\n");
     return NULL_POINTER;
   }
   if(pInRefBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInRefBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInRefBrokerName = NULL\n");
     return NULL_POINTER;
   }
 

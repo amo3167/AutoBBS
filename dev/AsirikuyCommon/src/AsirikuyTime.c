@@ -95,7 +95,7 @@ char* safe_timeString(char timeString[MAX_TIME_STRING_SIZE], time_t time)
     || (timeInfo.tm_yday < 0)
     || (timeInfo.tm_yday > 365))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"safe_timeString() Invalid time: %zd", time);
+    fprintf(stderr, "[ERROR] safe_timeString() Invalid time: %zd\n", time);
     strcpy(timeString, "Invalid Time");
   }
   else

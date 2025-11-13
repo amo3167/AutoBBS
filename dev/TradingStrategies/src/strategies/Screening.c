@@ -6,20 +6,20 @@ Primary rate: 1H
 #include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "base.h"
+#include "AsirikuyTime.h"
+#include "InstanceStates.h"
+#include <stdio.h>
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
 
-typedef enum trend_t
-{
-	UP =3,
-	UP_NORMAL = 2,	
-	UP_WEAK = 1,
-	DOWN = -3,
-	DOWN_NORMAL = -2,	
-	DOWN_WEAK = -1,
-	RANGE = 0
-}trend;
+// Forward declarations for Screening-specific implementations
+static AsirikuyReturnCode loadWeeklyIndicators_Screening(StrategyParams* pParams, Base_Indicators* pIndicators);
+static AsirikuyReturnCode workoutDailyTrend_Screening(StrategyParams* pParams, Base_Indicators* pIndicators);
+static AsirikuyReturnCode workoutWeeklyTrend_Screening(StrategyParams* pParams, Base_Indicators* pIndicators);
+
+// trend_t is already defined in base.h, using that one
 
 typedef enum screeningRtesIndexes_t
 {		
@@ -79,6 +79,14 @@ typedef struct indicators_t
 
 } Indicators;
 
+// Forward declarations
+static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators);
+static AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow);
+static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend);
+static AsirikuyReturnCode iTrend_HL_Screening(int ratesArrayIndex, int *trend, int index);
+static AsirikuyReturnCode iTrend_MA_Screening(double iATR, int ratesArrayIndex, int *trend);
+
 AsirikuyReturnCode runScreening(StrategyParams* pParams)
 {
 	AsirikuyReturnCode returnCode = SUCCESS;
@@ -90,13 +98,13 @@ AsirikuyReturnCode runScreening(StrategyParams* pParams)
 
 	if (pParams == NULL)
 	{
-		pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"runScreening() failed. pParams = NULL");
+		fprintf(stderr, "[CRITICAL] runScreening() failed. pParams = NULL\n\n");
 		return NULL_POINTER;
 	}
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[PRIMARY_RATES].time[shift0Index]);
 	//if (strcmp(timeString, "08/09/17 21:00") == 0)
-	//	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, "hit a point");
+	//	fprintf(stderr, ("[INFO] hit a point\n\n\n");
 
 	loadIndicators(pParams, &indicators);	
 	
@@ -111,34 +119,35 @@ static AsirikuyReturnCode loadMonthlyIndicators(StrategyParams* pParams, Indicat
 	char timeString[MAX_TIME_STRING_SIZE] = "";
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[S_WEEKLY_RATES].time[shift0Index]);
-	iSRLevels(pParams, pIndicators, S_WEEKLY_RATES, 8, &(pIndicators->monthlyHigh), &(pIndicators->monthlyLow));
+	iSRLevels_Screening(pParams, pIndicators, S_WEEKLY_RATES, 8, 8, &(pIndicators->monthlyHigh), &(pIndicators->monthlyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, 8weeksHigh=%lf, 8weeksLow = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, 8weeksHigh=%lf, 8weeksLow = %lf\n",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->monthlyHigh, pIndicators->monthlyLow);
 	return SUCCESS;
 }
 
-static AsirikuyReturnCode loadWeeklyIndicators(StrategyParams* pParams, Indicators* pIndicators)
+// loadWeeklyIndicators is declared in base.h, but this is a Screening-specific implementation
+static AsirikuyReturnCode loadWeeklyIndicators_Screening(StrategyParams* pParams, Base_Indicators* pIndicators)
 {	
 	int shift0Index = pParams->ratesBuffers->rates[S_WEEKLY_RATES].info.arraySize - 1;		
 	char timeString[MAX_TIME_STRING_SIZE] = "";
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[S_WEEKLY_RATES].time[shift0Index]);
 		
-	iTrend3Rules(pParams, pIndicators, S_WEEKLY_RATES, 2, &(pIndicators->weekly3RulesTrend));
-	iTrend_HL(S_WEEKLY_RATES, &(pIndicators->weeklyHLTrend));
-	iTrend_MA(pIndicators->weeklyATR, S_FOURHOURLY_RATES, &(pIndicators->weeklyMATrend));
+	iTrend3Rules_Screening(pParams, pIndicators, S_WEEKLY_RATES, 2, 0, &(pIndicators->weekly3RulesTrend));
+	iTrend_HL_Screening(S_WEEKLY_RATES, &(pIndicators->weeklyHLTrend), 0);
+	iTrend_MA_Screening(pIndicators->weeklyATR, S_FOURHOURLY_RATES, &(pIndicators->weeklyMATrend));
 
-	iSRLevels(pParams, pIndicators, S_WEEKLY_RATES, 2, &(pIndicators->weeklyHigh), &(pIndicators->weeklyLow));
+	iSRLevels_Screening(pParams, pIndicators, S_WEEKLY_RATES, 2, 2, &(pIndicators->weeklyHigh), &(pIndicators->weeklyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyHLTrend = %ld,weeklyMATrend=%ld",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, weeklyHLTrend = %ld,weeklyMATrend=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyHLTrend, pIndicators->weeklyMATrend);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weekly3RulesTrend = %ld,weeklyHigh=%lf, weeklyLow = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, weekly3RulesTrend = %ld,weeklyHigh=%lf, weeklyLow = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weekly3RulesTrend, pIndicators->weeklyHigh, pIndicators->weeklyLow);
 
-	workoutWeeklyTrend(pParams, pIndicators);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyTrend=%ld, weeklySupport = %lf,weeklyResistance = %lf,weeklyTP=%lf",
+	workoutWeeklyTrend_Screening(pParams, pIndicators);
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, weeklyTrend=%ld, weeklySupport = %lf,weeklyResistance = %lf,weeklyTP=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyTrend, pIndicators->weeklyS, pIndicators->weeklyR, pIndicators->weeklyTP);
 
 	return SUCCESS;
@@ -152,20 +161,20 @@ static AsirikuyReturnCode loadDailyIndicators(StrategyParams* pParams, Indicator
 	
 	safe_timeString(timeString, pParams->ratesBuffers->rates[S_DAILY_RATES].time[shift0Index]);
 		
-	iTrend3Rules(pParams, pIndicators, S_DAILY_RATES, 2, &(pIndicators->daily3RulesTrend));
-	iTrend_HL(S_DAILY_RATES, &(pIndicators->dailyHLTrend));
-	iTrend_MA(pIndicators->dailyATR,S_HOURLY_RATES, &(pIndicators->dailyMATrend));
+	iTrend3Rules_Screening(pParams, pIndicators, S_DAILY_RATES, 2, 0, &(pIndicators->daily3RulesTrend));
+	iTrend_HL_Screening(S_DAILY_RATES, &(pIndicators->dailyHLTrend), 0);
+	iTrend_MA_Screening(pIndicators->dailyATR, S_HOURLY_RATES, &(pIndicators->dailyMATrend));
 
-	iSRLevels(pParams, pIndicators, S_DAILY_RATES, 2, &(pIndicators->dailyHigh), &(pIndicators->dailyLow));
+	iSRLevels_Screening(pParams, pIndicators, S_DAILY_RATES, 2, 2, &(pIndicators->dailyHigh), &(pIndicators->dailyLow));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyHLTrend = %ld,dailyMATrend=%ld",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, dailyHLTrend = %ld,dailyMATrend=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyHLTrend, pIndicators->dailyMATrend);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, daily3RulesTrend = %ld,dailyHigh=%lf, dailyLow = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, daily3RulesTrend = %ld,dailyHigh=%lf, dailyLow = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->daily3RulesTrend, pIndicators->dailyHigh, pIndicators->dailyLow);
 
-	workoutDailyTrend(pParams, pIndicators);
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyTrend=%ld, dailySupport = %lf,dailyResistance = %lf£¬dailyTP=%lf",
+	workoutDailyTrend_Screening(pParams, (Base_Indicators*)pIndicators);
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, dailyTrend=%ld, dailySupport = %lf,dailyResistance = %lfï¿½ï¿½dailyTP=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyTrend, pIndicators->dailyS, pIndicators->dailyR, pIndicators->dailyTP);
 
 	return SUCCESS;
@@ -193,7 +202,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 	pIndicators->ma4H50M = iMA(3, S_FOURHOURLY_RATES, 50, 1);
 	pIndicators->ma4H200M = iMA(3, S_FOURHOURLY_RATES, 200, 1);
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, MA1H200M = %lf,MA4H200M=%lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, MA1H200M = %lf,MA4H200M=%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->ma1H200M, pIndicators->ma4H200M);
 
 	iPivot(S_DAILY_RATES, 1, &(pIndicators->dailyPivot),
@@ -202,7 +211,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 		&(pIndicators->dailyS3), &(pIndicators->dailyR3));
 
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, dailyPivot = %lf,dailyS1=%lf, dailyR1 = %lf,dailyS2=%lf, dailyR2 = %lf,dailyS3=%lf, dailyR3 = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, dailyPivot = %lf,dailyS1=%lf, dailyR1 = %lf,dailyS2=%lf, dailyR2 = %lf,dailyS3=%lf, dailyR3 = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyPivot, pIndicators->dailyS1, pIndicators->dailyR1, pIndicators->dailyS2, pIndicators->dailyR2, pIndicators->dailyS3, pIndicators->dailyR3);
 
 	iPivot(S_WEEKLY_RATES, 1, &(pIndicators->weeklyPivot),
@@ -210,12 +219,12 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 		&(pIndicators->weeklyS2), &(pIndicators->weeklyR2),
 		&(pIndicators->weeklyS3), &(pIndicators->weeklyR3));
 
-	pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"System InstanceID = %d, BarTime = %s, weeklyPivot = %lf,weeklyS1=%lf, weeklyR1 = %lf,weeklyS2=%lf, weeklyR2 = %lf,weeklyS3=%lf, weeklyR3 = %lf",
+	fprintf(stderr, "[INFO] System InstanceID = %d, BarTime = %s, weeklyPivot = %lf,weeklyS1=%lf, weeklyR1 = %lf,weeklyS2=%lf, weeklyR2 = %lf,weeklyS3=%lf, weeklyR3 = %lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->weeklyPivot, pIndicators->weeklyS1, pIndicators->weeklyR1, pIndicators->weeklyS2, pIndicators->weeklyR2, pIndicators->weeklyS3, pIndicators->weeklyR3);
 
 	loadMonthlyIndicators(pParams, pIndicators);
 
-	loadWeeklyIndicators(pParams, pIndicators);
+	loadWeeklyIndicators_Screening(pParams, pIndicators);
 	loadDailyIndicators(pParams, pIndicators);
 	
 
@@ -240,7 +249,9 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 	return SUCCESS;
 }
 
-static AsirikuyReturnCode workoutDailyTrend(StrategyParams* pParams, Indicators* pIndicators)
+// workoutDailyTrend is declared in base.h, but Screening.c has its own implementation
+// Removing static to match base.h declaration
+static AsirikuyReturnCode workoutDailyTrend_Screening(StrategyParams* pParams, Base_Indicators* pIndicators)
 {	
 	double preLow = iLow(S_DAILY_RATES, 1);
 	double preHigh = iHigh(S_DAILY_RATES, 1);
@@ -250,7 +261,7 @@ static AsirikuyReturnCode workoutDailyTrend(StrategyParams* pParams, Indicators*
 
 	pIndicators->dailyTrend = pIndicators->daily3RulesTrend + pIndicators->dailyHLTrend + pIndicators->dailyMATrend;
 
-	// ×îºó£¬ÐÞÕýÇ÷ÊÆ ºÍÖ§³Å×èÁ¦Î»ÖÃ¡£
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã¡ï¿½
 	if (pIndicators->dailyTrend == RANGE)
 	{
 		pIndicators->dailyS = pIndicators->dailyLow;
@@ -350,7 +361,9 @@ static AsirikuyReturnCode workoutDailyTrend(StrategyParams* pParams, Indicators*
 	return SUCCESS;
 }
 
-static AsirikuyReturnCode workoutWeeklyTrend(StrategyParams* pParams, Indicators* pIndicators)
+// workoutWeeklyTrend is declared in base.h, but Screening.c has its own implementation
+// Removing static to match base.h declaration
+static AsirikuyReturnCode workoutWeeklyTrend_Screening(StrategyParams* pParams, Base_Indicators* pIndicators)
 {
 	double preLow = iLow(S_WEEKLY_RATES, 1);
 	double preHigh = iHigh(S_WEEKLY_RATES, 1);
@@ -358,7 +371,7 @@ static AsirikuyReturnCode workoutWeeklyTrend(StrategyParams* pParams, Indicators
 	double currentLow = iLow(S_WEEKLY_RATES, 0);
 	double currentHigh = iHigh(S_WEEKLY_RATES, 0);
 
-	// ×îºó£¬ÐÞÕýÇ÷ÊÆ ºÍÖ§³Å×èÁ¦Î»ÖÃ¡£
+	// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ö§ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Î»ï¿½Ã¡ï¿½
 	pIndicators->weeklyTrend = pIndicators->weekly3RulesTrend + pIndicators->weeklyHLTrend + pIndicators->weeklyMATrend;
 
 	if (pIndicators->weeklyTrend == RANGE)
@@ -423,7 +436,7 @@ static AsirikuyReturnCode workoutWeeklyTrend(StrategyParams* pParams, Indicators
 	return SUCCESS;
 }
 
-static AsirikuyReturnCode iSRLevels(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift,double *pHigh,double *pLow)
+AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow)
 {
 	TA_RetCode retCode;
 	int shift0Index = pParams->ratesBuffers->rates[ratesArrayIndex].info.arraySize - 1;
@@ -445,8 +458,10 @@ static AsirikuyReturnCode iSRLevels(StrategyParams* pParams, Indicators* pIndica
 	return SUCCESS;
 }
 
-//¼ì²éÊÇ·ñÂú×ã¸ßµã¸ü¸ß£¬µÍµã¸ü¸ß£¬²¢ÇÒÊÕÅÌÒ²ÊÇ¸ü¸ß£¬ÄÇ¾ÍÊÇUP
-static AsirikuyReturnCode iTrend_HL(int ratesArrayIndex,int *trend)
+//ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ï¿½ï¿½ï¿½ï¿½ßµï¿½ï¿½ï¿½ß£ï¿½ï¿½Íµï¿½ï¿½ï¿½ß£ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ò²ï¿½Ç¸ï¿½ï¿½ß£ï¿½ï¿½Ç¾ï¿½ï¿½ï¿½UP
+// iTrend_HL is declared in base.h, but Screening.c has its own implementation
+// Keeping static since it's a local implementation
+static AsirikuyReturnCode iTrend_HL_Screening(int ratesArrayIndex, int *trend, int index)
 {
 	double preHigh1, preHigh2;
 	double preLow1, preLow2;
@@ -481,7 +496,9 @@ static AsirikuyReturnCode iTrend_HL(int ratesArrayIndex,int *trend)
 
 // Daily: 1H 200M , 50M
 // Weekly: 1H 200M, 50M
-static AsirikuyReturnCode iTrend_MA(double iATR,int ratesArrayIndex,int *trend)
+// iTrend_MA is declared in base.h, but Screening.c has its own implementation
+// Keeping static since it's a local implementation
+static AsirikuyReturnCode iTrend_MA_Screening(double iATR, int ratesArrayIndex, int *trend)
 {
 	double ma50M, ma200M;
 
@@ -497,7 +514,9 @@ static AsirikuyReturnCode iTrend_MA(double iATR,int ratesArrayIndex,int *trend)
 	return SUCCESS;
 }
 
-static AsirikuyReturnCode iTrend3Rules_LookBack(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift,int * pTrend)
+// iTrend3Rules_LookBack is declared in base.h, but Screening.c has its own implementation
+// Renaming to avoid conflict
+static AsirikuyReturnCode iTrend3Rules_LookBack_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int * pTrend)
 {
 	TA_RetCode retCode;
 	int shift0Index = pParams->ratesBuffers->rates[ratesArrayIndex].info.arraySize - 1;
@@ -525,10 +544,10 @@ static AsirikuyReturnCode iTrend3Rules_LookBack(StrategyParams* pParams, Indicat
 		if (boxHigh[i] == 0 || boxLow[i] == 0)
 			break;
 
-		if (iClose(ratesArrayIndex, shift1Index - (i + outBegIdx)) > boxHigh[i]) //ÖÜ¹æÔò£¬ÏòÉÏ¡£ c3 > max(h1,h2) or c3 > max(c1,c2) && h3>max(h1,h2) && l3>max(l1,l2)
+		if (iClose(ratesArrayIndex, shift1Index - (i + outBegIdx)) > boxHigh[i]) //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½ c3 > max(h1,h2) or c3 > max(c1,c2) && h3>max(h1,h2) && l3>max(l1,l2)
 			trend[i] = UP;
 
-		if (iClose(ratesArrayIndex, shift1Index - (i + outBegIdx)) < boxLow[i]) //ÖÜ¹æÔò£¬ÏòÉÏ¡£
+		if (iClose(ratesArrayIndex, shift1Index - (i + outBegIdx)) < boxLow[i]) //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½
 			trend[i] = DOWN;
 
 		if (i - 1 >= 0 && trend[i - 1] == UP && trend[i] == RANGE)
@@ -544,7 +563,9 @@ static AsirikuyReturnCode iTrend3Rules_LookBack(StrategyParams* pParams, Indicat
 	
 }
 
-static AsirikuyReturnCode iTrend3Rules(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int * pTrend)
+// iTrend3Rules is declared in base.h, but Screening.c has its own implementation with different signature
+// Renaming to avoid conflict
+static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend)
 {
 	TA_RetCode retCode;
 	int shift0Index = pParams->ratesBuffers->rates[ratesArrayIndex].info.arraySize - 1;
@@ -565,10 +586,10 @@ static AsirikuyReturnCode iTrend3Rules(StrategyParams* pParams, Indicators* pInd
 	}
 
 	*pTrend = RANGE;
-	if (iClose(ratesArrayIndex, 1) > boxHigh) //ÖÜ¹æÔò£¬ÏòÉÏ¡£ c3 > max(h1,h2)
+	if (iClose(ratesArrayIndex, 1) > boxHigh) //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½ c3 > max(h1,h2)
 			*pTrend = UP;
 
-	if (iClose(ratesArrayIndex, 1) < boxLow) //ÖÜ¹æÔò£¬ÏòÉÏ¡£
+	if (iClose(ratesArrayIndex, 1) < boxLow) //ï¿½Ü¹ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ï¡ï¿½
 			*pTrend = DOWN;
 
 	return SUCCESS;

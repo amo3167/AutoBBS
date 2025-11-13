@@ -52,19 +52,19 @@ AsirikuyReturnCode minMaxIndex(const double* pPrice, int arraySize, int period, 
 
   if(pPrice == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"minMaxIndex() failed. pPrice = NULL");
+    fprintf(stderr, "[CRITICAL] minMaxIndex() failed. pPrice = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutMinIndex == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"minMaxIndex() failed. pOutMinIndex = NULL");
+    fprintf(stderr, "[CRITICAL] minMaxIndex() failed. pOutMinIndex = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutMaxIndex == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"minMaxIndex() failed. pOutMaxIndex = NULL");
+    fprintf(stderr, "[CRITICAL] minMaxIndex() failed. pOutMaxIndex = NULL\n");
     return NULL_POINTER;
   }
 
@@ -82,7 +82,7 @@ AsirikuyReturnCode minMaxIndex(const double* pPrice, int arraySize, int period, 
       *pOutMaxIndex = i;
     }
 
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"minMaxIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
+    fprintf(stderr, "[DEBUG] minMaxIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
   }
 
   return SUCCESS;
@@ -94,13 +94,13 @@ AsirikuyReturnCode minIndex(const double* pPrice, int arraySize, int period, int
 
   if(pPrice == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"minIndex() failed. pPrice = NULL");
+    fprintf(stderr, "[CRITICAL] minIndex() failed. pPrice = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutMinIndex == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"minIndex() failed. pOutMinIndex = NULL");
+    fprintf(stderr, "[CRITICAL] minIndex() failed. pOutMinIndex = NULL\n");
     return NULL_POINTER;
   }
 
@@ -113,7 +113,7 @@ AsirikuyReturnCode minIndex(const double* pPrice, int arraySize, int period, int
       *pOutMinIndex = i;
     }
 
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"minIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
+    fprintf(stderr, "[DEBUG] minIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
   }
 
   return SUCCESS;
@@ -125,13 +125,13 @@ AsirikuyReturnCode maxIndex(const double* pPrice, int arraySize, int period, int
 
   if(pPrice == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"maxIndex() failed. pPrice = NULL");
+    fprintf(stderr, "[CRITICAL] maxIndex() failed. pPrice = NULL\n");
     return NULL_POINTER;
   }
 
   if(pOutMaxIndex == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"maxIndex() failed. pOutMaxIndex = NULL");
+    fprintf(stderr, "[CRITICAL] maxIndex() failed. pOutMaxIndex = NULL\n");
     return NULL_POINTER;
   }
 
@@ -144,7 +144,7 @@ AsirikuyReturnCode maxIndex(const double* pPrice, int arraySize, int period, int
       *pOutMaxIndex = i;
     }
 
-    pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"maxIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
+    fprintf(stderr, "[DEBUG] maxIndex() arraySize = %d, period = %d, shift = %d, Index %d = %f", arraySize, period, shift, i, pPrice[i]);
   }
 
   return SUCCESS;
@@ -202,43 +202,43 @@ double DriftCalculate (double p, double q, double eP, double eM)
    double d, r;
    r = p + q - 1;
    d = ((1 - q) * eP + (1 - p) * eM) / (1 - r);
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"DRIFT = %lf", d);
+   fprintf(stderr, "[INFO] DRIFT = %lf", d);
    return (d);
 }
 
 double VHCCalculate (int j, double p, double q, double eP, double eM)
 {
-//   Print ("VHC.Calculate");
+//   Print ("VHC.Calculate\n");
    double r, vhc;
    r = p + q - 1;
    vhc = (eP - eM) / (1 - r * r) * (1 - pow (r, j));
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"VHC = %lf", vhc);
+   fprintf(stderr, "[INFO] VHC = %lf", vhc);
    return (vhc);
 }
 
 double VHPCalculate (int j, double p, double q, double eP, double eM)
 {
-//   Print ("VHP.Calculate");
+//   Print ("VHP.Calculate\n");
    double vhp, d;
    d = DriftCalculate (p, q, eP, eM);
    vhp = d * j + (1 - p) * VHCCalculate (j, p, q, eP, eM);
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"VHP = %lf", vhp);
+   fprintf(stderr, "[INFO] VHP = %lf", vhp);
    return (vhp);
 }
 
 double VHMCalculate (int j, double p, double q, double eP, double eM)
 {
-//   Print ("VHM.Calculate");
+//   Print ("VHM.Calculate\n");
    double vhm, d;
    d = DriftCalculate (p, q, eP, eM);
    vhm = d * j - (1 - q) * VHCCalculate (j, p, q, eP, eM);
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"VHM = %lf", vhm);
+   fprintf(stderr, "[INFO] VHM = %lf", vhm);
    return (vhm);
 }
 
 int VHPjPFind (int j, double p, double q, double eP, double eM, double C)
 {
-//   Print ("VHP.jP.Find");
+//   Print ("VHP.jP.Find\n");
    double vhp;
    int jP = 1;
    vhp = VHPCalculate (jP, p, q, eP, eM);
@@ -252,13 +252,13 @@ int VHPjPFind (int j, double p, double q, double eP, double eM, double C)
       }
       vhp = VHPCalculate (jP, p, q, eP, eM);
    }
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"VH-jP = %d", jP);
+   fprintf(stderr, "[INFO] VH-jP = %d", jP);
    return (jP);
 }
 
 int VHMjMFind (int j, double p, double q, double eP, double eM, double C)
 {
-//   Print ("VHM.jM.Find");
+//   Print ("VHM.jM.Find\n");
    double vhm;
    int jM = 1;
    vhm = VHMCalculate (jM, p, q, eP, eM);
@@ -272,13 +272,13 @@ int VHMjMFind (int j, double p, double q, double eP, double eM, double C)
       }
       vhm = VHMCalculate (jM, p, q, eP, eM);
    }
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"VH-jM = %d", jM);
+   fprintf(stderr, "[INFO] VH-jM = %d", jM);
    return (jM);
 }
 
 int DMjMFind (int j, int jP, double p, double q, double eP, double eM, double C)
 {
-//   Print ("DM.jM.Find");
+//   Print ("DM.jM.Find\n");
    int jM;
    double DM, bM;
    jM = jP;
@@ -294,7 +294,7 @@ int DMjMFind (int j, int jP, double p, double q, double eP, double eM, double C)
       }
       DM = (VHMCalculate (jP, p, q, eP, eM) - bM) * pow (q, jM - jP) + bM;
    }
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"DM-jM = %d", jM);
+   fprintf(stderr, "[INFO] DM-jM = %d", jM);
    return (jM);
 }
 
@@ -316,7 +316,7 @@ int DPjPFind (int j, int jM, double p, double q, double eP, double eM, double C)
       DP = (VHPCalculate (jM, p, q, eP, eM) - bP) * pow (p, jP - jM) + bP;
    }
 
-   pantheios_logprintf(PANTHEIOS_SEV_INFORMATIONAL, (PAN_CHAR_T*)"D^P-jP = %d", jP);
+   fprintf(stderr, "[INFO] D^P-jP = %d", jP);
    return (jP);
 }
 

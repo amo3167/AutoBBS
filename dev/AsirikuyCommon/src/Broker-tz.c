@@ -57,13 +57,13 @@ AsirikuyReturnCode getTimezoneInfo(const char* pName, TimezoneInfo** pTimezoneIn
 
   if(pName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getTimezoneInfo() failed. pName = NULL");
+    fprintf(stderr, "[CRITICAL] getTimezoneInfo() failed. pName = NULL\n");
     return NULL_POINTER;
   }
 
   if(pTimezoneInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"getTimezoneInfo() failed. pTimezoneInfo = NULL");
+    fprintf(stderr, "[CRITICAL] getTimezoneInfo() failed. pTimezoneInfo = NULL\n");
     return NULL_POINTER;
   }
   
@@ -71,13 +71,13 @@ AsirikuyReturnCode getTimezoneInfo(const char* pName, TimezoneInfo** pTimezoneIn
   {
     if(strcmp(pName, timezoneRecords[i].name) == 0)
     {
-      pantheios_logprintf(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"getTimezoneInfo() Found matching record for \"%s\". Standard GMT offset = %d, DST GMT offset = %d", pName, timezoneRecords[i].gmtOffsetStd, timezoneRecords[i].gmtOffsetDS);
+      fprintf(stderr, "[DEBUG] getTimezoneInfo() Found matching record for \"%s\". Standard GMT offset = %d, DST GMT offset = %d\n", pName, timezoneRecords[i].gmtOffsetStd, timezoneRecords[i].gmtOffsetDS);
       *pTimezoneInfo = &timezoneRecords[i];
       return SUCCESS;
     }
   }
 
-  pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"getTimezoneInfo() Failed to find timezone information for \"%s\"", pName);
+  fprintf(stderr, "[ERROR] getTimezoneInfo() Failed to find timezone information for \"%s\"\n", pName);
   return UNKNOWN_TIMEZONE;
 }
 
@@ -90,7 +90,7 @@ static void removeQuotes(char *pLine)
 
   if(pLine == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"removeQuotes() failed. pLine = NULL");
+    fprintf(stderr, "[CRITICAL] removeQuotes() failed. pLine = NULL\n");
     return;
   }
 
@@ -119,12 +119,12 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
 
   if(pLine == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseLine() failed. pLine = NULL");
+    fprintf(stderr, "[CRITICAL] parseLine() failed. pLine = NULL\n");
     return NULL_POINTER;
   }
 
   
-  pantheios_logputs(PANTHEIOS_SEV_DEBUG, (PAN_CHAR_T*)"parseLine() Parsing timezone config file.");
+  fprintf(stderr, "[DEBUG] parseLine() Parsing timezone config file.\n");
   removeQuotes(pLine);
 
   token = strtok_r(pLine, ";", &strtokSafe);
@@ -134,7 +134,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].startMonth = atoi(token);
   if((timezoneRecords[recordsIndex].startMonth < 0) || (timezoneRecords[recordsIndex].startMonth > 12))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() Start Month = %s. Please use an integer from 1 to 12. 0 is also acceptable if there is no DST change.", token);
+    fprintf(stderr, "[ERROR] parseLine() Start Month = %s. Please use an integer from 1 to 12. 0 is also acceptable if there is no DST change.\n", token);
     return INVALID_CONFIG;
   }
   timezoneRecords[recordsIndex].startMonth -= 1; /* In timezone info file months start from 1. In C/C++ struct tm months start from 0. */
@@ -143,7 +143,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].startNth = atoi(token);
   if((timezoneRecords[recordsIndex].startNth < 0) || (timezoneRecords[recordsIndex].startNth > 4))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() Start Nth = %s. Please use an integer from 0 to 4. 0 means the last specified weekday of the month.", token);
+    fprintf(stderr, "[ERROR] parseLine() Start Nth = %s. Please use an integer from 0 to 4. 0 means the last specified weekday of the month.\n", token);
     return INVALID_CONFIG;
   }
 
@@ -151,7 +151,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].startDay = atoi(token);
   if((timezoneRecords[recordsIndex].startDay < 0) || (timezoneRecords[recordsIndex].startDay > 6))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() Start Day = %s. Please use an integer from 0 to 6. 0 = Sunday.", token);
+    fprintf(stderr, "[ERROR] parseLine() Start Day = %s. Please use an integer from 0 to 6. 0 = Sunday.\n", token);
     return INVALID_CONFIG;
   }
 
@@ -159,7 +159,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].startHour = atoi(token);
   if((timezoneRecords[recordsIndex].startHour < 0) || (timezoneRecords[recordsIndex].startHour > 23))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() Start Hour = %s. Please use an integer from 0 to 23.", token);
+    fprintf(stderr, "[ERROR] parseLine() Start Hour = %s. Please use an integer from 0 to 23.", token);
     return INVALID_CONFIG;
   }
 
@@ -168,7 +168,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].endMonth = atoi(token);
   if((timezoneRecords[recordsIndex].endMonth < 0) || (timezoneRecords[recordsIndex].endMonth > 12))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() End Month = %s. Please use an integer from 1 to 12. 0 is also acceptable if there is no DST change.", token);
+    fprintf(stderr, "[ERROR] parseLine() End Month = %s. Please use an integer from 1 to 12. 0 is also acceptable if there is no DST change.", token);
     return INVALID_CONFIG;
   }
   timezoneRecords[recordsIndex].endMonth -= 1; /* In timezone info file months start from 1. In C/C++ struct tm months start from 0. */
@@ -177,7 +177,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].endNth = atoi(token);
   if((timezoneRecords[recordsIndex].endNth < 0) || (timezoneRecords[recordsIndex].endNth > 4))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() End Nth = %s. Please use an integer from 0 to 4. 0 means the last specified weekday of the month.", token);
+    fprintf(stderr, "[ERROR] parseLine() End Nth = %s. Please use an integer from 0 to 4. 0 means the last specified weekday of the month.", token);
     return INVALID_CONFIG;
   }
 
@@ -185,7 +185,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].endDay = atoi(token);
   if((timezoneRecords[recordsIndex].endDay < 0) || (timezoneRecords[recordsIndex].endDay > 6))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() End Day = %s. Please use an integer from 0 to 6. 0 = Sunday.", token);
+    fprintf(stderr, "[ERROR] parseLine() End Day = %s. Please use an integer from 0 to 6. 0 = Sunday.", token);
     return INVALID_CONFIG;
   }
 
@@ -193,7 +193,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].endHour = atoi(token);
   if((timezoneRecords[recordsIndex].endHour < 0) || (timezoneRecords[recordsIndex].endHour > 23))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() End Hour = %s. Please use an integer from 0 to 23.", token);
+    fprintf(stderr, "[ERROR] parseLine() End Hour = %s. Please use an integer from 0 to 23.", token);
     return INVALID_CONFIG;
   }
 
@@ -202,7 +202,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].gmtOffsetStd = atoi(token);
   if((timezoneRecords[recordsIndex].gmtOffsetStd < -15) || (timezoneRecords[recordsIndex].gmtOffsetStd > +15))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() GMT Offset(normal) = %s. Please use an integer from -15 to 15.", token);
+    fprintf(stderr, "[ERROR] parseLine() GMT Offset(normal) = %s. Please use an integer from -15 to 15.", token);
     return INVALID_CONFIG;
   }
 
@@ -210,7 +210,7 @@ static AsirikuyReturnCode parseLine(int recordsIndex, char* pLine)
   timezoneRecords[recordsIndex].gmtOffsetDS = atoi(token);
   if((timezoneRecords[recordsIndex].gmtOffsetDS < -15) || (timezoneRecords[recordsIndex].gmtOffsetDS > +15))
   {
-    pantheios_logprintf(PANTHEIOS_SEV_ERROR, (PAN_CHAR_T*)"parseLine() GMT Offset(DST) = %s. Please use an integer from -15 to 15.", token);
+    fprintf(stderr, "[ERROR] parseLine() GMT Offset(DST) = %s. Please use an integer from -15 to 15.", token);
     return INVALID_CONFIG;
   }
 
@@ -235,7 +235,7 @@ AsirikuyReturnCode parseTimezoneConfig(const char* pFileName)
 
   if(pFileName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseTimezoneConfig() failed. pFilePath = NULL");
+    fprintf(stderr, "[CRITICAL] parseTimezoneConfig() failed. pFilePath = NULL\n");
     return NULL_POINTER;
   }
 
@@ -243,7 +243,7 @@ AsirikuyReturnCode parseTimezoneConfig(const char* pFileName)
 
   if(fileHandle == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"parseTimezoneConfig() failed. fileHandle = NULL");
+    fprintf(stderr, "[CRITICAL] parseTimezoneConfig() failed. fileHandle = NULL");
     return NULL_POINTER;
   }
 

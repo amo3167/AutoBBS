@@ -71,79 +71,79 @@ static AsirikuyReturnCode verifyPointers(
 {
   if(pInSettings == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInSettings = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInSettings = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInTradeSymbol == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInTradeSymbol = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInTradeSymbol = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInAccountCurrency == NULL)
   { 
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInAccountCurrency = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInAccountCurrency = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInBrokerName = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInRefBrokerName == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInRefBrokerName = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInRefBrokerName = NULL\n");
     return NULL_POINTER;
   }
   
   if(pInCurrentBrokerTime == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInCurrentBrokerTime = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInCurrentBrokerTime = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInOpenOrdersCount == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInOpenOrdersCount = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInOpenOrdersCount = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInOrderInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInOrderInfo = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInOrderInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInAccountInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInAccountInfo = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInAccountInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInBidAsk == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInBidAsk = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInBidAsk = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInRatesInfo == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInRatesInfo = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInRatesInfo = NULL\n");
     return NULL_POINTER;
   }
 
   if(pInRates_0 == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pInRates_0 = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pInRates_0 = NULL\n");
     return NULL_POINTER;
   }
   
   if(pOutResults == NULL)
   {
-    pantheios_logputs(PANTHEIOS_SEV_CRITICAL, (PAN_CHAR_T*)"verifyPointers() failed. pOutResults = NULL");
+    fprintf(stderr, "[CRITICAL] verifyPointers() failed. pOutResults = NULL\n");
     return NULL_POINTER;
   }
 
