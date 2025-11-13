@@ -13,8 +13,10 @@
 .vs/
 .idea/
 
-# Vendor dependencies (kept in vendor/ but often should be tracked) - uncomment if you vendor libs and don't want them in repo
-/vendor/
+# Vendor dependencies: ignore all by default, selectively whitelist needed ones
+/vendor/*
+!/vendor/Gaul/
+!/vendor/Gaul/**
 
 # Temporary files
  /tmp/
