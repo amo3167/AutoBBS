@@ -19,6 +19,8 @@
 !/vendor/Gaul/**
 !/vendor/MPICH2/
 !/vendor/MPICH2/**
+!/vendor/Pantheios/
+!/vendor/Pantheios/**
 
 # Temporary files
 /tmp/
