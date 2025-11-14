@@ -37,6 +37,7 @@
 #include "Precompiled.hpp"
 #include "Timezones.hpp"
 #include "AsirikuyTime.h"
+#include "AsirikuyLogger.h"
 
 static time_t createTimeNthSpecifiedWeekday(int year, int month, int nthSpecifiedWeekDayOfMonth, int weekDay, int hour)
 {
@@ -156,19 +157,19 @@ AsirikuyReturnCode getDSTStartEndDays(time_t currentTime, TimezoneInfo* pTzInfo,
 
   if(pTzInfo == NULL)
   {
-    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pTzInfo = NULL\n");
+    logCritical("getDSTStartEndDays() failed. pTzInfo = NULL");
     return NULL_POINTER;
   }
 
   if(pDstStartDay == NULL)
   {
-    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pDstStartDay = NULL\n");
+    logCritical("getDSTStartEndDays() failed. pDstStartDay = NULL");
     return NULL_POINTER;
   }
 
   if(pDstEndDay == NULL)
   {
-    fprintf(stderr, "[CRITICAL] getDSTStartEndDays() failed. pDstEndDay = NULL\n");
+    logCritical("getDSTStartEndDays() failed. pDstEndDay = NULL");
     return NULL_POINTER;
   }
 
@@ -177,12 +178,12 @@ AsirikuyReturnCode getDSTStartEndDays(time_t currentTime, TimezoneInfo* pTzInfo,
   dstStartTime  = createTime(currentYear, pTzInfo->startMonth, pTzInfo->startNth, pTzInfo->startDay, pTzInfo->startHour);
   safe_gmtime(&timeInfo, dstStartTime);
   *pDstStartDay = timeInfo.tm_yday;
-  fprintf(stderr, "[DEBUG] getDSTStartEndDays() DST start time = %s. DST start day = %d\n", safe_timeString(timeString, dstStartTime), *pDstStartDay);
+  logDebug("getDSTStartEndDays() DST start time = %s. DST start day = %d", safe_timeString(timeString, dstStartTime), *pDstStartDay);
 
   dstEndTime    = createTime(currentYear, pTzInfo->endMonth, pTzInfo->endNth, pTzInfo->endDay, pTzInfo->endHour);
   safe_gmtime(&timeInfo, dstEndTime);
   *pDstEndDay   = timeInfo.tm_yday;
-  fprintf(stderr, "[DEBUG] getDSTStartEndDays() DST end time = %s. DST end day = %d\n", safe_timeString(timeString, dstEndTime), *pDstEndDay);
+  logDebug("getDSTStartEndDays() DST end time = %s. DST end day = %d", safe_timeString(timeString, dstEndTime), *pDstEndDay);
 
   return SUCCESS;
 }

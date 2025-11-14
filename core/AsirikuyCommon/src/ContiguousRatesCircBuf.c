@@ -48,6 +48,7 @@
 #include "ContiguousRatesCircBuf.h"
 #include "TimeZoneOffsets.h"
 #include "CriticalSection.h"
+#include "AsirikuyLogger.h"
 
 static int gExtendedBufferSize = DEFAULT_RATES_BUF_EXT;
 static RatesBuffers gRatesBuffers[MAX_INSTANCES];
@@ -307,7 +308,7 @@ AsirikuyReturnCode incrementRatesOffset(int instanceId, int ratesIndex)
 
   if(instanceIndex >= MAX_INSTANCES)
   {
-    fprintf(stderr, "[CRITICAL] incrementRatesOffset() failed. instanceId: %d does not have a rates buffer allocated\n", instanceId);
+    logCritical("incrementRatesOffset() failed. instanceId: %d does not have a rates buffer allocated", instanceId);
     return UNKNOWN_INSTANCE_ID;
   }
 
@@ -331,13 +332,13 @@ AsirikuyReturnCode copyRatesBuffer(Rates* pDest, Rates* pSrc)
 {
   if(pDest == NULL)
   {
-    fprintf(stderr, "[CRITICAL] copyRatesPointers() failed. pDest = NULL\n");
+    logCritical("copyRatesPointers() failed. pDest = NULL");
     return NULL_POINTER;
   }
 
   if(pSrc == NULL)
   {
-    fprintf(stderr, "[CRITICAL] copyRatesPointers() failed. pSrc = NULL\n");
+    logCritical("copyRatesPointers() failed. pSrc = NULL");
     return NULL_POINTER;
   }
 

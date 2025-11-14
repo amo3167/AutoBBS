@@ -78,6 +78,43 @@ find build/gmake -name "*.make" -type f | while read makefile; do
     modified=true
   fi
   
+  # Fix 4: Fix MPI library names on macOS (mpich -> mpi, pmpi, mpl)
+  if [ "$OS" = "Darwin" ] && grep -q "CTesterFrameworkAPI" "$makefile" && grep -q "LIBS.*-lmpich" "$makefile"; then
+    echo "  Fixing MPI library names for macOS in: $makefile"
+    # Replace -lmpich -lmpl with -lmpi -lpmpi -lmpl
+    sed -i.bak 's/-lmpich -lmpl/-lmpi -lpmpi -lmpl/g' "$makefile" 2>/dev/null || \
+    sed -i '' 's/-lmpich -lmpl/-lmpi -lpmpi -lmpl/g' "$makefile" 2>/dev/null || true
+    # Also handle cases where mpich appears alone
+    sed -i.bak 's/-lmpich\([^-]\)/-lmpi -lpmpi -lmpl\1/g' "$makefile" 2>/dev/null || \
+    sed -i '' 's/-lmpich\([^-]\)/-lmpi -lpmpi -lmpl\1/g' "$makefile" 2>/dev/null || true
+    modified=true
+  fi
+  
+  # Fix 5: Ensure CTesterFrameworkAPI has all required library dependencies on macOS
+  if [ "$OS" = "Darwin" ] && grep -q "CTesterFrameworkAPI" "$makefile"; then
+    # Check if LIBS line has the required libraries but missing MPI path
+    if grep -q "^  LIBS.*-lAsirikuyFrameworkAPI.*-lLog" "$makefile"; then
+      # Determine MPI library path
+      MPI_LIB_PATH=""
+      if [ -n "$HOMEBREW_PREFIX" ] && [ -d "${HOMEBREW_PREFIX}/opt/mpich/lib" ]; then
+        MPI_LIB_PATH="${HOMEBREW_PREFIX}/opt/mpich/lib"
+      elif [ -d "/Users/andym/homebrew/opt/mpich/lib" ]; then
+        MPI_LIB_PATH="/Users/andym/homebrew/opt/mpich/lib"
+      elif [ -d "/opt/homebrew/opt/mpich/lib" ]; then
+        MPI_LIB_PATH="/opt/homebrew/opt/mpich/lib"
+      fi
+      
+      # Only add if path exists and not already present
+      if [ -n "$MPI_LIB_PATH" ] && ! grep -q "^  LIBS.*-L${MPI_LIB_PATH}" "$makefile"; then
+        echo "  Adding MPI library path to CTesterFrameworkAPI in: $makefile"
+        # Add MPI library path (avoid duplicates)
+        sed -i.bak "s|\(LIBS.*-lAsirikuyFrameworkAPI.*-lLog\)|\1 -L${MPI_LIB_PATH}|g" "$makefile" 2>/dev/null || \
+        sed -i '' "s|\(LIBS.*-lAsirikuyFrameworkAPI.*-lLog\)|\1 -L${MPI_LIB_PATH}|g" "$makefile" 2>/dev/null || true
+        modified=true
+      fi
+    fi
+  fi
+  
   # Clean up backup files if created
   [ -f "${makefile}.bak" ] && rm -f "${makefile}.bak" 2>/dev/null || true
 done

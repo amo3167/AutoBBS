@@ -41,6 +41,7 @@
 #include "Indicators.h"
 #include "MovingAverages.h"
 #include "Logging.h"
+#include "AsirikuyLogger.h"
 
 AsirikuyReturnCode barsToPreviousTime(const time_t* barOpenTimes, time_t time, int shiftIndex, int* pOutBarNumber)
 {
@@ -64,37 +65,37 @@ AsirikuyReturnCode calculateKeltnerChannels(const double* pHigh, const double* p
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pHigh = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pLow = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pClose = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(pOutUpper == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutUpper = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pOutUpper = NULL");
     return NULL_POINTER;
   }
 
   if(pOutMiddle == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutMiddle = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pOutMiddle = NULL");
     return NULL_POINTER;
   }
 
   if(pOutLower == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateKeltnerChannels() failed. pOutLower = NULL\n");
+    logCritical("calculateKeltnerChannels() failed. pOutLower = NULL");
     return NULL_POINTER;
   }
 
@@ -138,25 +139,25 @@ AsirikuyReturnCode calculateUltimateOscillator(const double* pHigh, const double
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pHigh = NULL\n");
+    logCritical("calculateUltimateOscillator() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pLow = NULL\n");
+    logCritical("calculateUltimateOscillator() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pClose = NULL\n");
+    logCritical("calculateUltimateOscillator() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(pOutUltimateOscillator == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateUltimateOscillator() failed. pOutUltimateOscillator = NULL\n");
+    logCritical("calculateUltimateOscillator() failed. pOutUltimateOscillator = NULL");
     return NULL_POINTER;
   }
 

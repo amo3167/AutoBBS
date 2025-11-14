@@ -46,6 +46,7 @@
 #include "NTPClient.hpp"
 #include "CriticalSection.h"
 #include "EasyTradeCWrapper.hpp"
+#include "AsirikuyLogger.h"
 #include <chrono>
 
 using boost::asio::ip::udp;
@@ -66,7 +67,7 @@ NTPClient* NTPClient::getInstance()
     if(instance_ == NULL)
     {
       instance_ = new NTPClient();
-      fprintf(stderr, "[NOTICE] NTPClient has been instantiated\n");
+      logNotice("NTPClient has been instantiated");
     }
     leaveCriticalSection();
   }
@@ -102,7 +103,7 @@ time_t NTPClient::queryRandomNTPServer()
     updateTime_      = local_time;
   }
 
-  fprintf(stderr, "[DEBUG] NTPClient::queryRandomNTPServer() NTP time = %ld.\n", local_time + localTimeOffset_);
+  logDebug("NTPClient::queryRandomNTPServer() NTP time = %ld.", local_time + localTimeOffset_);
   return local_time + localTimeOffset_;
 }
 
@@ -162,16 +163,16 @@ time_t NTPClient::queryNTPServer(const char* ntpServer)
       ntp_time -= uint32_t(SECONDS_1900_TO_1970);
     }
 
-    fprintf(stderr, "[DEBUG] NTPClient::queryNTPServer() ntp_time = %d.\n", ntp_time);
+    logDebug("NTPClient::queryNTPServer() ntp_time = %d.", ntp_time);
   }
   catch(std::exception exc)
   {
-    fprintf(stderr, "[ERROR] NTPClient::queryNTPServer() Caught Exception: %s, Server: %s\n", exc.what(), ntpServer);
+    logError("NTPClient::queryNTPServer() Caught Exception: %s, Server: %s", exc.what(), ntpServer);
     done();
   }
   catch(...)
   {
-    fprintf(stderr, "[ERROR] NTPClient::queryNTPServer() Caught Exception. Server: %s\n", ntpServer);
+    logError("NTPClient::queryNTPServer() Caught Exception. Server: %s", ntpServer);
     done();
   }
 
@@ -212,7 +213,7 @@ char* NTPClient::generateServerName(char serverName[TIME_SERVER_NAME_LENGTH])
 
 void NTPClient::handleTimeout()
 {
-  fprintf(stderr, "[DEBUG] NTPClient::handleTimeout() A request to an NTP server timed out.\n");
+  logDebug("NTPClient::handleTimeout() A request to an NTP server timed out.");
   done();
 }
 

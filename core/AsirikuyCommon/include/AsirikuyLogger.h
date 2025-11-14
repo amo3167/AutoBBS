@@ -1,22 +1,16 @@
 /**
  * @file
- * @brief     Threadsafe replacements for some standard C functions in time.h
+ * @brief     Simple file logger with severity levels for Asirikuy Framework
  * 
- * @author    Morgan Doel (Initial implementation)
- * @author    Daniel Fernandez (Assisted with design and code styling)
- * @author    Maxim Feinshtein (Assisted with design and code styling)
+ * @author    Auto (Implementation)
  * @version   F4.x.x
- * @date      2012
+ * @date      2025
  *
  * @copyright END-USER LICENSE AGREEMENT FOR ASIRIKUY SOFTWARE. IMPORTANT PLEASE READ THE TERMS AND CONDITIONS OF THIS LICENSE AGREEMENT CAREFULLY BEFORE USING THIS SOFTWARE: 
  * @copyright Asirikuy's End-User License Agreement ("EULA") is a legal agreement between you (either an individual or a single entity) and Asirikuy for the use of the Asirikuy Framework in both source and binary forms. By installing, copying, or otherwise using the Asirikuy Framework, you agree to be bound by the terms of this EULA. This license agreement represents the entire agreement concerning the program between you and Asirikuy, (referred to as "licenser"), and it supersedes any prior proposal, representation, or understanding between the parties. If you do not agree to the terms of this EULA, do not install or use the Asirikuy Framework.
  * @copyright The Asirikuy Framework is protected by copyright laws and international copyright treaties, as well as other intellectual property laws and treaties. The Asirikuy Framework is licensed, not sold.
  * @copyright 1. GRANT OF LICENSE.
- * @copyright The Asirikuy Framework is licensed as follows:
- * @copyright (a) Installation and Use.
  * @copyright Asirikuy grants you the right to install and use copies of the Asirikuy Framework in both source and binary forms for personal and business use. You may also make modifications to the source code.
- * @copyright (b) Backup Copies.
- * @copyright You may make copies of the Asirikuy Framework as may be necessary for backup and archival purposes.
  * @copyright 2. DESCRIPTION OF OTHER RIGHTS AND LIMITATIONS.
  * @copyright (a) Maintenance of Copyright Notices.
  * @copyright You must not remove or alter any copyright notices on any and all copies of the Asirikuy Framework.
@@ -36,74 +30,58 @@
  * @copyright In no event shall Asirikuy or any contributors to the Asirikuy Framework be liable for any damages (including, without limitation, lost profits, business interruption, or lost information) rising out of 'Authorized Users' use of or inability to use the Asirikuy Framework, even if Asirikuy has been advised of the possibility of such damages. In no event will Asirikuy or any contributors to the Asirikuy Framework be liable for loss of data or for indirect, special, incidental, consequential (including lost profit), or other damages based in contract, tort or otherwise. Asirikuy and contributors to the Asirikuy Framework shall have no liability with respect to the content of the Asirikuy Framework or any part thereof, including but not limited to errors or omissions contained therein, libel, infringements of rights of publicity, privacy, trademark rights, business interruption, personal injury, loss of privacy, moral rights or the disclosure of confidential information.
  */
 
-#include "Precompiled.h"
-#include "AsirikuyTime.h"
+#ifndef ASIRIKUY_LOGGER_H_
+#define ASIRIKUY_LOGGER_H_
+#pragma once
+
 #include "AsirikuyDefines.h"
-#include "AsirikuyLogger.h"
 
-struct tm *safe_gmtime(struct tm* ptm, time_t time)
-{
-  time_t dayTime   = (time_t)(time % SECONDS_PER_DAY);
-  time_t dayNumber = (time_t)(time / SECONDS_PER_DAY);
-  int    year      = UNIX_EPOCH_YEAR;
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-  ptm->tm_sec      = dayTime % SECONDS_PER_MINUTE;
-  ptm->tm_min      = (dayTime % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE;
-  ptm->tm_hour     = (int)(dayTime / SECONDS_PER_HOUR);
-  ptm->tm_wday     = DAY_OF_WEEK(time);
+// Log severity levels (matching AsirikuyConfig.xml)
+#define LOG_EMERGENCY  0
+#define LOG_ALERT      1
+#define LOG_CRITICAL   2
+#define LOG_ERROR      3
+#define LOG_WARNING    4
+#define LOG_NOTICE     5
+#define LOG_INFO       6
+#define LOG_DEBUG      7
 
-  while(dayNumber >= (time_t)YEARSIZE(year)) 
-  {
-    dayNumber -= YEARSIZE(year);
-    year++;
-  }
+/**
+ * Initialize the logger with a log file path and severity level
+ * 
+ * @param pLogFilePath Path to the log file (can be NULL for stderr only)
+ * @param severityLevel Maximum severity level to log (0-7)
+ * @return 0 on success, non-zero on error
+ */
+int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel);
 
-  ptm->tm_year = year - TM_EPOCH_YEAR;
-  ptm->tm_yday = (int)dayNumber;
-  ptm->tm_mon  = 0;
+/**
+ * Log a message with the specified severity level
+ * Only logs if severity <= configured severity level
+ * 
+ * @param severity Severity level (0-7)
+ * @param format printf-style format string
+ * @param ... Variable arguments for format string
+ */
+void asirikuyLogMessage(int severity, const char* format, ...);
 
-  while(dayNumber >= (time_t)DAYS_PER_MONTH[LEAPYEAR(year)][ptm->tm_mon]) 
-  {
-    dayNumber -= DAYS_PER_MONTH[LEAPYEAR(year)][ptm->tm_mon];
-    ptm->tm_mon++;
-  }
+// Convenience macros for different log levels
+#define logEmergency(...) asirikuyLogMessage(LOG_EMERGENCY, __VA_ARGS__)
+#define logAlert(...)     asirikuyLogMessage(LOG_ALERT, __VA_ARGS__)
+#define logCritical(...)  asirikuyLogMessage(LOG_CRITICAL, __VA_ARGS__)
+#define logError(...)     asirikuyLogMessage(LOG_ERROR, __VA_ARGS__)
+#define logWarning(...)   asirikuyLogMessage(LOG_WARNING, __VA_ARGS__)
+#define logNotice(...)    asirikuyLogMessage(LOG_NOTICE, __VA_ARGS__)
+#define logInfo(...)      asirikuyLogMessage(LOG_INFO, __VA_ARGS__)
+#define logDebug(...)     asirikuyLogMessage(LOG_DEBUG, __VA_ARGS__)
 
-  ptm->tm_mday  = (int)dayNumber + 1;
-  ptm->tm_isdst = 0;
+#ifdef __cplusplus
+} /* extern "C" */
+#endif
 
-  return ptm;
-}
+#endif /* ASIRIKUY_LOGGER_H_ */
 
-char* safe_timeString(char timeString[MAX_TIME_STRING_SIZE], time_t time)
-{
-  struct tm timeInfo;
-  
-  safe_gmtime(&timeInfo, time);
-
-  /* Validate the time */
-  if(  (timeInfo.tm_hour < 0)
-    || (timeInfo.tm_hour > 23)
-    || (timeInfo.tm_mday < 1)
-    || (timeInfo.tm_mday > 31)
-    || (timeInfo.tm_min < 0)
-    || (timeInfo.tm_min > 59)
-    || (timeInfo.tm_mon < 0)
-    || (timeInfo.tm_mon > 11)
-    || (timeInfo.tm_sec < 0)
-    || (timeInfo.tm_sec > 61)
-    || (timeInfo.tm_wday < 0)
-    || (timeInfo.tm_wday > 6)
-    || (timeInfo.tm_yday < 0)
-    || (timeInfo.tm_yday > 365))
-  {
-    logError("safe_timeString() Invalid time: %zd", time);
-    strcpy(timeString, "Invalid Time");
-  }
-  else
-  {
-    /* The time is valid, create the time string. */
-    strftime(timeString, MAX_TIME_STRING_SIZE - 1, "%d/%m/%y %H:%M", &timeInfo);
-  }
-  
-  return timeString;
-}

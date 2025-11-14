@@ -39,6 +39,7 @@
 #include "Precompiled.h"
 #include "MovingAverages.h"
 #include "Logging.h"
+#include "AsirikuyLogger.h"
 
 AsirikuyReturnCode calculateAverageRange(const double* pHigh, const double* pLow, int arraySize, int period, int shift, double* pOutAverageRange)
 {
@@ -47,19 +48,19 @@ AsirikuyReturnCode calculateAverageRange(const double* pHigh, const double* pLow
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pHigh = NULL\n");
+    logCritical("calculateAverageRange() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pLow = NULL\n");
+    logCritical("calculateAverageRange() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pOutAverageRange == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageRange() failed. pOutAverageRange = NULL\n");
+    logCritical("calculateAverageRange() failed. pOutAverageRange = NULL");
     return NULL_POINTER;
   }
 
@@ -92,25 +93,25 @@ AsirikuyReturnCode calculateAverageTypicalPrice(const double* pHigh, const doubl
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pHigh = NULL\n");
+    logCritical("calculateAverageTypicalPrice() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pLow = NULL\n");
+    logCritical("calculateAverageTypicalPrice() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pClose = NULL\n");
+    logCritical("calculateAverageTypicalPrice() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(pOutAverageTypicalPrice == NULL)
   {
-    fprintf(stderr, "[CRITICAL] calculateAverageTypicalPrice() failed. pOutAverageTypicalPrice = NULL\n");
+    logCritical("calculateAverageTypicalPrice() failed. pOutAverageTypicalPrice = NULL");
     return NULL_POINTER;
   }
 

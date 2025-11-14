@@ -42,6 +42,7 @@
 #include <float.h>
 
 #include "CandlestickPatterns.h"
+#include "AsirikuyLogger.h"
 
 
 BOOL detectThreeBlackCrows(double atrMultiplier, double atr, const double* pOpen, const double* pHigh, const double* pLow, const double* pClose, int arraySize)
@@ -55,31 +56,31 @@ BOOL detectThreeBlackCrows(double atrMultiplier, double atr, const double* pOpen
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pOpen = NULL\n");
+    logCritical("detectThreeBlackCrows() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pHigh = NULL\n");
+    logCritical("detectThreeBlackCrows() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pLow = NULL\n");
+    logCritical("detectThreeBlackCrows() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeBlackCrows() failed. pClose = NULL\n");
+    logCritical("detectThreeBlackCrows() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 4)
   {
-    fprintf(stderr, "[ERROR] threeBlackCrows() failed. arraySize < 4\n");
+    logError("threeBlackCrows() failed. arraySize < 4");
     return FALSE;
   }
 
@@ -111,31 +112,31 @@ BOOL detectThreeWhiteSoldiers(double atrMultiplier, double atr, const double* pO
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pOpen = NULL\n");
+    logCritical("detectThreeWhiteSoldiers() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pHigh = NULL\n");
+    logCritical("detectThreeWhiteSoldiers() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pLow = NULL\n");
+    logCritical("detectThreeWhiteSoldiers() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectThreeWhiteSoldiers() failed. pClose = NULL\n");
+    logCritical("detectThreeWhiteSoldiers() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 4)
   {
-    fprintf(stderr, "[ERROR] threeWhiteSoldiers() failed. arraySize < 4\n");
+    logError("threeWhiteSoldiers() failed. arraySize < 4");
     return FALSE;
   }
 
@@ -165,31 +166,31 @@ BOOL detectHangingMan(double atrMultiplier, double atr, const double* pOpen, con
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pOpen = NULL\n");
+    logCritical("detectHangingMan() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pHigh = NULL\n");
+    logCritical("detectHangingMan() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pLow = NULL\n");
+    logCritical("detectHangingMan() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHangingMan() failed. pClose = NULL\n");
+    logCritical("detectHangingMan() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 2)
   {
-    fprintf(stderr, "[ERROR] hangingMan() failed. arraySize < 2\n");
+    logError("hangingMan() failed. arraySize < 2");
     return FALSE;
   }
 
@@ -213,31 +214,31 @@ BOOL detectHammer(double atrMultiplier, double atr, const double* pOpen, const d
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHammer() failed. pOpen = NULL\n");
+    logCritical("detectHammer() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHammer() failed. pHigh = NULL\n");
+    logCritical("detectHammer() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHammer() failed. pLow = NULL\n");
+    logCritical("detectHammer() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectHammer() failed. pClose = NULL\n");
+    logCritical("detectHammer() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 2)
   {
-    fprintf(stderr, "[ERROR] hammer() failed. arraySize < 2\n");
+    logError("hammer() failed. arraySize < 2");
     return FALSE;
   }
 
@@ -262,31 +263,31 @@ int detectBearishEngulfing(double atrMultiplier, double atr, const double* pOpen
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pOpen = NULL\n");
+    logCritical("detectBearishEngulfing() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pHigh = NULL\n");
+    logCritical("detectBearishEngulfing() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pLow = NULL\n");
+    logCritical("detectBearishEngulfing() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishEngulfing() failed. pClose = NULL\n");
+    logCritical("detectBearishEngulfing() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] bearishEngulfing() failed. arraySize < 3\n");
+    logError("bearishEngulfing() failed. arraySize < 3");
     return FALSE;
   }
 
@@ -316,31 +317,31 @@ BOOL detectBullishEngulfing(double atrMultiplier, double atr, const double* pOpe
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pOpen = NULL\n");
+    logCritical("detectBullishEngulfing() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pHigh = NULL\n");
+    logCritical("detectBullishEngulfing() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pLow = NULL\n");
+    logCritical("detectBullishEngulfing() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishEngulfing() failed. pClose = NULL\n");
+    logCritical("detectBullishEngulfing() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] bullishEngulfing() failed. arraySize < 3\n");
+    logError("bullishEngulfing() failed. arraySize < 3");
     return FALSE;
   }
 
@@ -370,19 +371,19 @@ BOOL detectBearishRapidTp(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishRapidTp() failed. pOpen = NULL\n");
+    logCritical("detectBearishRapidTp() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBearishRapidTp() failed. pClose = NULL\n");
+    logCritical("detectBearishRapidTp() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] bearishRapidTp() failed. arraySize < 3\n");
+    logError("bearishRapidTp() failed. arraySize < 3");
     return FALSE;
   }
 
@@ -405,19 +406,19 @@ BOOL detectBullishRapidTp(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishRapidTp() failed. pOpen = NULL\n");
+    logCritical("detectBullishRapidTp() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectBullishRapidTp() failed. pClose = NULL\n");
+    logCritical("detectBullishRapidTp() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] bullishRapidTp() failed. arraySize < 3\n");
+    logError("bullishRapidTp() failed. arraySize < 3");
     return FALSE;
   }
 
@@ -440,31 +441,31 @@ BOOL detectDarkCloudCover(double atrMultiplier, double atr, const double* pOpen,
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pOpen = NULL\n");
+    logCritical("detectDarkCloudCover() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pHigh = NULL\n");
+    logCritical("detectDarkCloudCover() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pLow = NULL\n");
+    logCritical("detectDarkCloudCover() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectDarkCloudCover() failed. pClose = NULL\n");
+    logCritical("detectDarkCloudCover() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] darkCloudCover() failed. arraySize < 3\n");
+    logError("darkCloudCover() failed. arraySize < 3");
     return FALSE;
   }
 
@@ -490,31 +491,31 @@ BOOL detectPiercing(double atrMultiplier, double atr, const double* pOpen, const
 
   if(pOpen == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pOpen = NULL\n");
+    logCritical("detectPiercing() failed. pOpen = NULL");
     return NULL_POINTER;
   }
 
   if(pHigh == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pHigh = NULL\n");
+    logCritical("detectPiercing() failed. pHigh = NULL");
     return NULL_POINTER;
   }
 
   if(pLow == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pLow = NULL\n");
+    logCritical("detectPiercing() failed. pLow = NULL");
     return NULL_POINTER;
   }
 
   if(pClose == NULL)
   {
-    fprintf(stderr, "[CRITICAL] detectPiercing() failed. pClose = NULL\n");
+    logCritical("detectPiercing() failed. pClose = NULL");
     return NULL_POINTER;
   }
 
   if(arraySize < 3)
   {
-    fprintf(stderr, "[ERROR] piercing() failed. arraySize < 3\n");
+    logError("piercing() failed. arraySize < 3");
     return FALSE;
   }
 

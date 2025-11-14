@@ -1,6 +1,15 @@
 #include "CTesterFrameworkDefines.h"
-#include "gaul.h"  // From vendor/Gaul/src/gaul.h
 #include "Precompiled.h"
+// Temporarily undefine AsirikuyLogger macros that conflict with Gaul's log_util.h enum
+// We'll include AsirikuyLogger.h after gaul.h to restore them
+#ifdef LOG_WARNING
+#undef LOG_WARNING
+#endif
+#ifdef LOG_DEBUG
+#undef LOG_DEBUG
+#endif
+#include "gaul.h"  // From vendor/Gaul/src/gaul.h
+#include "AsirikuyLogger.h"  // Restore our logging macros
 #include <stdlib.h>
 #include <stdio.h>
 //#include <vld.h>
@@ -47,7 +56,7 @@ static boolean generationHook(int generation, population *pop)
 	//Stop optmization if we get to max number of generations
 	if (globalOptimizationSettings.maxGenerations > 0 && generation > globalOptimizationSettings.maxGenerations - 1)
 	{
-		fprintf(stderr, "Max num of generations (%d) reached!\n", globalOptimizationSettings.maxGenerations);
+		logInfo("Max num of generations (%d) reached!\n", globalOptimizationSettings.maxGenerations);
 		return FALSE;
 	}
 
@@ -70,16 +79,16 @@ static boolean generationHook(int generation, population *pop)
 
 		for (i=0;i<5;i++){
 			standardDeviation += (generationDifferences[i]-averageDifference)*(generationDifferences[i]-averageDifference)/5 ;
-			fprintf(stderr, "Past %d generation -> best fit = %lf\n", i, generationDifferences[i]);
+			logInfo("Past %d generation -> best fit = %lf\n", i, generationDifferences[i]);
 			if(generationDifferences[i] < 0) generationDifferencesFull = 0;
 		}
 
 		standardDeviation = sqrt(standardDeviation);
 
-		fprintf(stderr, "Best fit average = %lf, stdDev = %lf\n", averageDifference, standardDeviation);
+		logInfo("Best fit average = %lf, stdDev = %lf\n", averageDifference, standardDeviation);
 
 		if ( standardDeviation < 0.05*averageDifference && generationDifferencesFull == 1){
-		fprintf(stderr, "Solutions have converged!\n");
+		logInfo("Solutions have converged!\n");
 		return FALSE;
 		}
 	
@@ -88,11 +97,11 @@ static boolean generationHook(int generation, population *pop)
 	//Stop optimization if stopOptimization was called
 	if (stopOpti == 1)
 	{
-		fprintf(stderr, "stopOptimization was called -> Stoping optimization\n");
+		logInfo("stopOptimization was called -> Stoping optimization\n");
 		return FALSE;
 	}
 	
-	fprintf(stderr, "Generation %d started\n", generation +1);
+	logInfo("Generation %d started\n", generation +1);
 	return TRUE;	/* TRUE indicates that evolution should continue. */
 }
 
@@ -139,9 +148,9 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	}
 	
 	#ifdef _OPENMP
-		fprintf(stderr, "Starting Iteration %d on thread %d\n", localCurrentIteration, omp_get_thread_num());	
+		logInfo("Starting Iteration %d on thread %d\n", localCurrentIteration, omp_get_thread_num());	
 	#else
-		fprintf(stderr, "Starting Iteration %d\n", localCurrentIteration);
+		logInfo("Starting Iteration %d\n", localCurrentIteration);
 	#endif
 
 	entity->fitness = 0.0;
@@ -167,14 +176,14 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	localRates = (ASTRates ***)malloc(1 * sizeof(ASTRates**));
 	localRates[0] = (ASTRates **)malloc(10 * sizeof(ASTRates*));
 
-	fprintf(stderr, "SavingRates\n");
+	logInfo("SavingRates\n");
 	for (k=0;k<10;k++){
 		if (localRatesInfo[0][k].totalBarsRequired > 0) {
 			localRates[0][k] = (ASTRates *)malloc(globalNumCandles * sizeof(ASTRates));
 			memcpy (localRates[0][k], globalRates[n][k], globalNumCandles * sizeof(ASTRates));
 		}
 	}
-	fprintf(stderr, "endSavingRates\n");
+	logInfo("endSavingRates\n");
 
 	localAccountInfo = (AccountInfo**)malloc(1 * sizeof(AccountInfo*));
 	localAccountInfo[0] = (AccountInfo*)malloc(1 * sizeof(AccountInfo));
@@ -187,7 +196,7 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
     {
 		chromosomeValue = ((int*)entity->chromosome[0])[k];
 		chromosomeMappedValue = mapParamValue(chromosomeValue, globalOptimizationParams[k]);
-		fprintf(stderr, "Iteration: %d. Gen %d mapped to %lf from gen value %d\n", localCurrentIteration, k, chromosomeMappedValue, chromosomeValue);
+		logInfo("Iteration: %d. Gen %d mapped to %lf from gen value %d\n", localCurrentIteration, k, chromosomeMappedValue, chromosomeValue);
 		localSettings[0][globalOptimizationParams[k].index] = chromosomeMappedValue;
 		currentSet[k*2] = (double)globalOptimizationParams[k].index;
 		currentSet[k*2+1] = chromosomeMappedValue;
@@ -234,23 +243,23 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 			entity->fitness += testResult.cagr/testResult.maxDDDepth;
 			break;
 		default:
-			fprintf(stderr, "Optimization Goal %d not supported\n", globalOptimizationSettings.optimizationGoal);
+			logInfo("Optimization Goal %d not supported\n", globalOptimizationSettings.optimizationGoal);
 			return false;
 	}
 
 	if (testResult.finalBalance-localAccountInfo[0]->balance < 0){ 
 		entity->fitness = 0.0;
-		fprintf(stderr, "Iteration %d gave negative balance ... killing it\n", localCurrentIteration);
+		logInfo("Iteration %d gave negative balance ... killing it\n", localCurrentIteration);
 	}
 	
 	if (globalOptimizationSettings.discardAssymetricSets && fabs(testResult.numShorts - testResult.numLongs) > 0.5*min(testResult.numShorts, testResult.numLongs)){
 		entity->fitness = 0.0;
-		fprintf(stderr, "Iteration %d gave assymetric results (%d longs %d shorts) ... killing it\n", localCurrentIteration, testResult.numShorts, testResult.numLongs);
+		logInfo("Iteration %d gave assymetric results (%d longs %d shorts) ... killing it\n", localCurrentIteration, testResult.numShorts, testResult.numLongs);
 	}
 
 	if (testResult.totalTrades/testResult.yearsTraded < globalOptimizationSettings.minTradesAYear){
 		entity->fitness = 0.0;
-		fprintf(stderr, "Iteration %d gave less than %d trades a year in average... killing it\n", localCurrentIteration, globalOptimizationSettings.minTradesAYear);
+		logInfo("Iteration %d gave less than %d trades a year in average... killing it\n", localCurrentIteration, globalOptimizationSettings.minTradesAYear);
 	}
 
 	for (k=0;k<10;k++){
@@ -351,8 +360,8 @@ int __stdcall runOptimizationMultipleSymbols(
 	if (globalExecUnderMPI){	
 		MPI_Comm_size(MPI_COMM_WORLD ,&numProcs);
 		MPI_Comm_rank(MPI_COMM_WORLD ,&myId);
-		fprintf(stderr, "MPI enabled. Using %d cores\n", numProcs);
-		fprintf(stderr, "MPI thread %d up & running\n", myId);
+		logInfo("MPI enabled. Using %d cores\n", numProcs);
+		logInfo("MPI thread %d up & running\n", myId);
 	}
 	#endif
 
@@ -364,19 +373,19 @@ int __stdcall runOptimizationMultipleSymbols(
 		#endif
 		if(numThreads > omp_get_num_procs()) numThreads = omp_get_num_procs();
 		omp_set_num_threads(numThreads);
-		fprintf(stderr, "OpenMP enabled. Using %d cores\n", numThreads);
+		logInfo("OpenMP enabled. Using %d cores\n", numThreads);
 	#endif
 
 	numParamsInSet = numOptimizedParams;
 
 	if (optimizationType == OPTI_BRUTE_FORCE){
 		//Parameter space generation
-		fprintf(stderr, "Calculating possible parameter combinations.\n");
+		logInfo("Calculating possible parameter combinations.\n");
 		numCombinations = getParameterSetsNumber(0, numOptimizedParams, optimizationParams);
-		fprintf(stderr, "Number of parameter combinations is %d\n", numCombinations);
+		logInfo("Number of parameter combinations is %d\n", numCombinations);
 
 		if (numCombinations > MAXIMUM_PARAMETER_COMBINATIONS){
-			fprintf(stderr, "Number of parameter combinations is too large (exceeds 10 million). Try a genetic optimization instead.\n");
+			logInfo("Number of parameter combinations is too large (exceeds 10 million). Try a genetic optimization instead.\n");
 			if(optimizationFinished != NULL) optimizationFinished();
 			return true;
 		}
@@ -404,7 +413,7 @@ int __stdcall runOptimizationMultipleSymbols(
 			n++;
 		}
 
-		fprintf(stderr, "Finished parameter generation, starting runs.\n");
+		logInfo("Finished parameter generation, starting runs.\n");
 		//Run the optimization for each set
 		#pragma omp parallel for shared(pRates, pInSettings, pInAccountInfo, pRatesInfo) private(p, localTestSettings, localSettings, localRates, localSymbol, localAccountInfo, testResult, currentSet, localRatesInfo, n)
 		
@@ -415,9 +424,9 @@ int __stdcall runOptimizationMultipleSymbols(
 			if (stopOpti == 0)
 			{
 				#ifdef _OPENMP
-					fprintf(stderr, "Starting Iteration %d on thread %d\n", i, omp_get_thread_num());	
+					logInfo("Starting Iteration %d on thread %d\n", i, omp_get_thread_num());	
 				#else
-					fprintf(stderr, "Starting Iteration %d\n", i);
+					logInfo("Starting Iteration %d\n", i);
 				#endif			
 				
 
@@ -459,7 +468,7 @@ int __stdcall runOptimizationMultipleSymbols(
 					localSettings[0][optimizationParams[p].index] = sets[i*numOptimizedParams+p];
 					currentSet[p*2] = (double)optimizationParams[p].index;
 					currentSet[p*2+1] = (double)sets[i*numOptimizedParams+p];
-					fprintf(stderr, "localSettings[0][optimizationParams[p].index]= %lf, currentSet[p*2] =%lf,currentSet[p*2+1]=%lf\n", 
+					logInfo("localSettings[0][optimizationParams[p].index]= %lf, currentSet[p*2] =%lf,currentSet[p*2+1]=%lf\n", 
 						localSettings[0][optimizationParams[p].index],currentSet[p*2],currentSet[p*2+1]);
 				}
 
@@ -471,7 +480,7 @@ int __stdcall runOptimizationMultipleSymbols(
 
 				localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
 
-				fprintf(stderr, "localSettings[0][ADDITIONAL_PARAM_8]= %lf\n", localSettings[0][ADDITIONAL_PARAM_8]);
+				logInfo("localSettings[0][ADDITIONAL_PARAM_8]= %lf\n", localSettings[0][ADDITIONAL_PARAM_8]);
 
 				testResult = runPortfolioTest(testId++, localSettings, localSymbol, pInAccountCurrency, pInBrokerName, pInRefBrokerName, (double **)localAccountInfo, 
 									localTestSettings, localRatesInfo, numCandles, 1, localRates, minLotSize, NULL, NULL, NULL);
@@ -579,7 +588,7 @@ int __stdcall runOptimizationMultipleSymbols(
 				crossoverFunction = ga_crossover_integer_allele_mixing;
 				break;
 			default:
-				fprintf(stderr, "Crossover Mode %d not implemented\n", optimizationSettings.crossoverMode);
+				logInfo("Crossover Mode %d not implemented\n", optimizationSettings.crossoverMode);
 				return false;
 		}
 
@@ -597,7 +606,7 @@ int __stdcall runOptimizationMultipleSymbols(
 				mutateFunction = ga_mutate_integer_allpoint;
 				break;
 			default:
-				fprintf(stderr, "Mutate Mode %d not implemented\n", optimizationSettings.mutationMode);
+				logInfo("Mutate Mode %d not implemented\n", optimizationSettings.mutationMode);
 				return false;
 		}
 
@@ -622,7 +631,7 @@ int __stdcall runOptimizationMultipleSymbols(
 			   NULL										/* void *                 userdata */
 			);
 
-			fprintf(stderr, "Attaching slave with rank = %d", myId);
+			logInfo("Attaching slave with rank = %d", myId);
 			ga_attach_mpi_slave( pop );
 		}
 		//Main thread for MPI and no MPI
@@ -646,7 +655,7 @@ int __stdcall runOptimizationMultipleSymbols(
 			   NULL										/* void *                 userdata */
 			);
 
-			fprintf(stderr, "Main thread genetic process with rank = %d", myId);
+			logInfo("Main thread genetic process with rank = %d", myId);
 
 			ga_population_set_allele_min_integer(pop, 1);
 			ga_population_set_allele_max_integer(pop, 100);
