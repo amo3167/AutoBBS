@@ -17,6 +17,8 @@
 /vendor/*
 !/vendor/Gaul/
 !/vendor/Gaul/**
+!/vendor/MPICH2/
+!/vendor/MPICH2/**
 
 # Temporary files
 /tmp/
