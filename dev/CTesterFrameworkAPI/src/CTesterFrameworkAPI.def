@@ -1,0 +1,7 @@
+LIBRARY
+EXPORTS
+  getCTesterFrameworkVersion
+  runPortfolioTest
+  runOptimizationMultipleSymbols
+  stopOptimization
+  initCTesterFramework
