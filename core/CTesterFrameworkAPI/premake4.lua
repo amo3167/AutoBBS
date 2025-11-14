@@ -21,6 +21,11 @@ project "CTesterFrameworkAPI"
   libdirs{
 	"../../bin/**"
   }
+  configuration{"macosx"}
+    libdirs{
+      (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/mpich/lib",
+      "/Users/andym/homebrew/opt/mpich/lib"
+    }
   configuration{"not windows"}
     excludes {
       "src/**.def"
@@ -29,11 +34,9 @@ project "CTesterFrameworkAPI"
     linkoptions{"/DEF:../../../core/CTesterFrameworkAPI/src/CTesterFrameworkAPI.def"}
     links{"mpi"}
   configuration{"macosx"}
-    -- MPI is optional - only link if available
-    -- links{"mpich", "pmpich", "mpl"}
+    links{"mpich", "pmpich", "mpl"}
   configuration{"linux"}
-    -- MPI is optional - only link if available
-    -- links{"mpich", "mpl"}
+    links{"mpich", "mpl"}
   os.chdir("../..")
   cwd = os.getcwd()
   -- Windows
