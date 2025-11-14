@@ -24,3 +24,6 @@
 *.log
 *.swp
 ~*
+
+# CTester folder with large binaries
+/ctester/
