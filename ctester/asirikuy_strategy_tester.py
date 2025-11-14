@@ -443,12 +443,12 @@ def main():
         xmlHeader = ET.SubElement(xmlRoot, 'Header')
         ET.SubElement(xmlHeader, 'Deposit').text = str(settings[0][ORIGINAL_EQUITY])
 
-        if fromDate <= ratesArray[i][0][0].time:
-            ET.SubElement(xmlHeader, 'PeriodStart').text = datetime.datetime.fromtimestamp(ratesArray[i][0][0].time).isoformat()
+        if fromDate <= ratesArray[0][0][0].time:
+            ET.SubElement(xmlHeader, 'PeriodStart').text = datetime.datetime.fromtimestamp(ratesArray[0][0][0].time).isoformat()
         else:
             ET.SubElement(xmlHeader, 'PeriodStart').text = datetime.datetime.fromtimestamp(fromDate).isoformat()
 
-        ET.SubElement(xmlHeader, 'PeriodEnd').text = datetime.datetime.fromtimestamp(endingDate[i]).isoformat()
+        ET.SubElement(xmlHeader, 'PeriodEnd').text = datetime.datetime.fromtimestamp(endingDate[0]).isoformat()
         xmlTrades = ET.SubElement(xmlRoot, 'Trades')
 
         for i in range (numSystemsInPortfolio):
