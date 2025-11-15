@@ -8,8 +8,19 @@ project "TradingStrategies"
 	"**.c", 
 	"**.hpp"
   }
+  -- Include directories for strategy modules
+  -- Note: The "include" directory contains headers for all strategy modules:
+  --   - strategies/common/ (StopLossManagement, RangeOrderManagement, TimeManagement)
+  --   - strategies/macd/ (MACDDailyStrategy, MACDWeeklyStrategy, MACDOrderSplitting)
+  --   - strategies/ichimoko/ (IchimokoDailyStrategy, IchimokoWeeklyStrategy, IchimokoOrderSplitting)
+  --   - strategies/bbs/ (BBSBreakOutStrategy, BBSSwingStrategy, BBSOrderSplitting)
+  --   - strategies/limit/ (LimitStrategy, LimitBBSStrategy, LimitOrderSplitting)
+  --   - strategies/weekly/ (WeeklyAutoStrategy, WeeklyPivotStrategy, WeeklyOrderSplitting)
+  --   - strategies/shortterm/ (ShortTermStrategy, ShortTermOrderSplitting)
+  --   - strategies/misc/ (MiscStrategies, KeyKOrderSplitting)
   includedirs{
     "src",
+    "include",
     "../AsirikuyCommon/include",
     "../Log/include",
     "../OrderManager/include",

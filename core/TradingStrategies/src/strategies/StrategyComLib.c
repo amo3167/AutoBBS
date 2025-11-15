@@ -8,6 +8,7 @@
 #include "AsirikuyTime.h"
 #include "InstanceStates.h"
 #include "AsirikuyLogger.h"
+#include "trend/common/OrderSplittingUtilities.h"  // For splitBuyOrders_ATR, splitBuyOrders_LongTerm
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSEF
