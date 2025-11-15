@@ -1,0 +1,1 @@
+FOR /l %%x IN (1, 1, 1000000) do python checker.py -c ./config/checker_AT.config 2>NUL
