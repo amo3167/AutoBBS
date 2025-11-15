@@ -474,6 +474,92 @@ python3 vast.py
 
 **Note**: PyQt4 must be installed separately. The GUI is optional; command-line usage is fully functional.
 
+## Automated Backtesting Script
+
+### Overview
+
+The `run_btcusd_macd_860013.sh` script automates backtesting with parameter support and organized file management.
+
+### Features
+
+- **Command-line parameters**: Customize date range and log level
+- **Automatic cleanup**: Removes old results before each run
+- **Organized output**: Results saved to `tmp/SYMBOL_STRATEGYID/` folder
+- **Config preservation**: Saves used config file if parameters provided
+
+### Usage
+
+#### Basic Usage (Default Config)
+
+```bash
+cd ctester
+./run_btcusd_macd_860013.sh
+```
+
+Uses default config values from `config/Peso_MACD_BTCUSD-1H_860013.config`.
+
+#### With Custom Parameters
+
+```bash
+./run_btcusd_macd_860013.sh --fromdate 2020-01-02 --todate 2021-01-01 --logseverity 6
+```
+
+**Parameters**:
+- `--fromdate YYYY-MM-DD`: Start date for backtest
+- `--todate YYYY-MM-DD`: End date for backtest
+- `--logseverity LEVEL`: Log level (0-7)
+  - `0` = Emergency
+  - `4` = Warning
+  - `6` = Info
+  - `7` = Debug
+
+#### Help
+
+```bash
+./run_btcusd_macd_860013.sh --help
+```
+
+### Output Structure
+
+Results are saved to `tmp/BTCUSD_860013/`:
+
+```
+tmp/BTCUSD_860013/
+├── allStatistics_860013.csv      # Statistics summary
+├── backtest_860013.log            # Backtest execution log
+├── config_860013.config           # Config file used (if parameters provided)
+├── results_860013.png              # Equity curve chart
+├── results_860013.set              # Parameter set file
+└── results_860013.txt              # Detailed trade results
+```
+
+### Examples
+
+#### Example 1: Test Specific Date Range
+
+```bash
+./run_btcusd_macd_860013.sh --fromdate 2020-01-02 --todate 2021-01-01
+```
+
+#### Example 2: Test with Debug Logging
+
+```bash
+./run_btcusd_macd_860013.sh --fromdate 2020-01-02 --todate 2021-01-01 --logseverity 7
+```
+
+#### Example 3: Test with Warning Level Only
+
+```bash
+./run_btcusd_macd_860013.sh --fromdate 2020-01-02 --todate 2021-01-01 --logseverity 4
+```
+
+### Notes
+
+- The script automatically cleans the results folder before each run
+- Old `.state` files in `tmp/` are automatically cleaned up
+- The script creates a temporary config file if parameters are provided
+- The temporary config file is saved as `config_860013.config` for reference
+
 ## Examples
 
 ### Example 1: Simple Single Strategy Test

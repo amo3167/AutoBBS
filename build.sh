@@ -159,6 +159,80 @@ if [ "$(uname -s)" = "Darwin" ]; then
   done
   echo -e "${GREEN}✓ Rename complete${NC}"
   echo ""
+  
+  # Step 4.6: Fix library dependencies (install names and rpaths)
+  echo -e "${YELLOW}Step 4.6: Fixing library dependencies...${NC}"
+  PROJECT_ROOT="$(cd "$(dirname "$0")" && pwd)"
+  
+  # Find all libraries first
+  TRADING_STRATEGIES_LIB="$PROJECT_ROOT/bin/gmake/x64/Debug/lib/libtrading_strategies.dylib"
+  ASIRIKUY_FRAMEWORK_LIB="$PROJECT_ROOT/bin/gmake/x64/Debug/libAsirikuyFrameworkAPI.dylib"
+  CTESTER_FRAMEWORK_LIB=$(find "$PROJECT_ROOT/bin/gmake" -name "*CTesterFrameworkAPI.dylib" 2>/dev/null | head -1)
+  MXML_LIB="$PROJECT_ROOT/vendor/MiniXML/libmxml.dylib"
+  
+  # Fix each library
+  find bin/gmake -name "*.dylib" -type f 2>/dev/null | while read -r lib; do
+    if [ ! -f "$lib" ]; then
+      continue
+    fi
+    
+    lib_name=$(basename "$lib")
+    lib_dir=$(dirname "$lib")
+    
+    # Fix self-reference (install name) - change .so to .dylib
+    self_ref=$(otool -D "$lib" 2>/dev/null | tail -1)
+    if [[ "$self_ref" == *".so"* ]]; then
+      new_self_ref="${self_ref%.so}.dylib"
+      install_name_tool -id "$new_self_ref" "$lib" 2>/dev/null || true
+    fi
+    
+    # Fix cross-library references - collect dependencies first to avoid subshell issues
+    deps_to_fix=()
+    while IFS= read -r dep; do
+      # Skip empty lines and system libraries
+      [ -z "$dep" ] && continue
+      if [[ "$dep" == "/usr/lib/"* ]] || [[ "$dep" == "/System/"* ]] || [[ "$dep" == "/Users/andym/homebrew/"* ]]; then
+        continue
+      fi
+      
+      # Collect .so references, absolute paths to our libraries, and vendor library references
+      if [[ "$dep" == *".so"* ]] || [[ "$dep" == "$PROJECT_ROOT"* ]] || [[ "$dep" == *"libmxml"* ]] || [[ "$dep" == "/usr/local/lib/"* ]]; then
+        deps_to_fix+=("$dep")
+      fi
+    done < <(otool -L "$lib" 2>/dev/null | grep -E "\.so|\.dylib" | grep -v ":" | awk '{print $1}')
+    
+    # Now fix each dependency
+    for dep in "${deps_to_fix[@]}"; do
+      # Determine which library this dependency refers to
+      rpath_name=""
+      
+      if [[ "$dep" == *"libAsirikuyFrameworkAPI"* ]] && [ -f "$ASIRIKUY_FRAMEWORK_LIB" ]; then
+        rpath_name="@rpath/libAsirikuyFrameworkAPI.dylib"
+      elif [[ "$dep" == *"libCTesterFrameworkAPI"* ]] && [ -f "$CTESTER_FRAMEWORK_LIB" ]; then
+        rpath_name="@rpath/$(basename "$CTESTER_FRAMEWORK_LIB")"
+      elif [[ "$dep" == *"libtrading_strategies"* ]] && [ -f "$TRADING_STRATEGIES_LIB" ]; then
+        rpath_name="@rpath/libtrading_strategies.dylib"
+      elif [[ "$dep" == *"libmxml"* ]] && [ -f "$MXML_LIB" ]; then
+        rpath_name="@rpath/libmxml.dylib"
+      elif [[ "$dep" == *".so"* ]]; then
+        # Fallback: just change .so to .dylib
+        rpath_name="${dep%.so}.dylib"
+      fi
+      
+      if [ -n "$rpath_name" ]; then
+        install_name_tool -change "$dep" "$rpath_name" "$lib" 2>/dev/null || true
+      fi
+    done
+    
+    # Add rpaths to help find dependencies (ignore errors if rpath already exists)
+    install_name_tool -add_rpath "@loader_path" "$lib" 2>/dev/null || true
+    install_name_tool -add_rpath "$PROJECT_ROOT/bin/gmake/x64/Debug" "$lib" 2>&1 | grep -v "duplicate path" || true
+    install_name_tool -add_rpath "$PROJECT_ROOT/bin/gmake/x64/Debug/lib" "$lib" 2>&1 | grep -v "duplicate path" || true
+    install_name_tool -add_rpath "$PROJECT_ROOT/vendor/MiniXML" "$lib" 2>&1 | grep -v "duplicate path" || true
+  done
+  
+  echo -e "${GREEN}✓ Library dependencies fixed${NC}"
+  echo ""
 fi
 
 # Step 5: Verify build output

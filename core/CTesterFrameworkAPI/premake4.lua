@@ -28,7 +28,8 @@ project "CTesterFrameworkAPI"
     }
     linkoptions{
       "-L" .. ((os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/mpich/lib"),
-      "-L/Users/andym/homebrew/opt/mpich/lib"
+      "-L/Users/andym/homebrew/opt/mpich/lib",
+      "-headerpad_max_install_names"
     }
   configuration{"not windows"}
     excludes {

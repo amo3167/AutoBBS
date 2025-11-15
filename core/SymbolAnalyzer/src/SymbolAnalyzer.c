@@ -448,17 +448,20 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
 
 		if(offset >= 0 && offset < (int)strlen(pSymbol))
 		{
+			logDebug("parseSymbol() found currency '%s' at offset %d in symbol '%s'", g_currencies[i][CURRENCY_CODE], offset, pSymbol);
 			if(baseCurrencyOffset == -1)
 			{
         /* Assume for now that this offset is the base currency */
 				baseCurrencyOffset = offset;
 				strcpy(pBaseCurrency, g_currencies[i][CURRENCY_CODE]);
+				logDebug("parseSymbol() set baseCurrency='%s' at offset %d", pBaseCurrency, baseCurrencyOffset);
 			}
 			else if(quoteCurrencyOffset == -1)
 			{
 				if(offset < baseCurrencyOffset)
 				{
           /* Found the base currency. The first offset must have been the quote currency. Swap them. */
+					logDebug("parseSymbol() swapping: found '%s' at offset %d < baseCurrencyOffset %d", g_currencies[i][CURRENCY_CODE], offset, baseCurrencyOffset);
 					quoteCurrencyOffset = baseCurrencyOffset;
 					baseCurrencyOffset  = offset;
 					strcpy(pQuoteCurrency, pBaseCurrency);
@@ -467,11 +470,13 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
 				else
 				{
           /* Found the quote currency offset */
+					logDebug("parseSymbol() found quoteCurrency='%s' at offset %d", g_currencies[i][CURRENCY_CODE], offset);
 					quoteCurrencyOffset = offset;
 					strcpy(pQuoteCurrency, g_currencies[i][CURRENCY_CODE]);
 				}
 
         /* baseCurrencyOffset and quoteCurrencyOffset have both been found. */
+				logDebug("parseSymbol() found both currencies: base='%s' at %d, quote='%s' at %d", pBaseCurrency, baseCurrencyOffset, pQuoteCurrency, quoteCurrencyOffset);
 				break;
 			}
 		}
@@ -480,7 +485,8 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
   /* Did we fail to find a second currency offset? If so exit now to avoid undefined behaviour */
 	if(quoteCurrencyOffset < 0)
   {
-    logError("parseSymbol() failed. Unknown symbol. pSymbol = %s", pSymbol);
+    logError("parseSymbol() failed. Unknown symbol. pSymbol = %s. Found baseCurrency='%s' at offset %d, but no quote currency found. This suggests only one currency code was found in the symbol.", 
+             pSymbol, baseCurrencyOffset >= 0 ? pBaseCurrency : "NONE", baseCurrencyOffset);
 		return UNKNOWN_SYMBOL;
   }
 
@@ -541,6 +547,7 @@ AsirikuyReturnCode normalizeSymbol(char* pSymbol)
 AsirikuyReturnCode normalizeCurrency(char* pCurrency)
 {
   int i;
+  size_t currencyLen;
 
   /* If pCurrency is NULL exit now to avoid a memory access violation */
   if(pCurrency == NULL)
@@ -548,6 +555,10 @@ AsirikuyReturnCode normalizeCurrency(char* pCurrency)
     logCritical("normalizeCurrency() failed. pCurrency = NULL\n\n");
     return NULL_POINTER;
   }
+  
+  currencyLen = strlen(pCurrency);
+  logDebug("normalizeCurrency() called with pCurrency = '%s' (length=%zu)", pCurrency, currencyLen);
+  
   //g_currencies[TOTAL_CURRENCIES][TOTAL_CURRENCY_INFO_INDEXES][CURRENCY_INFO_STRING_SIZE]
   for(i = 0; i < TOTAL_CURRENCIES; i++)
 	{
@@ -559,8 +570,8 @@ AsirikuyReturnCode normalizeCurrency(char* pCurrency)
     }
   }
 
-  logWarning("normalizeCurrency() %s is not a recognized currency, defaulting to \"USD\". This may occur when using cent accounts on some brokers.", pCurrency);
-  strcpy(pCurrency, "USD\n\n");
+  logWarning("normalizeCurrency() '%s' (length=%zu) is not a recognized currency, defaulting to \"USD\". This may occur when using cent accounts on some brokers.", pCurrency, currencyLen);
+  strcpy(pCurrency, "USD");
   return SUCCESS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/
@@ -602,8 +613,19 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
   returnCode = parseSymbol(pSymbol, prefix, baseCurrency, separator, quoteCurrency, suffix);
   if(returnCode != SUCCESS)
   {
-    return returnCode;
+    /* If parseSymbol fails, we can't determine currencies, so conversion symbols can't be found */
+    /* This is expected for some symbol formats (e.g., crypto pairs without separators) */
+    logWarning("getConversionSymbols() - parseSymbol() failed for symbol %s. Conversion symbols cannot be determined, but this may be expected for some symbol formats (e.g., crypto pairs without separators).", pSymbol);
+    strcpy(pBaseConversionSymbol, "");
+    strcpy(pQuoteConversionSymbol, "");
+    return returnCode; /* Return the parseSymbol error code */
   }
+
+  /* Special case: If account currency matches quote currency, no conversion needed for quote */
+  int accountMatchesQuote = (strcmp(pAccountCurrency, quoteCurrency) == 0);
+  int accountMatchesBase = (strcmp(pAccountCurrency, baseCurrency) == 0);
+  logDebug("getConversionSymbols() - accountCurrency='%s', baseCurrency='%s', quoteCurrency='%s', accountMatchesQuote=%d, accountMatchesBase=%d", 
+           pAccountCurrency, baseCurrency, quoteCurrency, accountMatchesQuote, accountMatchesBase);
 
 	for(i = 0; i < TOTAL_CURRENCY_PAIRS; i++)
 	{
@@ -661,13 +683,38 @@ AsirikuyReturnCode getConversionSymbols(const char* pSymbol, char* pAccountCurre
 
 	if(foundBaseConversionSymbol || foundQuoteConversionSymbol)
 	{
+    /* Only one of the conversion symbols needs to be found. */
+    /* However, if account currency matches quote/base currency, no conversion is needed. */
+    logDebug("getConversionSymbols() - foundBaseConversionSymbol=%d, foundQuoteConversionSymbol=%d, accountMatchesQuote=%d, accountMatchesBase=%d", 
+             foundBaseConversionSymbol, foundQuoteConversionSymbol, accountMatchesQuote, accountMatchesBase);
+    if(accountMatchesQuote || accountMatchesBase)
+    {
+      logInfo("getConversionSymbols() - Found conversion symbol but account currency (%s) matches %s currency of symbol %s. No conversion needed.", 
+              pAccountCurrency, accountMatchesQuote ? "quote" : "base", pSymbol);
+      strcpy(pBaseConversionSymbol, "");
+      strcpy(pQuoteConversionSymbol, "");
+      return SUCCESS;
+    }
     /* Only one of the conversion symbols needs to be found. Exit successful. */
     logDebug("getConversionSymbols() succeeded but only 1 conversion symbol was found. pBaseConversionSymbol = %s, pQuoteConversionSymbol = %s", pBaseConversionSymbol, pQuoteConversionSymbol);
 	  return SUCCESS;
   }
 
-  /* Failed to find any conversion symbols. Exit with failure. */
-  logError("getConversionSymbols() failed. Unable to find any conversion symbols.\n\n");
+  /* Failed to find any conversion symbols. */
+  /* This is expected when account currency matches quote/base currency (e.g., USD account trading BTCUSD) */
+  if(accountMatchesQuote || accountMatchesBase)
+  {
+    logInfo("getConversionSymbols() - No conversion symbols needed. Account currency (%s) matches %s currency of symbol %s. Currency conversion not required.", 
+            pAccountCurrency, accountMatchesQuote ? "quote" : "base", pSymbol);
+    /* Return success since no conversion is needed */
+    strcpy(pBaseConversionSymbol, "");
+    strcpy(pQuoteConversionSymbol, "");
+    return SUCCESS;
+  }
+
+  /* This is a real error - conversion symbols are needed but not found */
+  logWarning("getConversionSymbols() failed. Unable to find conversion symbols for symbol %s with account currency %s. Currency conversion for profit/loss may be inaccurate.", 
+             pSymbol, pAccountCurrency);
 	return NO_CONVERSION_SYMBOLS;
 }
 /* ---------------------------------------------------------------------------------------------------------------------------------------------*/

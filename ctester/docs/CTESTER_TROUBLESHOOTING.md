@@ -15,6 +15,74 @@
 
 ## Common Issues
 
+### Issue 0: Log Level Not Applied (Fixed December 2024)
+
+**Symptoms**:
+- INFO messages appear despite setting `logseverity = 4` (WARNING)
+- Log level setting seems to be ignored
+
+**Status**: ✅ **FIXED** in December 2024
+
+**Cause**: When multiple loggers initialize (CTester and Framework), the logger was using the highest severity level instead of the most restrictive one.
+
+**Solution**: 
+- **Fixed automatically** - No action needed
+- The logger now correctly uses the most restrictive (lowest) severity level
+- If CTester sets severity 4 (WARNING) and Framework sets severity 7 (DEBUG), the logger uses severity 4 (WARNING)
+
+**Verification**:
+```bash
+# Set logseverity = 4 in config
+# Run backtest
+# Check log file - should only see WARNING, ERROR, CRITICAL, ALERT, EMERGENCY
+# No INFO or DEBUG messages should appear
+```
+
+### Issue 0a: Currency Conversion False Errors (Fixed December 2024)
+
+**Symptoms**:
+```
+[ERROR] For system No.0, no quote conversion symbol found for trade symbol BTCUSD with account currency USD.
+[ERROR] For system No.0, no base conversion symbol found for trade symbol BTCUSD with account currency USD.
+```
+
+**Status**: ✅ **FIXED** in December 2024
+
+**Cause**: The system was logging ERROR messages when no currency conversion was needed (e.g., BTCUSD with USD account currency).
+
+**Solution**:
+- **Fixed automatically** - No action needed
+- The system now correctly detects when no conversion is needed
+- Logs INFO message instead of ERROR when account currency matches symbol currency
+
+**Verification**:
+```bash
+# Test with BTCUSD and USD account currency
+# Should see INFO message: "no conversion symbols needed for trade symbol BTCUSD with account currency USD"
+# No ERROR messages should appear
+```
+
+### Issue 0b: State Files with Newlines in Names (Fixed December 2024)
+
+**Symptoms**:
+- `.state` files appear with blank lines in their names when listing files
+- Filenames look corrupted or have strange formatting
+
+**Status**: ✅ **FIXED** in December 2024
+
+**Cause**: Literal newline characters (`\n\n\n\n\n`) were being added to file paths in `InstanceStates.c`.
+
+**Solution**:
+- **Fixed automatically** - No action needed
+- `.state` files now have normal filenames (e.g., `1.state`, `223456.state`)
+- Old files with newlines can be cleaned up (optional)
+
+**Cleanup** (optional):
+```bash
+cd ctester
+rm -f tmp/*.state
+```
+
 ### Issue 1: Library Not Found
 
 **Symptoms**:

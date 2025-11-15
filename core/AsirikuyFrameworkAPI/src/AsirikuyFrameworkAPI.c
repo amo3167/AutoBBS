@@ -100,8 +100,14 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
   // Pantheios removed - using standard fprintf for logging
   // char pantheiosLogPath[MAX_FILE_PATH_CHARS] = "";
 
+  logInfo("initFramework called: config='%s', account='%s', initialized=%d, initializing=%d\n", 
+          pAsirikuyConfig ? pAsirikuyConfig : "NULL", 
+          pAccountName ? pAccountName : "NULL", 
+          initialized, initializing);
+
   if(!initialized)
   {
+    logInfo("initFramework: Framework not initialized yet, entering initialization\n");
     enterCriticalSection();
 	 if(initializing)
     {
@@ -114,12 +120,50 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
 
   if(initialized)
   {
+    // Framework already initialized, but we should still add the Framework log file
+    // to the logger (logger now supports multiple files)
+    logInfo("initFramework: Framework already initialized, adding log file\n");
+    // Parse config to get log folder
+    AsirikuyConfig tempConfig;
+    strcpy(tempConfig.configFileName, pAsirikuyConfig);
+    tempConfig.ratesBufferExtension = DEFAULT_RATES_BUF_EXT;
+    result = parseConfigFile(&tempConfig);
+    logInfo("initFramework: Framework already initialized. Config parse result: %d\n", result);
+    if(result == SUCCESS)
+    {
+      logInfo("initFramework: Config parsed. Log folder: '%s', length: %zu\n", 
+               tempConfig.loggingConfig.logFolder, strlen(tempConfig.loggingConfig.logFolder));
+      if(strlen(tempConfig.loggingConfig.logFolder) > 0)
+      {
+        char logFilePath[MAX_FILE_PATH_CHARS] = "";
+        strcpy(logFilePath, tempConfig.loggingConfig.logFolder);
+        strcat(logFilePath, "/");
+        if(pAccountName != NULL && strlen(pAccountName) > 0)
+        {
+          strcat(logFilePath, pAccountName);
+        }
+        strcat(logFilePath, LOG_FILENAME);
+        logInfo("initFramework: Adding Framework log file: %s\n", logFilePath);
+        // Add Framework log file to logger (logger supports multiple files now)
+        int loggerResult = asirikuyLoggerInit(logFilePath, tempConfig.loggingConfig.severityLevel);
+        logNotice("AsirikuyFramework logger added log file: %s (framework already initialized, logger result: %d)\n", logFilePath, loggerResult);
+      }
+      else
+      {
+        logWarning("initFramework: Log folder is empty in config\n");
+      }
+    }
+    else
+    {
+      logError("initFramework: Failed to parse config file: %s, result: %d\n", pAsirikuyConfig, result);
+    }
     initializing = FALSE;
     return (int)SUCCESS;
   }
 
   if(pAsirikuyConfig == NULL)
   {
+    logError("initFramework: pAsirikuyConfig is NULL\n");
     initializing = FALSE;
     return (int)INVALID_CONFIG;
   }
@@ -128,23 +172,44 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
   // Pantheios removed - severity level no longer needed
   // config.loggingConfig.severityLevel = PANTHEIOS_SEV_NOTICE;
   config.ratesBufferExtension = DEFAULT_RATES_BUF_EXT;
+  logInfo("initFramework: Parsing config file: %s\n", pAsirikuyConfig);
   result = parseConfigFile(&config);
   if(result != SUCCESS)
   {
+    logError("initFramework: Failed to parse config, result: %d\n", result);
     initializing = FALSE;
     return (int)result;
   }
 
   seedRand();
 
-  // Pantheios removed - using standard fprintf for logging
-  // strcat(pantheiosLogPath, config.loggingConfig.logFolder);
-  // strcat(pantheiosLogPath, "/");
-  // strcat(pantheiosLogPath, pAccountName);
-  // strcat(pantheiosLogPath, LOG_FILENAME);
-  // pantheios_init();
-  // pantheios_be_file_setFilePath((PAN_CHAR_T*)pantheiosLogPath, 0, 0, PANTHEIOS_BEID_ALL);
-  // pantheios_fe_simple_setSeverityCeiling(config.loggingConfig.severityLevel);
+  // Initialize the AsirikuyLogger with log file path from config
+  // Note: Logger now supports multiple files, so this will add the Framework log file
+  // alongside any existing log files (e.g., CTester log)
+  char logFilePath[MAX_FILE_PATH_CHARS] = "";
+  logInfo("initFramework: Log folder from config: '%s', length: %zu\n", 
+           config.loggingConfig.logFolder, strlen(config.loggingConfig.logFolder));
+  if(strlen(config.loggingConfig.logFolder) > 0)
+  {
+    strcpy(logFilePath, config.loggingConfig.logFolder);
+    strcat(logFilePath, "/");
+    if(pAccountName != NULL && strlen(pAccountName) > 0)
+    {
+      strcat(logFilePath, pAccountName);
+    }
+    strcat(logFilePath, LOG_FILENAME);
+    logInfo("initFramework: Adding Framework log file: %s\n", logFilePath);
+    // Add Framework log file to logger (logger supports multiple files now)
+    int loggerResult = asirikuyLoggerInit(logFilePath, config.loggingConfig.severityLevel);
+    logNotice("AsirikuyFramework logger initialized to: %s (logger result: %d)\n", logFilePath, loggerResult);
+  }
+  else
+  {
+    logWarning("initFramework: No log folder configured, using stderr only\n");
+    // If no log folder configured, initialize logger without file (stderr only)
+    asirikuyLoggerInit(NULL, config.loggingConfig.severityLevel);
+  }
+  
   logNotice("AsirikuyFramework initialized.\n");
 
   retCode = TA_Initialize();
@@ -193,9 +258,16 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
 
 static int initInstance(int instanceId, int isTesting, char* pAsirikuyConfig, char* pAccountName)
 {
+  logInfo("initInstance called: instanceId=%d, isTesting=%d, config='%s', account='%s'\n", 
+          instanceId, isTesting, pAsirikuyConfig ? pAsirikuyConfig : "NULL", 
+          pAccountName ? pAccountName : "NULL");
+  
   int returnCode = initFramework(pAsirikuyConfig, pAccountName);
+  
+  logInfo("initInstance: initFramework returned %d\n", returnCode);
   if(returnCode != SUCCESS)
   {
+    logError("initInstance: initFramework failed with code %d\n", returnCode);
     return returnCode;
   }
 
@@ -249,7 +321,6 @@ extern "C" {
     {
       return returnCode;
     }
-
     return SUCCESS;
   }
 

@@ -602,8 +602,10 @@ def main():
                 _ratesInfoArray[0] = ratesInfoArray[i]
 
                 astdll.runPortfolioTest.restype = TestResult
+                # Encode accountCurrency to bytes for C function (keep string version for Python operations)
+                accountCurrencyBytes = accountCurrency.encode('utf-8')
                 result = astdll.runPortfolioTest (
-                    c_int(1),ctypes.pointer(_settings), ctypes.pointer(_symbols), accountCurrency, brokerName, refBrokerName,
+                    c_int(1),ctypes.pointer(_settings), ctypes.pointer(_symbols), accountCurrencyBytes, brokerName, refBrokerName,
                     ctypes.pointer(_accountInfo), ctypes.pointer(_testSettings), ctypes.pointer(_ratesInfoArray), c_int(numCandles),
                     c_int(1), ctypes.pointer(_ratesArray), c_double(minLotSize), testUpdate_c, None, signalUpdate_c
                 )
@@ -645,8 +647,10 @@ def main():
             f = open(outputFile + ".txt", 'w')
             f.write("Order Number, Order Type, Open Time, Close Time, Open Price, Close Price, Lots, Profit, SL, TP, Balance, ID, Pair, Swap\n")
             astdll.runPortfolioTest.restype = TestResult
+            # Encode accountCurrency to bytes for C function (keep string version for Python operations)
+            accountCurrencyBytes = accountCurrency.encode('utf-8')
             result = astdll.runPortfolioTest (
-                c_int(1), ctypes.pointer(settings), ctypes.pointer(symbols), accountCurrency, brokerName, refBrokerName, ctypes.pointer(accountInfo),
+                c_int(1), ctypes.pointer(settings), ctypes.pointer(symbols), accountCurrencyBytes, brokerName, refBrokerName, ctypes.pointer(accountInfo),
                 ctypes.pointer(testSettings), ctypes.pointer(ratesInfoArray), c_int(numCandles), c_int(numSystemsInPortfolio), ctypes.pointer(ratesArray), c_double(minLotSize),
                 testUpdate_c, None, signalUpdate_c
             )

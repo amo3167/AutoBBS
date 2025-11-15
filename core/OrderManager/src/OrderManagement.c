@@ -107,8 +107,8 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
   char   quoteTradeCurrency     [] = "2..";
   char   baseConversionCurrency [] = "3..";
   char   quoteConversionCurrency[] = "4..";
-  char   baseConversionSymbol   [] = "5..............";
-  char   quoteConversionSymbol  [] = "6..............";
+  char   baseConversionSymbol   [MAX_FILE_PATH_CHARS] = "";
+  char   quoteConversionSymbol  [MAX_FILE_PATH_CHARS] = "";
   double atr, sumTrueRange = 0, high, low, previousClose; 
   int shift1Index = pParams->ratesBuffers->rates[0].info.arraySize - 2;
   int	 i;
@@ -145,13 +145,26 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
   }
   
   /* Get conversion symbols that relate base with deposit and quote with deposit */
-  getConversionSymbols(pParams->tradeSymbol, pParams->accountInfo.currency, baseConversionSymbol, quoteConversionSymbol);
+  /* Explicitly clear buffers before calling getConversionSymbols to ensure clean state */
+  strcpy(baseConversionSymbol, "");
+  strcpy(quoteConversionSymbol, "");
+  AsirikuyReturnCode conversionResult = getConversionSymbols(pParams->tradeSymbol, pParams->accountInfo.currency, baseConversionSymbol, quoteConversionSymbol);
 
   /* Now we get the base and quote portions of the quote conversion symbol (the symbol that relates the quote with the deposit currencies).*/
+  /* Only parse conversion symbols if they were successfully found and are not empty */
+  if(conversionResult == SUCCESS && strlen(quoteConversionSymbol) > 0)
+  {
     getBaseCurrency(quoteConversionSymbol, baseConversionCurrency);
     getQuoteCurrency(quoteConversionSymbol, quoteConversionCurrency);
-    conversionRateBid = pParams->bidAsk.quoteConversionBid;
-    conversionRateAsk = pParams->bidAsk.quoteConversionAsk;
+  }
+  else
+  {
+    /* Conversion symbols not found or empty - clear the currency buffers */
+    strcpy(baseConversionCurrency, "");
+    strcpy(quoteConversionCurrency, "");
+  }
+  conversionRateBid = pParams->bidAsk.quoteConversionBid;
+  conversionRateAsk = pParams->bidAsk.quoteConversionAsk;
     
   /* If the quote symbol's base matches the deposit currency (like a USD account trading the USDJPY pair) then we multiply for 1/quoteSymbol.*/
   if((strcmp(pParams->accountInfo.currency, baseConversionCurrency) == 0))
@@ -228,26 +241,35 @@ static double calculateMarginRequired(const StrategyParams* pParams, OrderType o
   char   quoteCurrency          [] = "2..";
   char   baseConversionCurrency [] = "3..";
   char   quoteConversionCurrency[] = "4..";
-  char   baseConversionSymbol   [] = "5...............";
-  char   quoteConversionSymbol  [] = "6...............";
+  char   baseConversionSymbol   [MAX_FILE_PATH_CHARS] = "";
+  char   quoteConversionSymbol  [MAX_FILE_PATH_CHARS] = "";
 
   getBaseCurrency(pParams->tradeSymbol, baseCurrency);
   getQuoteCurrency(pParams->tradeSymbol, quoteCurrency);
-  getConversionSymbols(pParams->tradeSymbol, pParams->accountInfo.currency, baseConversionSymbol, quoteConversionSymbol);
+  /* Explicitly clear buffers before calling getConversionSymbols to ensure clean state */
+  strcpy(baseConversionSymbol, "");
+  strcpy(quoteConversionSymbol, "");
+  AsirikuyReturnCode conversionResult = getConversionSymbols(pParams->tradeSymbol, pParams->accountInfo.currency, baseConversionSymbol, quoteConversionSymbol);
 
-  if(pParams->bidAsk.baseConversionBid > 0 && pParams->bidAsk.baseConversionAsk > 0)
+  if(pParams->bidAsk.baseConversionBid > 0 && pParams->bidAsk.baseConversionAsk > 0 && conversionResult == SUCCESS && strlen(baseConversionSymbol) > 0)
   {
     conversionBid = pParams->bidAsk.baseConversionBid;
     conversionAsk = pParams->bidAsk.baseConversionAsk;
     getBaseCurrency(baseConversionSymbol, baseConversionCurrency);
     getQuoteCurrency(baseConversionSymbol, quoteConversionCurrency);
   }
-  else if(pParams->bidAsk.quoteConversionBid > 0 && pParams->bidAsk.quoteConversionAsk > 0)
+  else if(pParams->bidAsk.quoteConversionBid > 0 && pParams->bidAsk.quoteConversionAsk > 0 && conversionResult == SUCCESS && strlen(quoteConversionSymbol) > 0)
   {
     conversionBid = pParams->bidAsk.quoteConversionBid;
     conversionAsk = pParams->bidAsk.quoteConversionAsk;
     getBaseCurrency(quoteConversionSymbol, baseConversionCurrency);
     getQuoteCurrency(quoteConversionSymbol, quoteConversionCurrency);
+  }
+  else
+  {
+    /* Conversion symbols not found or empty - clear the currency buffers */
+    strcpy(baseConversionCurrency, "");
+    strcpy(quoteConversionCurrency, "");
   }
 
   if(strcmp(pParams->accountInfo.currency, baseCurrency) == 0)
