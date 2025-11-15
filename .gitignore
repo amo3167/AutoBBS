@@ -29,3 +29,6 @@
 *.swp
 ~*
 
+# Historical MT4 CSV price data (removed locally, keep ignored going forward)
+/history/*MT4*.csv
+
