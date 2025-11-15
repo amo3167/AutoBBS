@@ -20,6 +20,10 @@
 #include <stdio.h>
 #include <unistd.h>
 
+// Forward declaration for CTester Symbol Analyzer API functions
+// These are defined in AsirikuyFrameworkAPI which CTesterFrameworkAPI links to
+int C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char* pBaseConversionSymbol, char* pQuoteConversionSymbol);
+
 #define MATHEMATICAL_EXPECTANCY_LIMIT 50
 #define MATHEMATICAL_EXPECTANCY_DIVISION 5
 
@@ -1131,14 +1135,18 @@ TestResult __stdcall runPortfolioTest (
 	if (numSystems > 1)
 		pInSettings[j][STRATEGY_INSTANCE_ID] = j+1;		
 
-		result = WAIT_FOR_INIT;
-		tries = 0;
+	logInfo("About to call initInstanceC for system %d, instanceId=%d\n", j, (int)pInSettings[j][STRATEGY_INSTANCE_ID]);
 
-		while(result == WAIT_FOR_INIT && tries <3){
-			result = initInstanceC ((int)pInSettings[j][STRATEGY_INSTANCE_ID], 1, "./config/AsirikuyConfig.xml", "");
-			sleepMilliseconds(500);
-			tries++;
-		}
+	result = WAIT_FOR_INIT;
+	tries = 0;
+
+	while(result == WAIT_FOR_INIT && tries <3){
+		logInfo("Calling initInstanceC: attempt %d, instanceId=%d\n", tries+1, (int)pInSettings[j][STRATEGY_INSTANCE_ID]);
+		result = initInstanceC ((int)pInSettings[j][STRATEGY_INSTANCE_ID], 1, "./config/AsirikuyConfig.xml", "");
+		logInfo("initInstanceC returned: %d\n", result);
+		sleepMilliseconds(500);
+		tries++;
+	}
 		if(result!=SUCCESS){
 			switch (result){
 				case UNKNOWN_INSTANCE_ID:
@@ -1171,25 +1179,76 @@ TestResult __stdcall runPortfolioTest (
 		baseSymbols[n] = (char*)malloc(MAX_FILE_PATH_CHARS * sizeof(char));
 		quoteSymbols[n] = (char*)malloc(MAX_FILE_PATH_CHARS * sizeof(char));
 
-		sprintf (baseSymbols[n], "%s", "");
+        sprintf (baseSymbols[n], "%s", "");
 		sprintf (quoteSymbols[n], "%s", "");
         sprintf (baseSymbolTemp, "%s", "");
 		sprintf (quoteSymbolTemp, "%s", "");
 
-		mql5_getConversionSymbols(pInTradeSymbol[n], pInAccountCurrency, baseSymbolTemp, quoteSymbolTemp);
-          
-        // cut the symbol names to remove any suffixes
-        if (strlen(baseSymbolTemp) != 0){
-            strncpy(baseSymbols[n], baseSymbolTemp, 6);
-            baseSymbols[n][6] = '\0';
-            logDebug("For system No.%d, base symbol is %s", n, baseSymbols[n]);
+		int conversionResult = C_getConversionSymbols(pInTradeSymbol[n], pInAccountCurrency, baseSymbolTemp, quoteSymbolTemp);
+		
+		// Check if conversion is not required first (SUCCESS with empty strings means account currency matches)
+		int baseSymbolEmpty = (strlen(baseSymbolTemp) == 0);
+		int quoteSymbolEmpty = (strlen(quoteSymbolTemp) == 0);
+		int noConversionNeeded = (conversionResult == SUCCESS && baseSymbolEmpty && quoteSymbolEmpty);
+		
+		if (noConversionNeeded) {
+			// No conversion needed - account currency matches quote/base currency
+			logInfo("For system No.%d, no conversion symbols needed for trade symbol %s with account currency %s. Account currency matches symbol currency - conversion not required.", n, pInTradeSymbol[n], pInAccountCurrency);
+		} else if (strlen(baseSymbolTemp) != 0) {
+            // cut the symbol names to remove any suffixes and leading/trailing newlines
+            // Note: getConversionSymbols prepends "\n\n" to symbols, so we need to skip those
+            // Skip leading newlines/whitespace
+            char* baseSymbolStart = baseSymbolTemp;
+            while(*baseSymbolStart == '\n' || *baseSymbolStart == '\r' || *baseSymbolStart == ' ' || *baseSymbolStart == '\t') {
+                baseSymbolStart++;
+            }
+            // Find end of string and strip trailing whitespace
+            size_t len = strlen(baseSymbolStart);
+            while(len > 0 && (baseSymbolStart[len-1] == '\n' || baseSymbolStart[len-1] == '\r' || baseSymbolStart[len-1] == ' ' || baseSymbolStart[len-1] == '\t')) {
+                len--;
+            }
+            // Copy up to 6 characters, skipping any newlines in the middle
+            size_t copyLen = (len > 6) ? 6 : len;
+            size_t j = 0;
+            for(size_t k = 0; k < len && j < copyLen; k++) {
+                if(baseSymbolStart[k] != '\n' && baseSymbolStart[k] != '\r') {
+                    baseSymbols[n][j++] = baseSymbolStart[k];
+                }
+            }
+            baseSymbols[n][j] = '\0';
+            logInfo("For system No.%d, base conversion symbol is %s", n, baseSymbols[n]);
+        } else if (conversionResult == NO_CONVERSION_SYMBOLS) {
+            // Real error - conversion symbols are needed but not found
+            logError("For system No.%d, no base conversion symbol found for trade symbol %s with account currency %s. Symbol parsing may have failed - conversion rates will use default values.", n, pInTradeSymbol[n], pInAccountCurrency);
         }
+        // else: base symbol is empty but conversionResult is SUCCESS - this means only quote symbol was found, which is OK
         
-        if (strlen(quoteSymbolTemp) != 0){
-            strncpy(quoteSymbols[n], quoteSymbolTemp, 6);
-            quoteSymbols[n][6] = '\0';
-            logDebug("For system No.%d, quote symbol is %s", n, quoteSymbols[n]);
+        if (!noConversionNeeded && strlen(quoteSymbolTemp) != 0){
+            // Skip leading newlines/whitespace
+            char* quoteSymbolStart = quoteSymbolTemp;
+            while(*quoteSymbolStart == '\n' || *quoteSymbolStart == '\r' || *quoteSymbolStart == ' ' || *quoteSymbolStart == '\t') {
+                quoteSymbolStart++;
+            }
+            // Find end of string and strip trailing whitespace
+            size_t len = strlen(quoteSymbolStart);
+            while(len > 0 && (quoteSymbolStart[len-1] == '\n' || quoteSymbolStart[len-1] == '\r' || quoteSymbolStart[len-1] == ' ' || quoteSymbolStart[len-1] == '\t')) {
+                len--;
+            }
+            // Copy up to 6 characters, skipping any newlines in the middle
+            size_t copyLen = (len > 6) ? 6 : len;
+            size_t j = 0;
+            for(size_t k = 0; k < len && j < copyLen; k++) {
+                if(quoteSymbolStart[k] != '\n' && quoteSymbolStart[k] != '\r') {
+                    quoteSymbols[n][j++] = quoteSymbolStart[k];
+                }
+            }
+            quoteSymbols[n][j] = '\0';
+            logInfo("For system No.%d, quote conversion symbol is %s", n, quoteSymbols[n]);
+        } else if (!noConversionNeeded && conversionResult == NO_CONVERSION_SYMBOLS) {
+            // Real error - conversion symbols are needed but not found
+            logError("For system No.%d, no quote conversion symbol found for trade symbol %s with account currency %s. Symbol parsing may have failed - conversion rates will use default values.", n, pInTradeSymbol[n], pInAccountCurrency);
         }
+        // else: quote symbol is empty but conversionResult is SUCCESS (or no conversion needed) - this is OK
         
 		baseFiles[n] = NULL;
 		quoteFiles[n] = NULL;
@@ -1199,7 +1258,9 @@ TestResult __stdcall runPortfolioTest (
 			sprintf (buffer, "%s_QUOTES.csv", baseSymbols[n]);			
 			baseFiles[n] = fopen(buffer , "r" );
 			if (baseFiles[n] == NULL) {
-    			logError("Error. Quotes for base symbol %s not found. Trading results will be inaccurate.", baseSymbols[n]);
+    			logWarning("Base conversion file not found: %s. Trading results may be inaccurate. Expected file: %s_QUOTES.csv", baseSymbols[n], baseSymbols[n]);
+			} else {
+				logDebug("Successfully opened base conversion file: %s_QUOTES.csv", baseSymbols[n]);
 			}
 		}
 
@@ -1208,7 +1269,9 @@ TestResult __stdcall runPortfolioTest (
 			sprintf (buffer, "%s_QUOTES.csv", quoteSymbols[n]);		
 			quoteFiles[n] = fopen(buffer , "r" );
 			if (quoteFiles[n] == NULL) {
-    			logError("Error. Quotes for quote symbol %s not found. Trading results will be inaccurate.",  quoteSymbols[n]);
+    			logWarning("Quote conversion file not found: %s. Trading results may be inaccurate. Expected file: %s_QUOTES.csv", quoteSymbols[n], quoteSymbols[n]);
+			} else {
+				logDebug("Successfully opened quote conversion file: %s_QUOTES.csv", quoteSymbols[n]);
 			}
 		}
 	}
@@ -1360,16 +1423,38 @@ TestResult __stdcall runPortfolioTest (
 			if(lDate.tm_year < 50) lDate.tm_year += 2000 ; else lDate.tm_year += 1900;
 
 			currentDateTime = mkgmtime(lDate.tm_year, lDate.tm_mon, lDate.tm_mday, lDate.tm_hour, lDate.tm_min, lDate.tm_sec);
+			
+			/* Validate parsed time - negative times are invalid (before Unix epoch) */
+			if(currentDateTime < 0)
+			{
+				logError("DATA ISSUE: Invalid time parsed from quote conversion file %s_QUOTES.csv: timestamp=%zd (date: %02d/%02d/%04d %02d:%02d). This date is before Unix epoch (1970-01-01). Raw line: %.100s. Skipping this entry.", 
+				         quoteSymbols[s], currentDateTime, lDate.tm_mday, lDate.tm_mon, lDate.tm_year, lDate.tm_hour, lDate.tm_min, data);
+				break; /* Skip this invalid entry */
+			}
+			
 			strftime(date, 20, "%d/%m/%Y %H:%M:%S", gmtime(&currentDateTime));
 			}
 		} else {
+			if(strlen(quoteSymbols[s]) > 0) {
+				// Sanitize symbol for logging - remove any newlines that might cause message splitting
+				char cleanSymbol[7] = "";
+				size_t idx = 0;
+				for(size_t k = 0; k < strlen(quoteSymbols[s]) && idx < 6; k++) {
+					if(quoteSymbols[s][k] != '\n' && quoteSymbols[s][k] != '\r') {
+						cleanSymbol[idx++] = quoteSymbols[s][k];
+					}
+				}
+				cleanSymbol[idx] = '\0';
+				logWarning("Quote conversion file %s_QUOTES.csv not found for system %d. Using conversion rate of 1.0. Trading results may be inaccurate.", cleanSymbol, s);
+			}
             bidAsk[IDX_QUOTE_CONVERSION_ASK] = 1;  
             bidAsk[IDX_QUOTE_CONVERSION_BID] = 1; 
 		}
 
 		// we should now get base currency values if necessary
 
-		if(baseFiles[s] != NULL){	
+		if(baseFiles[s] != NULL){
+			logDebug("Reading base conversion rates from file for system %d", s);	
 
 			currentDateTime = 0;
 
@@ -1399,9 +1484,30 @@ TestResult __stdcall runPortfolioTest (
 			if(lDate.tm_year < 50) lDate.tm_year += 2000 ; else lDate.tm_year += 1900;
 
 			currentDateTime = mkgmtime(lDate.tm_year, lDate.tm_mon, lDate.tm_mday, lDate.tm_hour, lDate.tm_min, lDate.tm_sec);
+			
+			/* Validate parsed time - negative times are invalid (before Unix epoch) */
+			if(currentDateTime < 0)
+			{
+				logError("DATA ISSUE: Invalid time parsed from base conversion file %s_QUOTES.csv: timestamp=%zd (date: %02d/%02d/%04d %02d:%02d). This date is before Unix epoch (1970-01-01). Raw line: %.100s. Skipping this entry.", 
+				         baseSymbols[s], currentDateTime, lDate.tm_mday, lDate.tm_mon, lDate.tm_year, lDate.tm_hour, lDate.tm_min, data);
+				break; /* Skip this invalid entry */
+			}
+			
 			strftime(date, 20, "%d/%m/%Y %H:%M:%S", gmtime(&currentDateTime));
 			}
 		} else {
+			if(strlen(baseSymbols[s]) > 0) {
+				// Sanitize symbol for logging - remove any newlines that might cause message splitting
+				char cleanSymbol[7] = "";
+				size_t idx = 0;
+				for(size_t k = 0; k < strlen(baseSymbols[s]) && idx < 6; k++) {
+					if(baseSymbols[s][k] != '\n' && baseSymbols[s][k] != '\r') {
+						cleanSymbol[idx++] = baseSymbols[s][k];
+					}
+				}
+				cleanSymbol[idx] = '\0';
+				logWarning("Base conversion file %s_QUOTES.csv not found for system %d. Using conversion rate of 1.0. Trading results may be inaccurate.", cleanSymbol, s);
+			}
             bidAsk[IDX_BASE_CONVERSION_ASK] = 1;  
             bidAsk[IDX_BASE_CONVERSION_BID] = 1; 
 		}

@@ -107,12 +107,12 @@ void loadInstanceState(int instanceId)
   }
 
   strcpy(path, gInstanceStatesFolder);
-  strcat(path, "/\n\n\n\n\n");
+  strcat(path, "/");
   sprintf(instanceIdString,  "%d", instanceId);
   strcat(path, instanceIdString);
   strcat(path, INSTANCE_STATES_FILENAME_EXTENSION);
 
-  file = fopen(path, "rb\n");
+  file = fopen(path, "rb");
   if(!file)
   {
     logNotice("loadInstanceState() %s does not exist yet. There is no state to load.\n", path);
@@ -156,12 +156,12 @@ static void backupInstanceState(int instanceId)
   logDebug("backupInstanceState() InstanceId = %d, States Index = %d, instance ID = %d, Is parameter space loaded = %d, Last order update time = %d, Last Run time = %d, ", instanceId, instanceIndex, gInstanceStates[instanceIndex].instanceId, gInstanceStates[instanceIndex].isParameterSpaceLoaded, gInstanceStates[instanceIndex].lastOrderUpdateTime, gInstanceStates[instanceIndex].lastRunTime);
 
   strcpy(path, gInstanceStatesFolder);
-  strcat(path, "/\n\n\n\n\n");
+  strcat(path, "/");
   sprintf(instanceIdString, "%d", instanceId);
   strcat(path, instanceIdString);
   strcat(path, INSTANCE_STATES_FILENAME_EXTENSION);
 
-  file = fopen(path, "wb\n\n\n\n\n");
+  file = fopen(path, "wb");
   if(file)
   {
     fwrite(&gInstanceStates[instanceIndex], sizeof(InstanceState), 1, file);

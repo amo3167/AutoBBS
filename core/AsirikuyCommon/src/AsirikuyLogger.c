@@ -15,9 +15,13 @@
 #include <time.h>
 #include <sys/time.h>
 #include <unistd.h>
+#include <errno.h>
+
+// Maximum number of log files (support multiple loggers)
+#define MAX_LOG_FILES 4
 
 // Logger state
-static FILE* gLogFile = NULL;
+static FILE* gLogFiles[MAX_LOG_FILES] = {NULL, NULL, NULL, NULL};
 static int gSeverityLevel = LOG_INFO; // Default to Info level
 static BOOL gInitialized = FALSE;
 
@@ -91,41 +95,97 @@ static void ensureDirectoryExists(const char* filePath)
 
 int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel)
 {
-  if(gInitialized)
+  // Create test file to verify this function is called
+  FILE* testFile = fopen("/tmp/asirikuyLoggerInit_called.log", "a");
+  if(testFile != NULL)
   {
-    return 0; // Already initialized
+    fprintf(testFile, "asirikuyLoggerInit called: path='%s', severity=%d\n", 
+            pLogFilePath ? pLogFilePath : "NULL", severityLevel);
+    fclose(testFile);
   }
-
-  gSeverityLevel = severityLevel;
+  
+  // Debug: Log initialization attempt
+  fprintf(stderr, "[DEBUG] asirikuyLoggerInit called: path='%s', severity=%d\n", 
+          pLogFilePath ? pLogFilePath : "NULL", severityLevel);
+  fflush(stderr);
+  
+  // Update severity level (use lowest/most restrictive severity if multiple loggers)
+  // Lower numbers = more restrictive (only critical errors), higher numbers = less restrictive (everything)
+  // If this is the first initialization or the new severity is more restrictive, use it
+  if(!gInitialized || severityLevel < gSeverityLevel)
+  {
+    gSeverityLevel = severityLevel;
+  }
 
   // Open log file if path provided
   if(pLogFilePath != NULL && strlen(pLogFilePath) > 0)
   {
+    fprintf(stderr, "[DEBUG] asirikuyLoggerInit: Opening log file: %s\n", pLogFilePath);
+    fflush(stderr);
+    // Check if this log file is already open
+    int i;
+    for(i = 0; i < MAX_LOG_FILES; i++)
+    {
+      if(gLogFiles[i] != NULL)
+      {
+        // Check if this is the same file (simple string comparison)
+        // Note: This is a simple check - in practice, we'd need to track file paths
+        // For now, we'll allow multiple files to be opened
+      }
+    }
+    
+    // Find an empty slot for the new log file
+    int slot = -1;
+    for(i = 0; i < MAX_LOG_FILES; i++)
+    {
+      if(gLogFiles[i] == NULL)
+      {
+        slot = i;
+        break;
+      }
+    }
+    
+    if(slot == -1)
+    {
+      // All slots full, replace the first one (or we could append to existing)
+      fprintf(stderr, "[WARNING] Maximum log files (%d) reached. Reusing first slot.\n", MAX_LOG_FILES);
+      if(gLogFiles[0] != NULL && gLogFiles[0] != stderr)
+      {
+        fclose(gLogFiles[0]);
+      }
+      slot = 0;
+    }
+    
     // Ensure directory exists
     ensureDirectoryExists(pLogFilePath);
     
     // Open log file in append mode
-    gLogFile = fopen(pLogFilePath, "a");
-    if(gLogFile == NULL)
+    gLogFiles[slot] = fopen(pLogFilePath, "a");
+    if(gLogFiles[slot] == NULL)
     {
       // If append fails, try write mode
-      gLogFile = fopen(pLogFilePath, "w");
+      gLogFiles[slot] = fopen(pLogFilePath, "w");
     }
     
-    if(gLogFile != NULL)
+    if(gLogFiles[slot] != NULL)
     {
+      fprintf(stderr, "[DEBUG] asirikuyLoggerInit: Successfully opened log file in slot %d: %s\n", slot, pLogFilePath);
+      fflush(stderr);
       // Write header (bypass severity check for initialization)
       char timestamp[32] = "";
       getTimestamp(timestamp, sizeof(timestamp));
-      fprintf(gLogFile, "\n=== Asirikuy Logger Started ===\n");
-      fprintf(gLogFile, "[%s] Log file: %s\n", timestamp, pLogFilePath);
-      fprintf(gLogFile, "[%s] Severity level: %d (%s)\n", timestamp, severityLevel, getSeverityLabel(severityLevel));
-      fprintf(gLogFile, "[%s] All messages with severity <= %d will be logged\n", timestamp, severityLevel);
-      fflush(gLogFile);
+      fprintf(gLogFiles[slot], "\n=== Asirikuy Logger Started ===\n");
+      fprintf(gLogFiles[slot], "[%s] Log file: %s\n", timestamp, pLogFilePath);
+      fprintf(gLogFiles[slot], "[%s] Severity level: %d (%s)\n", timestamp, severityLevel, getSeverityLabel(severityLevel));
+      fprintf(gLogFiles[slot], "[%s] All messages with severity <= %d will be logged\n", timestamp, severityLevel);
+      fflush(gLogFiles[slot]);
     }
     else
     {
       fprintf(stderr, "[WARNING] Failed to open log file: %s. Logging to stderr only.\n", pLogFilePath);
+      fprintf(stderr, "[WARNING] Error details: errno=%d, path='%s'\n", errno, pLogFilePath);
+      fflush(stderr);
+      gLogFiles[slot] = NULL;
     }
   }
 
@@ -176,11 +236,15 @@ void asirikuyLogMessage(int severity, const char* format, ...)
     fprintf(stderr, "%s", logLine);
   }
   
-  // Write to log file if open
-  if(gLogFile != NULL)
+  // Write to all open log files
+  int i;
+  for(i = 0; i < MAX_LOG_FILES; i++)
   {
-    fprintf(gLogFile, "%s", logLine);
-    fflush(gLogFile); // Ensure immediate write
+    if(gLogFiles[i] != NULL && gLogFiles[i] != stderr)
+    {
+      fprintf(gLogFiles[i], "%s", logLine);
+      fflush(gLogFiles[i]); // Ensure immediate write
+    }
   }
 }
 
