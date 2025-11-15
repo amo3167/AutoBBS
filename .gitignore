@@ -29,6 +29,10 @@
 *.swp
 ~*
 
-# Historical MT4 CSV price data (removed locally, keep ignored going forward)
+# Historical price data (large broker-exported datasets removed to slim repository)
 /history/*MT4*.csv
+/history/*_1.csv
+/history/OpenOrders*
+/history/ClosedOrders*
+/history/Equity*
 
