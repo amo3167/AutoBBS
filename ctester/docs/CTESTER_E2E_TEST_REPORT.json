@@ -1,0 +1,60 @@
+{
+  "test_suite": "T060: End-to-End Testing for CTester",
+  "date": "2025-11-15T15:24:02.075890",
+  "duration_seconds": 1.416919,
+  "summary": {
+    "total": 5,
+    "passed": 3,
+    "failed": 1,
+    "warnings": 1,
+    "skipped": 0
+  },
+  "results": [
+    {
+      "test": "Configuration Loading",
+      "status": "PASS",
+      "details": [
+        "Found 8 config files",
+        "Section 'strategy' found",
+        "Section 'misc' found",
+        "Section 'account' found"
+      ]
+    },
+    {
+      "test": "Library Loading",
+      "status": "PASS",
+      "details": [
+        "Set DYLD_LIBRARY_PATH: /Users/andym/projects/AutoBBS/bin/gmake/x64/Debug:/Users/andym/projects/AutoBBS/bin/gmake/x64/Debug/lib:/Users/andym/projects/AutoBBS/vendor/MiniXML",
+        "Library loaded: libCTesterFrameworkAPI.dylib",
+        "Framework initialization successful",
+        "Framework version: 1.2.1"
+      ]
+    },
+    {
+      "test": "Data Preparation",
+      "status": "PASS",
+      "details": [
+        "History directory found",
+        "Found 1 CSV files"
+      ]
+    },
+    {
+      "test": "Strategy Execution (Diagnostic 1)",
+      "status": "FAIL",
+      "details": [
+        "Test failed with return code 1",
+        "STDOUT: Installing colorama Library for Python\nInstalling fastcsv Library for Python\n",
+        "STDERR: f __name__ == \"__main__\": main()\n                               ~~~~^^\n  File \"/Users/andym/projects/AutoBBS/ctester/asirikuy_strategy_tester.py\", line 371, in main\n    result = checkRates(historyFilePaths[i])\n  File \"/Users/andym/projects/AutoBBS/ctester/include/asirikuy.py\", line 305, in checkRates\n    with fastcsv.Reader(io.open(historyFilePath1)) as reader:\n                        ~~~~~~~^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: './history/EURUSD1987_60.csv'\n"
+      ],
+      "execution_time": "0.68s"
+    },
+    {
+      "test": "Output Validation (Test 1)",
+      "status": "WARN",
+      "details": [
+        "Text output file not found",
+        "XML output file not found (may be optional)"
+      ]
+    }
+  ]
+}

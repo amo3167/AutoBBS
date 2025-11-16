@@ -22,3 +22,44 @@
 *.log
 *.swp
 ~*
+
+# CTester specific folders
+/ctester/history/
+/ctester/log/
+/ctester/tmp/
+
+# Python compiled files
+*.pyc
+__pycache__/
+
+# Windows build artifacts
+*.dll
+*.pdb
+*.ilk
+*.idb
+*.pyd
+
+# Platform-specific shared libraries (use build output instead)
+*.so
+*.dylib
+
+# IDE project files
+*.e4p
+*.e4q
+*.e4t
+_eric4project/
+.pydevproject
+.project
+.settings/
+
+# Windows-specific files
+*.bat
+Thumbs.db
+
+# Temporary/output files (ctester)
+/ctester/open_order.txt
+/ctester/optimization.txt
+/ctester/optimization.png
+
+# Obsolete test scripts (KANTU strategy removed from core)
+/ctester/ast_kantu*.py
