@@ -47,5 +47,7 @@
 #include "NTPClientTests.hpp"
 #include "OrderManagerTests.hpp"
 #include "SymbolAnalyzerTests.hpp"
-#include "TradingStrategiesTests.hpp"
+// Note: TradingStrategies tests are now in separate .cpp files
+// (TradingStrategiesTests.cpp, StrategyContextTests.cpp, etc.)
+// and will be automatically linked by the build system
 

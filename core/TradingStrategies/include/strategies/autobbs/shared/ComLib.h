@@ -175,6 +175,18 @@ extern "C" {
 	AsirikuyReturnCode addMoreOrdersOnLongTermTrend(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex);
 
 	BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+	BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
+
+	AsirikuyReturnCode workoutExecutionTrend_Auto_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators);
+	AsirikuyReturnCode workoutExecutionTrend_XAUUSD_DayTrading(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators);
+	AsirikuyReturnCode workoutExecutionTrend_XAUUSD_DayTrading(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators);
+
+	void splitBuyOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
+	void splitSellOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
+	void splitBuyOrders_ShortTerm_ATR_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
+	void splitSellOrders_ShortTerm_ATR_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
+	void splitBuyOrders_Daily_Swing(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
+	void splitSellOrders_Daily_Swing(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
 
 #ifdef __cplusplus
 } /* extern "C" */
