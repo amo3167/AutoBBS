@@ -36,8 +36,8 @@
 
 //Types
 #ifndef true
-    #define false 0;
-    #define true 1;
+    #define false 0
+    #define true 1
 #endif
 
 typedef struct ast_rates_t

@@ -7,6 +7,11 @@ CompileFlags:
     - -I/Users/andym/projects/AutoBBS/core/OrderManager/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyTechnicalAnalysis/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyEasyTrade/include
+    - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include
+    - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/CTester
+    - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/MQL
+    - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/jforex
+    - -I/Users/andym/projects/AutoBBS/core/CTesterFrameworkAPI/include
     - -I/Users/andym/projects/AutoBBS/vendor/TALib/c/include
 
 ---

@@ -10,8 +10,6 @@
 #include "OrderSignals.h"
 #include "CTesterDefines.h"
 #include "CTesterTradingStrategiesAPI.h"
-#include "CTesterSymbolAnalyserAPI.h"
-#include "CTesterFrameworkAPI.h"
 #include "AsirikuyLogger.h"
 #include "stdlib.h"
 #include "AsirikuyTime.h"
@@ -108,7 +106,7 @@ double roundN(double x, int prec)
 	x = ceil(x * power - 0.5) / power;
 
 	if (x == -0)
-	x = 0;
+		x = 0;
 
 	return x;
 } 
@@ -822,7 +820,7 @@ void calculate_trade_by_trade_statistics(StatisticItem *statistics,
 			sumBalanceTime += (statistics[j].time-statistics[0].time)*(log(statistics[j].balance)- log(statistics[0].balance));
 		}
         
-        avgTime += (statistics[j].time-statistics[0].time) / statisticsSize;
+        avgTime += (statistics[j].time-statistics[0].time) / (double)statisticsSize;
 		avgBalance += (statistics[j].balance-statistics[0].balance) / statisticsSize;
 		avgBalanceLog += (log(statistics[j].balance)-log(statistics[0].balance)) / statisticsSize;
 
@@ -969,8 +967,9 @@ void calculate_weekly_statistics(StatisticItem *statistics,
 
 	/* if above 100 make the UlcerIndex 100 (all strategies above 100 are useless) */
 	if (sqrt(sumSqrt/n) > 100)
-	testResult->ulcerIndex = 100; else
-	testResult->ulcerIndex = sqrt(sumSqrt/n);
+		testResult->ulcerIndex = 100; 
+	else
+		testResult->ulcerIndex = sqrt(sumSqrt/n);
 
 	meanWeekly = cumWeekReturn/n;
 	sigmaWeekly = sqrt((n*cumWeekReturnSquare-cumWeekReturn*cumWeekReturn)/(n*(n-1)));
@@ -1098,9 +1097,8 @@ TestResult __stdcall runPortfolioTest (
 	rates = (CRates***)malloc(sizeof(CRates**) * numSystems);
 
 	for (n=0; n<numSystems; n++)
-	rates[n] = (CRates**)malloc(sizeof(CRates*) * 10);
+		rates[n] = (CRates**)malloc(sizeof(CRates*) * 10);
 	
-
 	if(signalUpdate != NULL) { 
 		numSignals = (int*)malloc(numSystems * sizeof(int));
 		globalSignalUpdate = signalUpdate;
@@ -1523,7 +1521,7 @@ TestResult __stdcall runPortfolioTest (
 
 		pInAccountInfo[s][IDX_BALANCE] = finalBalance;
 		profit = 0;
-		percentageCompleted = (double)(i[s]/numCandles)*100;
+		percentageCompleted = (double)(i[s])/(double)(numCandles)*100;
 		//Fill rates arrays
 
 		// only shift arrays if the bar is new
@@ -1584,24 +1582,24 @@ TestResult __stdcall runPortfolioTest (
 
 		// update data on new tick 
 		if (bidAsk[IDX_BID] > rates[s][0][numBarsRequired[s][0]-1].high)
-		rates[s][0][numBarsRequired[s][0]-1].high	= bidAsk[IDX_BID];
+			rates[s][0][numBarsRequired[s][0]-1].high	= bidAsk[IDX_BID];
 
 		if (bidAsk[IDX_BID] < rates[s][0][numBarsRequired[s][0]-1].low)
-		rates[s][0][numBarsRequired[s][0]-1].low	= bidAsk[IDX_BID];
+			rates[s][0][numBarsRequired[s][0]-1].low	= bidAsk[IDX_BID];
 
 		rates[s][0][numBarsRequired[s][0]-1].close  = bidAsk[IDX_BID];
 		rates[s][0][numBarsRequired[s][0]-1].volume += 1;	
 
 		for (n = 1; n < 10; n++){
 			if (numBarsRequired[s][n] > 0){
-			if (bidAsk[IDX_BID] > rates[s][n][numBarsRequired[s][n]-1].high)
-			rates[s][n][numBarsRequired[s][n]-1].high	= bidAsk[IDX_BID];
+				if (bidAsk[IDX_BID] > rates[s][n][numBarsRequired[s][n]-1].high)
+					rates[s][n][numBarsRequired[s][n]-1].high	= bidAsk[IDX_BID];
 
-			if (bidAsk[IDX_BID] < rates[s][n][numBarsRequired[s][n]-1].low)
-			rates[s][n][numBarsRequired[s][n]-1].low	= bidAsk[IDX_BID];
+				if (bidAsk[IDX_BID] < rates[s][n][numBarsRequired[s][n]-1].low)
+					rates[s][n][numBarsRequired[s][n]-1].low	= bidAsk[IDX_BID];
 
-			rates[s][n][numBarsRequired[s][n]-1].close  = bidAsk[IDX_BID];
-			rates[s][n][numBarsRequired[s][n]-1].volume += 1;	
+				rates[s][n][numBarsRequired[s][n]-1].close  = bidAsk[IDX_BID];
+				rates[s][n][numBarsRequired[s][n]-1].volume += 1;	
 			}
 		}
 
@@ -1651,7 +1649,7 @@ TestResult __stdcall runPortfolioTest (
 		n = 0;
 		m = 0;
 		while (m < MAX_ORDERS ){
-			if ((openOrders[m].instanceId == pInSettings[s][STRATEGY_INSTANCE_ID])){
+			if (openOrders[m].instanceId == pInSettings[s][STRATEGY_INSTANCE_ID]){
 			systemOrders[n] = openOrders[m] ;
 			if ((openOrders[m].type ==BUY || openOrders[m].type ==BUYLIMIT || openOrders[m].type ==BUYSTOP) && (openOrders[m].isOpen == 1)) openOrdersCountSystem[BUY]++;
 			if ((openOrders[m].type ==SELL || openOrders[m].type ==SELLLIMIT || openOrders[m].type == SELLSTOP) && (openOrders[m].isOpen == 1)) openOrdersCountSystem[SELL]++;
@@ -1887,13 +1885,13 @@ TestResult __stdcall runPortfolioTest (
 		free(rates[s]); rates[s] = NULL;
 
 		if (tickFiles[s] != NULL)
-		fclose(tickFiles[s]);
+			fclose(tickFiles[s]);
 
 		if (quoteFiles[s] != NULL)
-		fclose(quoteFiles[s]);
+			fclose(quoteFiles[s]);
 
 		if (baseFiles[s] != NULL)
-		fclose(baseFiles[s]);
+			fclose(baseFiles[s]);
 
 		free(baseSymbols[s]); baseSymbols[s] = NULL;
 		free(quoteSymbols[s]); quoteSymbols[s] = NULL;
