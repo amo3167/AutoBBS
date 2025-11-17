@@ -826,6 +826,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		if (strstr(pParams->tradeSymbol, "XTIUSD") != NULL || strstr(pParams->tradeSymbol, "SpotCrudeUSD") != NULL)
 		{
 			/* Override isDailyOnly for EOD entry */
+			config.isDailyOnly = FALSE;
 		}
 	}
 
