@@ -11,22 +11,22 @@
  * for account risk limits and side restrictions.
  */
 
+#include <math.h>
+#include <string.h>
 #include "AsirikuyDefines.h"
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "OrderManagement.h"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 // Include strategy convenience headers - these include all individual strategy headers
+// These headers transitively include function declarations used in the switch statement below
+// Note: Linter warns these aren't used "directly" but they're required for function declarations
+// from included sub-headers (workoutExecutionTrend_* functions used in switch at line 111)
 #include "strategies/autobbs/trend/TrendStrategy.h"  // Includes all trend strategy headers (BBS, Limit, MACD, Ichimoko, Weekly, ShortTerm, Misc)
 #include "strategies/autobbs/swing/SwingStrategy.h"  // Includes all swing strategy headers (Weekly, DayTrading, MultipleDay, MACD_BEILI)
-#include "StrategyUserInterface.h"
 #include "AsirikuyTime.h"
 #include "InstanceStates.h"
 #include "AsirikuyLogger.h"
-#include "strategies/autobbs/shared/common/ProfitManagement.h"
-#include "strategies/autobbs/shared/ordermanagement/OrderManagement.h"
 #include "strategies/autobbs/shared/execution/StrategyExecution.h"
 
 // Commodity symbol prefixes that use start hour = 1
@@ -59,7 +59,7 @@
  * - 9: Limit orders with BBS
  * - 10: Weekly Auto
  * - 13: Weekly Swing New
- * - 14: Auto Hedge
+ * - 14: (Removed: Auto Hedge)
  * - 15: XAUUSD Day Trading
  * - 16: GBPJPY Day Trading Ver2
  * - 17: Weekly ATR Prediction
@@ -127,17 +127,14 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 	case 10:
 		workoutExecutionTrend_WeeklyAuto(pParams, pIndicators, pBase_Indicators);
 		break;
-	case 13:
-		workoutExecutionTrend_Weekly_Swing_New(pParams, pIndicators, pBase_Indicators);
-		break;
 	case 14:
-		workoutExecutionTrend_Auto_Hedge(pParams, pIndicators, pBase_Indicators);
+		// Removed: workoutExecutionTrend_Auto_Hedge
 		break;
 	case 15:
 		workoutExecutionTrend_XAUUSD_DayTrading(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 16:
-		workoutExecutionTrend_GBPJPY_DayTrading_Ver2(pParams, pIndicators, pBase_Indicators);
+		workoutExecutionTrend_GBPJPY_DayTrading(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 17:
 		workoutExecutionTrend_WeeklyATR_Prediction(pParams, pIndicators, pBase_Indicators);
@@ -145,17 +142,14 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 	case 18:
 		workoutExecutionTrend_4HBBS_Swing_BoDuan(pParams, pIndicators, pBase_Indicators);
 		break;
-	case 19:		
-		workoutExecutionTrend_DayTrading_ExecutionOnly(pParams, pIndicators, pBase_Indicators);
+	case 19:
+		// Removed: workoutExecutionTrend_DayTrading_ExecutionOnly
 		break;
 	case 20:
 		workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 21:				
 		workoutExecutionTrend_MultipleDay(pParams, pIndicators, pBase_Indicators);
-		break;
-	case 22:		
-		workoutExecutionTrend_MultipleDay_V2(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 23:
 		workoutExecutionTrend_MACD_Daily(pParams, pIndicators, pBase_Indicators);
@@ -211,11 +205,24 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 
 	// Filter out entry signals that conflict with AUTOBBS_ONE_SIDE setting
 	// If side is restricted (1 = buy only, -1 = sell only) and entry signal conflicts, block entry
+	logInfo("System InstanceID = %d, BarTime = %s, AUTOBBS_ONE_SIDE filter check: side = %ld, entrySignal = %d",
+		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->side, pIndicators->entrySignal);
+	
 	if (pIndicators->side != 0 && pIndicators->entrySignal != 0 && pIndicators->side != pIndicators->entrySignal)
 	{
-		logWarning("System InstanceID = %d, BarTime = %s, Against Side = %ld, skip this entry signal = %d",
+		logWarning("System InstanceID = %d, BarTime = %s, Against Side = %ld, skip this entry signal = %d (BLOCKED by AUTOBBS_ONE_SIDE)",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->side, pIndicators->entrySignal);
 		pIndicators->entrySignal = 0;
+	}
+	else if (pIndicators->side != 0 && pIndicators->entrySignal != 0)
+	{
+		logInfo("System InstanceID = %d, BarTime = %s, AUTOBBS_ONE_SIDE filter PASSED: side = %ld matches entrySignal = %d",
+			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->side, pIndicators->entrySignal);
+	}
+	else if (pIndicators->side == 0)
+	{
+		logInfo("System InstanceID = %d, BarTime = %s, AUTOBBS_ONE_SIDE filter: side = 0 (no restriction), entrySignal = %d",
+			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->entrySignal);
 	}
 
 	//// Dont enter trade on the new day bar, it is too risky and not reliable.
@@ -232,55 +239,6 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 // workoutExecutionTrend_Auto is implemented in MiscStrategies.c - removed duplicate
 
 // XAUUSD Daily Stop Check - checks if orders should be closed after 15 minutes
-static void XAUUSD_Daily_Stop_Check(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
-{
-	int shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
-	int shift0Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 1, shift1Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
-	time_t currentTime, openTime;
-	struct tm timeInfo1, timeInfo2;
-	char timeString[MAX_TIME_STRING_SIZE] = "";
-	double diffMins;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-	safe_gmtime(&timeInfo1, currentTime);
-	safe_timeString(timeString, currentTime);
-
-	if (pParams->orderInfo[0].ticket != 0 && pParams->orderInfo[0].isOpen == TRUE)
-	{
-		// Must pass 15M
-		openTime = pParams->orderInfo[0].openTime;
-		safe_gmtime(&timeInfo2, pParams->orderInfo[0].openTime);
-
-		diffMins = difftime(currentTime, openTime) / 60;
-
-		if (diffMins == 15)
-		{
-			if (pParams->orderInfo[0].type == BUY && pIndicators->bbsTrend_secondary == -1)
-			{
-				pIndicators->lossTimes = getLossTimesInDayEasy(currentTime, &pIndicators->total_lose_pips);
-				pIndicators->winTimes = getWinTimesInDayEasy(currentTime);
-				if (pIndicators->lossTimes > 0 && pIndicators->winTimes == 0)
-				{
-					logWarning("System InstanceID = %d, BarTime = %s, lossTimes = %ld,winTimes = %ld,orderType=%ld, bbsTrend_secondary=%ld\n\n",
-										(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->lossTimes, pIndicators->winTimes, pParams->orderInfo[0].type, pIndicators->bbsTrend_secondary);
-					pIndicators->exitSignal = EXIT_BUY;
-				}
-			}
-			if (pParams->orderInfo[0].type == SELL && pIndicators->bbsTrend_secondary == 1)
-			{
-				pIndicators->lossTimes = getLossTimesInDayEasy(currentTime, &pIndicators->total_lose_pips);
-				pIndicators->winTimes = getWinTimesInDayEasy(currentTime);
-				if (pIndicators->lossTimes > 0 && pIndicators->winTimes == 0)
-				{
-					logWarning("System InstanceID = %d, BarTime = %s, lossTimes = %ld,winTimes = %ld,orderType=%ld, bbsTrend_secondary=%ld\n\n",
-										(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->lossTimes, pIndicators->winTimes, pParams->orderInfo[0].type, pIndicators->bbsTrend_secondary);
-					pIndicators->exitSignal = EXIT_SELL;
-				}
-			}
-		}
-	}
-}
-
 /*
 XAUUSD 15M
 1/2 risk  
@@ -489,13 +447,6 @@ if (pIndicators->executionTrend == -1)
 
 	return SUCCESS;
 }
-
-// workoutExecutionTrend_WeeklyPivot - kept for potential future use
-// workoutExecutionTrend_Hedge is implemented in HedgeStrategy.c - removed duplicate
-
-// workoutExecutionTrend_KongJian is implemented in MiscStrategies.c - removed duplicate
-
-// workoutExecutionTrend_WeeklyAuto is implemented in WeeklyAutoStrategy.c - removed duplicate
 
 // Weekly retreat strategy, only for EUR, AUD, crossing currencies
 AsirikuyReturnCode workoutExecutionTrend_WeeklyRetreat(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
@@ -747,8 +698,3 @@ if (pIndicators->bbsTrend_primary == -1)
 	return SUCCESS;
 }
 
-// XAUUSD_DayTrading_Allow_Trade and XAUUSD_DayTrading_Entry are implemented in DayTradingHelpers.c
-// Removed duplicate implementations - using the ones from DayTradingHelpers.c
-
-// workoutExecutionTrend_XAUUSD_DayTrading is implemented in DayTradingStrategy.c
-// Removed duplicate/broken implementation - using the one from DayTradingStrategy.c
