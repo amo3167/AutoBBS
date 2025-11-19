@@ -12,13 +12,11 @@
  * - Limit orders (Fibonacci retracement levels)
  * - Medium term (3 orders with different risk/reward ratios)
  * - Daily swing (with loss recovery)
- * - Short term hedge (ATR-based hedging)
  * - Various strategy-specific splitters (BBS, MACD, Ichimoku, etc.)
  */
 
 #include <math.h>
 #include "strategies/autobbs/base/Base.h"
-#include "OrderManagement.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"
@@ -29,6 +27,7 @@
 #include "strategies/autobbs/trend/macd/MACDOrderSplitting.h"
 #include "strategies/autobbs/trend/shortterm/ShortTermOrderSplitting.h"
 #include "strategies/autobbs/swing/daytrading/DayTradingOrderSplitting.h"
+#include "strategies/autobbs/swing/multipleday/MultipleDayOrderManagement.h"
 #include "strategies/autobbs/shared/ordersplitting/OrderSplitting.h"
 
 // Fibonacci retracement levels
@@ -48,13 +47,6 @@
 #define DAILY_SWING_TAKE_PRICE 3.0       // Fixed take price for daily swing (3 pips)
 #define MAX_EQUITY_RISK_PERCENT 0.015     // Maximum 1.5% of equity risk
 #define PERCENT_TO_DECIMAL 100.0          // Conversion factor (100% = 1.0)
-
-// Hedge order constants
-#define ATR_HEDGE_THRESHOLD_DIVISOR 3.0   // Hedge when within 1/3 of ATR
-#define ATR_TIGHT_GAP_DIVISOR 4.0         // Tight gap threshold (1/4 ATR)
-#define HEDGE_TAKE_PRICE_DIVISOR 4.0      // Take price = gap / 4
-#define HEDGE_RISK_MULTIPLIER 2.0         // Double risk when gap is tight
-#define HEDGE_LOT_SIZE_MULTIPLIER 3.0     // Triple lot size for hedge orders
 
 /**
  * Splits buy orders for limit order strategy.
@@ -291,77 +283,6 @@ static void splitSellOrders_MediumTerm(StrategyParams *pParams, Indicators *pInd
 	}
 }
 
-/**
- * Splits buy orders for daily swing strategy.
- * 
- * Calculates lot size based on:
- * - Standard order size calculation
- * - Previous losses recovery (total_lose_pips / takePrice)
- * 
- * Lot size is capped at 1.5% of account equity to limit risk.
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure containing total_lose_pips
- * @param pBase_Indicators Base indicators structure containing predicted daily high
- * @param takePrice_primary Primary take profit value (not used, fixed at 3 pips)
- * @param stopLoss Stop loss value
- */
-void splitBuyOrders_Daily_Swing(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss)
-{
-	double takePrice = DAILY_SWING_TAKE_PRICE;
-	double lots, lots_singal;
-	double pHigh = pBase_Indicators->pDailyHigh;
-
-	// Calculate standard lot size
-	lots_singal = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, takePrice);
-
-	// Add lot size to recover previous losses
-	lots = pIndicators->total_lose_pips / takePrice + lots_singal;
-
-	// Cap lots to 1.5% of equity to limit risk
-	if (lots * takePrice * PERCENT_TO_DECIMAL / pParams->accountInfo.equity > MAX_EQUITY_RISK_PERCENT)
-		lots = pParams->accountInfo.equity * MAX_EQUITY_RISK_PERCENT / PERCENT_TO_DECIMAL / takePrice;
-
-	openSingleLongEasy(takePrice, stopLoss, lots, 0);
-}
-
-/**
- * Stub implementation for MultiDays GBPJPY Swing order splitting.
- * 
- * TODO: Implement proper MultiDays GBPJPY Swing order splitting logic.
- * For now, uses Daily_Swing as fallback.
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure
- * @param pBase_Indicators Base indicators structure
- * @param takePrice_primary Primary take profit value
- * @param stopLoss Stop loss value
- */
-static void splitBuyOrders_MultiDays_GBPJPY_Swing(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss)
-{
-	// TODO: Implement MultiDays GBPJPY Swing order splitting
-	// For now, use Daily_Swing as fallback
-	splitBuyOrders_Daily_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
-}
-
-/**
- * Stub implementation for MultiDays GBPJPY Swing order splitting.
- * 
- * TODO: Implement proper MultiDays GBPJPY Swing order splitting logic.
- * For now, uses Daily_Swing as fallback.
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure
- * @param pBase_Indicators Base indicators structure
- * @param takePrice_primary Primary take profit value
- * @param stopLoss Stop loss value
- */
-static void splitSellOrders_MultiDays_GBPJPY_Swing(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss)
-{
-	// TODO: Implement MultiDays GBPJPY Swing order splitting
-	// For now, use Daily_Swing as fallback
-	splitSellOrders_Daily_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
-}
 
 /**
  * Stub implementation for MACD BEILI order splitting.
@@ -422,18 +343,17 @@ static void splitSellOrders_MACD_BEILI(StrategyParams *pParams, Indicators *pInd
  * - 10: Weekly_Beginning
  * - 11: Weekly_ShortTerm
  * - 12: ATR
- * - 14: ShortTerm_Hedge
- * - 15: ShortTerm_ATR_Hedge
+ * - 14: (Removed: ShortTerm_Hedge)
+ * - 15: (Removed: ShortTerm_ATR_Hedge)
  * - 16: Daily_Swing
  * - 19: 4HSwing
  * - 20: 4HSwing_100P
- * - 23: MultiDays_GBPJPY_Swing
  * - 24: MACDDaily
  * - 25: MACDWeekly
  * - 26: Ichimoko_Daily
  * - 27: 4HSwing_Shellington
  * - 28: MACD_BEILI
- * - 29: Daily_Swing_ExecutionOnly
+ * - 29: (Removed: Daily_Swing_ExecutionOnly)
  * - 31: ShortTerm_New
  * - 32: Range orders
  * - 33: Ichimoko_Weekly
@@ -458,7 +378,11 @@ void splitBuyOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indic
 	case 17:
 	case 18:
 	case 21:
+		// Reserved/empty modes
+		break;
 	case 22:
+		splitBuyOrders_MultiDays_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		break;
 	case 30:
 		// Reserved/empty modes
 		break;
@@ -478,10 +402,10 @@ void splitBuyOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indic
 		splitBuyOrders_ATR(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 14:
-		splitBuyOrders_ShortTerm_Hedge(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitBuyOrders_ShortTerm_Hedge
 		break;
 	case 15:
-		splitBuyOrders_ShortTerm_ATR_Hedge(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitBuyOrders_ShortTerm_ATR_Hedge
 		break;
 	case 16:
 		splitBuyOrders_Daily_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -491,9 +415,6 @@ void splitBuyOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indic
 		break;
 	case 20:
 		splitBuyOrders_4HSwing_100P(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
-		break;
-	case 23:
-		splitBuyOrders_MultiDays_GBPJPY_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 24:
 		splitBuyOrders_MACDDaily(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -511,7 +432,7 @@ void splitBuyOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indic
 		splitBuyOrders_MACD_BEILI(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 29:
-		splitBuyOrders_Daily_Swing_ExecutionOnly(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitBuyOrders_Daily_Swing_ExecutionOnly
 		break;
 	case 31:
 		splitBuyOrders_ShortTerm_New(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -546,18 +467,17 @@ void splitBuyOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indic
  * - 10: Weekly_Beginning
  * - 11: Weekly_ShortTerm
  * - 12: ATR
- * - 14: ShortTerm_Hedge
- * - 15: ShortTerm_ATR_Hedge
+ * - 14: (Removed: ShortTerm_Hedge)
+ * - 15: (Removed: ShortTerm_ATR_Hedge)
  * - 16: Daily_Swing
  * - 19: 4HSwing
  * - 20: 4HSwing_100P
- * - 23: MultiDays_GBPJPY_Swing
  * - 24: MACDDaily
  * - 25: MACDWeekly
  * - 26: Ichimoko_Daily
  * - 27: 4HSwing_Shellington
  * - 28: MACD_BEILI
- * - 29: Daily_Swing_ExecutionOnly
+ * - 29: (Removed: Daily_Swing_ExecutionOnly)
  * - 31: ShortTerm_New
  * - 32: Range orders
  */
@@ -596,15 +516,19 @@ void splitSellOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indi
 	case 17:
 	case 18:
 	case 21:
+		// Reserved/empty modes
+		break;
 	case 22:
+		splitSellOrders_MultiDays_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		break;
 	case 30:
 		// Reserved/empty modes
 		break;
 	case 14:
-		splitSellOrders_ShortTerm_Hedge(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitSellOrders_ShortTerm_Hedge
 		break;
 	case 15:
-		splitSellOrders_ShortTerm_ATR_Hedge(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitSellOrders_ShortTerm_ATR_Hedge
 		break;
 	case 16:
 		splitSellOrders_Daily_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -614,9 +538,6 @@ void splitSellOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indi
 		break;
 	case 20:
 		splitSellOrders_4HSwing_100P(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
-		break;
-	case 23:
-		splitSellOrders_MultiDays_GBPJPY_Swing(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 24:
 		splitSellOrders_MACDDaily(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
@@ -634,7 +555,7 @@ void splitSellOrders(StrategyParams *pParams, Indicators *pIndicators, Base_Indi
 		splitSellOrders_MACD_BEILI(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
 		break;
 	case 29:
-		splitSellOrders_Daily_Swing_ExecutionOnly(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
+		// Removed: splitSellOrders_Daily_Swing_ExecutionOnly
 		break;
 	case 31:
 		splitSellOrders_ShortTerm_New(pParams, pIndicators, pBase_Indicators, takePrice_primary, stopLoss);
