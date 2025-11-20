@@ -43,6 +43,50 @@ find build/gmake -name "*.make" -type f | while read makefile; do
     fi
   fi
   
+  # Fix 2a: Replace -fopenmp with -Xpreprocessor -fopenmp on macOS (clang requires this)
+  if [ "$OS" = "Darwin" ] && grep -q "CTesterFrameworkAPI" "$makefile" && grep -q "CFLAGS.*-fopenmp\|CFLAGS.*-Xpreprocessor.*-fopenmp" "$makefile"; then
+    echo "  Fixing OpenMP flags for macOS in: $makefile"
+    # Replace -fopenmp with -Xpreprocessor -fopenmp in CFLAGS (only if not already present)
+    if ! grep -q "CFLAGS.*-Xpreprocessor.*-fopenmp" "$makefile"; then
+      sed -i.bak 's/ -fopenmp/ -Xpreprocessor -fopenmp/g' "$makefile" 2>/dev/null || \
+      sed -i '' 's/ -fopenmp/ -Xpreprocessor -fopenmp/g' "$makefile" 2>/dev/null || true
+      sed -i.bak 's/^-fopenmp/-Xpreprocessor -fopenmp/g' "$makefile" 2>/dev/null || \
+      sed -i '' 's/^-fopenmp/-Xpreprocessor -fopenmp/g' "$makefile" 2>/dev/null || true
+    fi
+    # Ensure _OPENMP is defined (clang with -Xpreprocessor -fopenmp may not define it automatically)
+    if ! grep -q "DEFINES.*_OPENMP\|CFLAGS.*-D_OPENMP" "$makefile"; then
+      echo "  Adding _OPENMP define to: $makefile"
+      # Add -D_OPENMP to CFLAGS
+      sed -i.bak 's/\(CFLAGS.*-Xpreprocessor -fopenmp\)/\1 -D_OPENMP/g' "$makefile" 2>/dev/null || \
+      sed -i '' 's/\(CFLAGS.*-Xpreprocessor -fopenmp\)/\1 -D_OPENMP/g' "$makefile" 2>/dev/null || true
+    fi
+    # Add libomp include path if not already present
+    OMP_INCLUDE=""
+    OMP_LIB=""
+    if [ -d "/Users/andym/homebrew/opt/libomp/include" ]; then
+      OMP_INCLUDE="/Users/andym/homebrew/opt/libomp/include"
+      OMP_LIB="/Users/andym/homebrew/opt/libomp/lib"
+    elif [ -n "$HOMEBREW_PREFIX" ] && [ -d "${HOMEBREW_PREFIX}/opt/libomp/include" ]; then
+      OMP_INCLUDE="${HOMEBREW_PREFIX}/opt/libomp/include"
+      OMP_LIB="${HOMEBREW_PREFIX}/opt/libomp/lib"
+    elif [ -d "/opt/homebrew/opt/libomp/include" ]; then
+      OMP_INCLUDE="/opt/homebrew/opt/libomp/include"
+      OMP_LIB="/opt/homebrew/opt/libomp/lib"
+    fi
+    if [ -n "$OMP_INCLUDE" ] && ! grep -q "INCLUDES.*$OMP_INCLUDE" "$makefile"; then
+      echo "  Adding libomp include path to: $makefile"
+      sed -i.bak "s|\(INCLUDES.*\)|\1 -I${OMP_INCLUDE}|g" "$makefile" 2>/dev/null || \
+      sed -i '' "s|\(INCLUDES.*\)|\1 -I${OMP_INCLUDE}|g" "$makefile" 2>/dev/null || true
+    fi
+    if [ -n "$OMP_LIB" ] && ! grep -q "LIBS.*-lomp" "$makefile"; then
+      echo "  Adding libomp library to: $makefile"
+      # Add library path and link flag
+      sed -i.bak "s|\(LIBS.*\)|\1 -L${OMP_LIB} -lomp|g" "$makefile" 2>/dev/null || \
+      sed -i '' "s|\(LIBS.*\)|\1 -L${OMP_LIB} -lomp|g" "$makefile" 2>/dev/null || true
+    fi
+    modified=true
+  fi
+  
   # Fix 2: Remove -lrt from LIBS on macOS (rt is Linux-only)
   if [ "$OS" = "Darwin" ] && grep -q "LIBS.*-lrt" "$makefile"; then
     echo "  Removing -lrt from LIBS in: $makefile (macOS doesn't have rt library)"

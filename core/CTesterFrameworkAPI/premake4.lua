@@ -46,10 +46,25 @@ project "CTesterFrameworkAPI"
   configuration{"windows"}
     linkoptions{"/DEF:../../../core/CTesterFrameworkAPI/src/CTesterFrameworkAPI.def"}
     links{"mpi"}
-  configuration{"macosx"}
-    links{"mpi", "pmpi", "mpl"}
+  configuration{"macosx", "x64"}
+    links{"mpi", "pmpi", "mpl", "omp"}
+    buildoptions{"-Xpreprocessor", "-fopenmp"}
+    includedirs{
+      (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/libomp/include",
+      "/Users/andym/homebrew/opt/libomp/include",
+      "/opt/homebrew/opt/libomp/include"
+    }
+  configuration{"macosx", "x32"}
+    links{"mpi", "pmpi", "mpl", "omp"}
+    buildoptions{"-Xpreprocessor", "-fopenmp"}
+    includedirs{
+      (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/libomp/include",
+      "/Users/andym/homebrew/opt/libomp/include",
+      "/opt/homebrew/opt/libomp/include"
+    }
   configuration{"linux"}
     links{"mpich", "mpl"}
+    buildoptions{"-fopenmp"}
   os.chdir("../..")
   cwd = os.getcwd()
   -- Windows

@@ -1,5 +1,6 @@
 #include "CTesterFrameworkDefines.h"
 #include "Precompiled.h"
+#include "AsirikuyFrameworkAPI.h"  // For initInstanceC and WAIT_FOR_INIT, SUCCESS
 // Temporarily undefine AsirikuyLogger macros that conflict with Gaul's log_util.h enum
 // We'll include AsirikuyLogger.h after gaul.h to restore them
 #ifdef LOG_WARNING
@@ -12,6 +13,7 @@
 #include "AsirikuyLogger.h"  // Restore our logging macros
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>  // For memset
 //#include <vld.h>
 
 #ifdef _OPENMP
@@ -177,16 +179,20 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	localRates[0] = (ASTRates **)malloc(10 * sizeof(ASTRates*));
 
 	logInfo("SavingRates\n");
+	// Always allocate ALL timeframes - runPortfolioTest may access them without NULL checks
 	for (k=0;k<10;k++){
-		if (localRatesInfo[0][k].totalBarsRequired > 0) {
-			localRates[0][k] = (ASTRates *)malloc(globalNumCandles * sizeof(ASTRates));
+		localRates[0][k] = (ASTRates *)malloc(globalNumCandles * sizeof(ASTRates));
+		// Always zero out first to ensure valid data
+		memset (localRates[0][k], 0, globalNumCandles * sizeof(ASTRates));
+		// Copy data if available and needed
+		if (localRatesInfo[0][k].totalBarsRequired > 0 && globalRates[n][k] != NULL) {
 			memcpy (localRates[0][k], globalRates[n][k], globalNumCandles * sizeof(ASTRates));
 		}
 	}
 	logInfo("endSavingRates\n");
 
 	localAccountInfo = (AccountInfo**)malloc(1 * sizeof(AccountInfo*));
-	localAccountInfo[0] = (AccountInfo*)malloc(1 * sizeof(AccountInfo));
+	localAccountInfo[0] = (AccountInfo*)malloc(sizeof(AccountInfo));
 	memcpy (localAccountInfo[0], globalAccountInfo, sizeof(AccountInfo));
 
 	localTestSettings = (TestSettings*)malloc(1 * sizeof(TestSettings));
@@ -210,7 +216,8 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 
 	localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
 	
-	testResult = runPortfolioTest(testId+1, localSettings, localSymbol, globalAccountCurrency, globalBrokerName, globalRefBrokerName, (double **)localAccountInfo, 
+	// Cast AccountInfo** to double** for runPortfolioTest (it treats AccountInfo as double array)
+	testResult = runPortfolioTest(testId+1, localSettings, localSymbol, globalAccountCurrency, globalBrokerName, globalRefBrokerName, (double**)localAccountInfo, 
 						localTestSettings, localRatesInfo, globalNumCandles, 1, localRates, globalMinLotSize, NULL, NULL, NULL);
 
 	if (testResult.r2 < 0) testResult.r2 = 0;
@@ -263,8 +270,11 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	}
 
 	for (k=0;k<10;k++){
-			if (localRatesInfo[0][k].totalBarsRequired > 0) {
-			free(localRates[0][k]); localRates[0][k] = NULL;
+			// Timeframe 0 is always allocated, others only if totalBarsRequired > 0
+			if (k == 0 || localRatesInfo[0][k].totalBarsRequired > 0) {
+				if (localRates[0][k] != NULL) {
+					free(localRates[0][k]); localRates[0][k] = NULL;
+				}
 			}
 	}
 
@@ -324,20 +334,36 @@ int __stdcall runOptimizationMultipleSymbols(
 	char				**error
 )
 {
-
+	// CRITICAL: Use fprintf to stderr FIRST - this will work even if logger isn't initialized
+	fprintf(stderr, "[CRITICAL] === runOptimizationMultipleSymbols FUNCTION ENTRY ===\n");
+	fflush(stderr);
+	
+	// CRITICAL: Log immediately at function entry, before any variable declarations
+	logInfo("=== runOptimizationMultipleSymbols ENTRY ===\n");
+	logInfo("=== runOptimizationMultipleSymbols called ===\n");
+	logInfo("  numOptimizedParams=%d, optimizationType=%d, numThreads=%d\n", numOptimizedParams, optimizationType, numThreads);
+	logInfo("  numSymbols=%d, numCandles=%d, minLotSize=%lf\n", numSymbols, numCandles, minLotSize);
+	logInfo("  optimizationUpdate=%p, optimizationFinished=%p\n", (void*)optimizationUpdate, (void*)optimizationFinished);
 	
 	//General variables
 	char error_t[MAX_ERROR_LENGTH];
 	int i, j, finishCtr = 0, n, p;
 	int numParamsInSet;
 	int testId;
+	
+	// Ensure broker names and account currency are never NULL (use defaults if NULL)
+	static const char defaultBrokerName[] = "Default Broker";
+	static const char defaultAccountCurrency[] = "USD";
+	char *safeBrokerName = (pInBrokerName != NULL && pInBrokerName[0] != '\0') ? pInBrokerName : (char*)defaultBrokerName;
+	char *safeRefBrokerName = (pInRefBrokerName != NULL && pInRefBrokerName[0] != '\0') ? pInRefBrokerName : (char*)defaultBrokerName;
+	char *safeAccountCurrency = (pInAccountCurrency != NULL && pInAccountCurrency[0] != '\0') ? pInAccountCurrency : (char*)defaultAccountCurrency;
 
 	//Brute force variables
 	int numCombinations, maxSteps, steps/*, localNumCandles*/;
 	double *sets, *combination, elem, **localSettings;
 	/*ASTRates *localRates;*/
 	CRatesInfo **localRatesInfo;
-	AccountInfo **localAccountInfo;
+	AccountInfo **localAccountInfo;  // Keep as AccountInfo** for type safety, cast to double** when calling runPortfolioTest
 	TestSettings *localTestSettings;
 	ASTRates ***localRates;
 	char **localSymbol;
@@ -373,15 +399,21 @@ int __stdcall runOptimizationMultipleSymbols(
 		#endif
 		if(numThreads > omp_get_num_procs()) numThreads = omp_get_num_procs();
 		omp_set_num_threads(numThreads);
-		logInfo("OpenMP enabled. Using %d cores\n", numThreads);
+		logInfo("OpenMP enabled. Using %d threads on %d available CPU cores\n", numThreads, omp_get_num_procs());
+		fprintf(stderr, "[OPENMP] Enabled with %d threads on %d CPU cores\n", numThreads, omp_get_num_procs());
+		fflush(stderr);
 	#endif
 
 	numParamsInSet = numOptimizedParams;
 
 	if (optimizationType == OPTI_BRUTE_FORCE){
 		//Parameter space generation
+		fprintf(stderr, "[DEBUG] Calculating possible parameter combinations...\n");
+		fflush(stderr);
 		logInfo("Calculating possible parameter combinations.\n");
 		numCombinations = getParameterSetsNumber(0, numOptimizedParams, optimizationParams);
+		fprintf(stderr, "[DEBUG] Number of parameter combinations: %d\n", numCombinations);
+		fflush(stderr);
 		logInfo("Number of parameter combinations is %d\n", numCombinations);
 
 		if (numCombinations > MAXIMUM_PARAMETER_COMBINATIONS){
@@ -414,19 +446,109 @@ int __stdcall runOptimizationMultipleSymbols(
 		}
 
 		logInfo("Finished parameter generation, starting runs.\n");
-		//Run the optimization for each set
-		#pragma omp parallel for shared(pRates, pInSettings, pInAccountInfo, pRatesInfo) private(p, localTestSettings, localSettings, localRates, localSymbol, localAccountInfo, testResult, currentSet, localRatesInfo, n)
+		fprintf(stderr, "[DEBUG] Finished parameter generation. Starting runs. numCombinations=%d, myId=%d, numProcs=%d\n", numCombinations, myId, numProcs);
+		fflush(stderr);
 		
+		// CRITICAL: Initialize framework ONCE before parallel loop to avoid race conditions
+		// This ensures all threads find the framework already initialized
+		fprintf(stderr, "[INIT] DEBUG: About to check OpenMP and numThreads\n");
+		fflush(stderr);
+		#ifdef _OPENMP
+		if(numThreads > 1) {
+			fprintf(stderr, "[INIT] DEBUG: _OPENMP is defined, numThreads=%d\n", numThreads);
+			fflush(stderr);
+			fprintf(stderr, "[INIT] DEBUG: numThreads > 1 is TRUE, entering pre-init block\n");
+			fflush(stderr);
+			fprintf(stderr, "[INIT] Pre-initializing framework before parallel loop (using instanceId=1)\n");
+			fflush(stderr);
+			logInfo("Pre-initializing framework before parallel loop\n");
+			int preInitResult = WAIT_FOR_INIT;
+			int preInitTries = 0;
+			int maxPreInitTries = 50;
+			int preInitDelay = 500;
+			int preInitExponentialDelay = preInitDelay;
+			
+			while(preInitResult == WAIT_FOR_INIT && preInitTries < maxPreInitTries) {
+				fprintf(stderr, "[INIT] Pre-init attempt %d/%d, waiting %dms\n", preInitTries+1, maxPreInitTries, preInitExponentialDelay);
+				fflush(stderr);
+				preInitResult = initInstanceC(1, 1, "./config/AsirikuyConfig.xml", "");
+				fprintf(stderr, "[INIT] Pre-init returned: %d\n", preInitResult);
+				fflush(stderr);
+				if(preInitResult == WAIT_FOR_INIT) {
+					sleepMilliseconds(preInitExponentialDelay);
+					if(preInitExponentialDelay < 2000) {
+						preInitExponentialDelay = (int)(preInitExponentialDelay * 1.2);
+					}
+				}
+				preInitTries++;
+			}
+			
+			if(preInitResult == SUCCESS) {
+				fprintf(stderr, "[INIT] Framework pre-initialized successfully. All threads can now use it.\n");
+				fflush(stderr);
+				logInfo("Framework pre-initialized successfully\n");
+			} else {
+				fprintf(stderr, "[INIT] WARNING: Framework pre-initialization failed with code %d. Threads will retry individually.\n", preInitResult);
+				fflush(stderr);
+				logWarning("Framework pre-initialization failed with code %d\n", preInitResult);
+			}
+		}
+		#endif
+		
+		//Run the optimization for each set
+		// Use MPI distribution if MPI is enabled, otherwise use OpenMP parallel for
 		testId = 1;
 
+		fprintf(stderr, "[DEBUG] Loop start: i=%d, numCombinations=%d, condition=%s\n", 0 + myId, numCombinations, (0 + myId < numCombinations) ? "TRUE" : "FALSE");
+		fflush(stderr);
+		
+		#if HAVE_MPI == 1
+		// MPI mode: use manual work distribution
 		for (i = 0 + myId; i<numCombinations; i += numProcs){
+		#else
+		// Non-MPI mode: use OpenMP parallel for (only if numThreads > 1 to avoid overhead)
+		#ifdef _OPENMP
+		// When numThreads == 1, OpenMP still has overhead, so we disable it by setting threads to 1
+		// This is better than conditional compilation which would require code duplication
+		if(numThreads == 1) {
+			omp_set_num_threads(1);  // Explicitly disable parallelization
+		}
+		#pragma omp parallel for private(i, n, p, localSettings, currentSet, localRatesInfo, localSymbol, localRates, localAccountInfo, localTestSettings, testResult) schedule(dynamic) if(numThreads > 1)
+		#endif
+		for (i = 0; i<numCombinations; i++){
+		#endif
+			#ifdef _OPENMP
+			int thread_id = (numThreads > 1) ? omp_get_thread_num() : 0;
+			int num_threads = (numThreads > 1) ? omp_get_num_threads() : 1;
+			#else
+			int thread_id = 0;
+			int num_threads = 1;
+			#endif
+			
+			fprintf(stderr, "[DEBUG] Loop iteration: i=%d, thread=%d/%d\n", i, thread_id, num_threads);
+			fflush(stderr);
 			//Stop optimization if stopOptimization was called
+			fprintf(stderr, "[DEBUG] Checking stopOpti: stopOpti=%d\n", stopOpti);
+			fflush(stderr);
+			fprintf(stderr, "[DEBUG] About to call logInfo (logger may not be initialized yet)\n");
+			fflush(stderr);
+			logInfo("[DEBUG] Loop iteration: i=%d, stopOpti=%d, thread=%d/%d\n", i, stopOpti, thread_id, num_threads);
+			fprintf(stderr, "[DEBUG] After logInfo call\n");
+			fflush(stderr);
+			fprintf(stderr, "[DEBUG] After stopOpti check, entering if block\n");
+			fflush(stderr);
 			if (stopOpti == 0)
 			{
+				fprintf(stderr, "[DEBUG] stopOpti is 0, starting iteration %d on thread %d/%d\n", i, thread_id, num_threads);
+				fflush(stderr);
 				#ifdef _OPENMP
-					logInfo("Starting Iteration %d on thread %d\n", i, omp_get_thread_num());	
+					logInfo("Starting Iteration %d on thread %d/%d (OpenMP parallel)\n", i, thread_id, num_threads);
+					fprintf(stderr, "[THREAD] Iteration %d running on OpenMP thread %d of %d\n", i, thread_id, num_threads);
+					fflush(stderr);
 				#else
-					logInfo("Starting Iteration %d\n", i);
+					logInfo("Starting Iteration %d (sequential)\n", i);
+					fprintf(stderr, "[DEBUG] Logged: Starting Iteration %d\n", i);
+					fflush(stderr);
 				#endif			
 				
 
@@ -449,19 +571,179 @@ int __stdcall runOptimizationMultipleSymbols(
 				localRates    = (ASTRates ***)malloc(1 * sizeof(ASTRates**));
 				localRates[0] = (ASTRates **)malloc(10 * sizeof(ASTRates*));
 						
+				// Always allocate ALL timeframes - runPortfolioTest may access them without NULL checks
 				for(p=0;p<10;p++){
 					localRates[0][p] = (ASTRates *)malloc(numCandles * sizeof(ASTRates));
-					
-					if (localRatesInfo[0][p].totalBarsRequired > 0) {
-					memcpy (localRates[0][p], pRates[n][p], numCandles * sizeof(ASTRates));
+					// Always zero out first to ensure valid data
+					memset (localRates[0][p], 0, numCandles * sizeof(ASTRates));
+					// Copy data if available and needed
+					if (localRatesInfo[0][p].totalBarsRequired > 0 && pRates != NULL && pRates[n] != NULL && pRates[n][p] != NULL) {
+						memcpy (localRates[0][p], pRates[n][p], numCandles * sizeof(ASTRates));
 					}
 				}
 
+				// Check if pInAccountInfo is NULL before using it
+				if (pInAccountInfo == NULL) {
+					logError("ERROR: pInAccountInfo is NULL, cannot allocate localAccountInfo\n");
+					// Clean up and skip this iteration
+					for (p=0;p<10;p++){
+						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
+					}
+					if (localRates != NULL && localRates[0] != NULL) {
+						free(localRates[0]); localRates[0] = NULL;
+					}
+					if (localRates != NULL) {
+						free(localRates); localRates = NULL;
+					}
+					if (localSymbol != NULL && localSymbol[0] != NULL) {
+						free(localSymbol[0]); localSymbol[0] = NULL;
+					}
+					if (localSymbol != NULL) {
+						free(localSymbol); localSymbol = NULL;
+					}
+					if (localSettings != NULL && localSettings[0] != NULL) {
+						free(localSettings[0]); localSettings[0] = NULL;
+					}
+					if (localSettings != NULL) {
+						free(localSettings); localSettings = NULL;
+					}
+					if (currentSet != NULL) {
+						free(currentSet); currentSet = NULL;
+					}
+					if (localRatesInfo != NULL && localRatesInfo[0] != NULL) {
+						free(localRatesInfo[0]); localRatesInfo[0] = NULL;
+					}
+					if (localRatesInfo != NULL) {
+						free(localRatesInfo); localRatesInfo = NULL;
+					}
+					continue; // Skip this iteration
+				}
+
 				localAccountInfo = (AccountInfo**)malloc(1 * sizeof(AccountInfo*));
-				localAccountInfo[0] = (AccountInfo*)malloc(1 * sizeof(AccountInfo));
+				if (localAccountInfo == NULL) {
+					logError("ERROR: Failed to allocate localAccountInfo\n");
+					// Clean up and skip this iteration
+					for (p=0;p<10;p++){
+						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
+					}
+					if (localRates != NULL && localRates[0] != NULL) {
+						free(localRates[0]); localRates[0] = NULL;
+					}
+					if (localRates != NULL) {
+						free(localRates); localRates = NULL;
+					}
+					if (localSymbol != NULL && localSymbol[0] != NULL) {
+						free(localSymbol[0]); localSymbol[0] = NULL;
+					}
+					if (localSymbol != NULL) {
+						free(localSymbol); localSymbol = NULL;
+					}
+					if (localSettings != NULL && localSettings[0] != NULL) {
+						free(localSettings[0]); localSettings[0] = NULL;
+					}
+					if (localSettings != NULL) {
+						free(localSettings); localSettings = NULL;
+					}
+					if (currentSet != NULL) {
+						free(currentSet); currentSet = NULL;
+					}
+					if (localRatesInfo != NULL && localRatesInfo[0] != NULL) {
+						free(localRatesInfo[0]); localRatesInfo[0] = NULL;
+					}
+					if (localRatesInfo != NULL) {
+						free(localRatesInfo); localRatesInfo = NULL;
+					}
+					continue; // Skip this iteration
+				}
+				localAccountInfo[0] = (AccountInfo*)malloc(sizeof(AccountInfo));
+				if (localAccountInfo[0] == NULL) {
+					logError("ERROR: Failed to allocate localAccountInfo[0]\n");
+					free(localAccountInfo); localAccountInfo = NULL;
+					// Clean up and skip this iteration
+					for (p=0;p<10;p++){
+						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
+					}
+					if (localRates != NULL && localRates[0] != NULL) {
+						free(localRates[0]); localRates[0] = NULL;
+					}
+					if (localRates != NULL) {
+						free(localRates); localRates = NULL;
+					}
+					if (localSymbol != NULL && localSymbol[0] != NULL) {
+						free(localSymbol[0]); localSymbol[0] = NULL;
+					}
+					if (localSymbol != NULL) {
+						free(localSymbol); localSymbol = NULL;
+					}
+					if (localSettings != NULL && localSettings[0] != NULL) {
+						free(localSettings[0]); localSettings[0] = NULL;
+					}
+					if (localSettings != NULL) {
+						free(localSettings); localSettings = NULL;
+					}
+					if (currentSet != NULL) {
+						free(currentSet); currentSet = NULL;
+					}
+					if (localRatesInfo != NULL && localRatesInfo[0] != NULL) {
+						free(localRatesInfo[0]); localRatesInfo[0] = NULL;
+					}
+					if (localRatesInfo != NULL) {
+						free(localRatesInfo); localRatesInfo = NULL;
+					}
+					continue; // Skip this iteration
+				}
 				memcpy (localAccountInfo[0], pInAccountInfo, sizeof(AccountInfo));
 
 				localTestSettings = (TestSettings*)malloc(1*sizeof(TestSettings));
+				if (localTestSettings == NULL) {
+					logError("ERROR: Failed to allocate localTestSettings\n");
+					// Clean up and skip this iteration
+					if (localAccountInfo != NULL && localAccountInfo[0] != NULL) {
+						free(localAccountInfo[0]); localAccountInfo[0] = NULL;
+					}
+					if (localAccountInfo != NULL) {
+						free(localAccountInfo); localAccountInfo = NULL;
+					}
+					for (p=0;p<10;p++){
+						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
+					}
+					if (localRates != NULL && localRates[0] != NULL) {
+						free(localRates[0]); localRates[0] = NULL;
+					}
+					if (localRates != NULL) {
+						free(localRates); localRates = NULL;
+					}
+					if (localSymbol != NULL && localSymbol[0] != NULL) {
+						free(localSymbol[0]); localSymbol[0] = NULL;
+					}
+					if (localSymbol != NULL) {
+						free(localSymbol); localSymbol = NULL;
+					}
+					if (localSettings != NULL && localSettings[0] != NULL) {
+						free(localSettings[0]); localSettings[0] = NULL;
+					}
+					if (localSettings != NULL) {
+						free(localSettings); localSettings = NULL;
+					}
+					if (currentSet != NULL) {
+						free(currentSet); currentSet = NULL;
+					}
+					if (localRatesInfo != NULL && localRatesInfo[0] != NULL) {
+						free(localRatesInfo[0]); localRatesInfo[0] = NULL;
+					}
+					if (localRatesInfo != NULL) {
+						free(localRatesInfo); localRatesInfo = NULL;
+					}
+					continue; // Skip this iteration
+				}
 				memcpy (localTestSettings, &testSettings[n], sizeof(TestSettings));
 
 				for(p=0; p<numOptimizedParams; p++){
@@ -478,17 +760,251 @@ int __stdcall runOptimizationMultipleSymbols(
 				testId = omp_get_thread_num();	
 				#endif
 
+				// Ensure testId is valid (should be >= 0)
+				if (testId < 0) {
+					testId = 1;
+				}
+
 				localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
 
 				logInfo("localSettings[0][ADDITIONAL_PARAM_8]= %lf\n", localSettings[0][ADDITIONAL_PARAM_8]);
 
-				testResult = runPortfolioTest(testId++, localSettings, localSymbol, pInAccountCurrency, pInBrokerName, pInRefBrokerName, (double **)localAccountInfo, 
-									localTestSettings, localRatesInfo, numCandles, 1, localRates, minLotSize, NULL, NULL, NULL);
+				// Safety check: ensure all critical parameters are valid before calling runPortfolioTest
+				// Check all timeframes are allocated (runPortfolioTest may access any of them)
+				BOOL allTimeframesValid = TRUE;
+				if (localRates != NULL && localRates[0] != NULL) {
+					for (p = 0; p < 10; p++) {
+						if (localRates[0][p] == NULL) {
+							allTimeframesValid = FALSE;
+							logError("ERROR: localRates[0][%d] is NULL\n", p);
+							break;
+						}
+					}
+				} else {
+					allTimeframesValid = FALSE;
+				}
+				
+				if (!allTimeframesValid ||
+				    localRates == NULL || localRates[0] == NULL ||
+				    localSettings == NULL || localSettings[0] == NULL ||
+				    localSymbol == NULL || localSymbol[0] == NULL ||
+				    localAccountInfo == NULL || localAccountInfo[0] == NULL ||
+				    localTestSettings == NULL || localRatesInfo == NULL || localRatesInfo[0] == NULL ||
+				    safeAccountCurrency == NULL || safeBrokerName == NULL || safeRefBrokerName == NULL) {
+					logError("ERROR: Critical parameter is NULL, cannot run portfolio test\n");
+					logError("  localRates=%p, localRates[0]=%p, localRates[0][0]=%p\n", 
+					         (void*)localRates, localRates ? (void*)localRates[0] : NULL, 
+					         (localRates && localRates[0]) ? (void*)localRates[0][0] : NULL);
+					logError("  localSettings=%p, localSettings[0]=%p\n", 
+					         (void*)localSettings, localSettings ? (void*)localSettings[0] : NULL);
+					logError("  localSymbol=%p, localSymbol[0]=%p\n", 
+					         (void*)localSymbol, localSymbol ? (void*)localSymbol[0] : NULL);
+					logError("  localAccountInfo=%p, localAccountInfo[0]=%p\n", 
+					         (void*)localAccountInfo, localAccountInfo ? (void*)localAccountInfo[0] : NULL);
+					logError("  localTestSettings=%p, localRatesInfo=%p, localRatesInfo[0]=%p\n", 
+					         (void*)localTestSettings, (void*)localRatesInfo, 
+					         localRatesInfo ? (void*)localRatesInfo[0] : NULL);
+					logError("  safeAccountCurrency=%p, safeBrokerName=%p, safeRefBrokerName=%p\n",
+					         (void*)safeAccountCurrency, (void*)safeBrokerName, (void*)safeRefBrokerName);
+					// Clean up and skip this iteration
+					for (p=0;p<10;p++){
+						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
+					}
+					if (localRates != NULL && localRates[0] != NULL) {
+						free(localRates[0]); localRates[0] = NULL;
+					}
+					if (localRates != NULL) {
+						free(localRates); localRates = NULL;
+					}
+					if (localTestSettings != NULL) {
+						free(localTestSettings); localTestSettings = NULL;
+					}
+					if (localSymbol != NULL && localSymbol[0] != NULL) {
+						free(localSymbol[0]); localSymbol[0] = NULL;
+					}
+					if (localSymbol != NULL) {
+						free(localSymbol); localSymbol = NULL;
+					}
+					if (localSettings != NULL && localSettings[0] != NULL) {
+						free(localSettings[0]); localSettings[0] = NULL;
+					}
+					if (localSettings != NULL) {
+						free(localSettings); localSettings = NULL;
+					}
+					if (currentSet != NULL) {
+						free(currentSet); currentSet = NULL;
+					}
+					if (localRatesInfo != NULL && localRatesInfo[0] != NULL) {
+						free(localRatesInfo[0]); localRatesInfo[0] = NULL;
+					}
+					if (localRatesInfo != NULL) {
+						free(localRatesInfo); localRatesInfo = NULL;
+					}
+					if (localAccountInfo != NULL && localAccountInfo[0] != NULL) {
+						free(localAccountInfo[0]); localAccountInfo[0] = NULL;
+					}
+					if (localAccountInfo != NULL) {
+						free(localAccountInfo); localAccountInfo = NULL;
+					}
+					continue; // Skip this iteration
+				}
 
-				if(optimizationUpdate != NULL) optimizationUpdate(testResult, currentSet, numParamsInSet);
+				// Store testId before incrementing to avoid issues
+				#ifdef _OPENMP
+				int currentTestId = i + 1; // Use iteration number as test ID for OpenMP (thread-safe)
+				#else
+				int currentTestId = testId;
+				testId++;
+				#endif
+				
+				// CRITICAL: Validate all parameters before calling runPortfolioTest
+				fprintf(stderr, "[DEBUG] Validating parameters before runPortfolioTest call...\n");
+				fflush(stderr);
+				
+				if (localSettings == NULL || localSettings[0] == NULL) {
+					logError("ERROR: localSettings is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localSettings is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (localSymbol == NULL || localSymbol[0] == NULL) {
+					logError("ERROR: localSymbol is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localSymbol is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (safeAccountCurrency == NULL) {
+					logError("ERROR: safeAccountCurrency is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: safeAccountCurrency is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (safeBrokerName == NULL) {
+					logError("ERROR: safeBrokerName is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: safeBrokerName is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (safeRefBrokerName == NULL) {
+					logError("ERROR: safeRefBrokerName is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: safeRefBrokerName is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (localAccountInfo == NULL || localAccountInfo[0] == NULL) {
+					logError("ERROR: localAccountInfo is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localAccountInfo is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (localTestSettings == NULL) {
+					logError("ERROR: localTestSettings is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localTestSettings is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (localRatesInfo == NULL || localRatesInfo[0] == NULL) {
+					logError("ERROR: localRatesInfo is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localRatesInfo is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (localRates == NULL || localRates[0] == NULL) {
+					logError("ERROR: localRates is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[DEBUG] ERROR: localRates is NULL\n");
+					fflush(stderr);
+					continue;
+				}
+				if (numCandles <= 0) {
+					logError("ERROR: numCandles is invalid (%d) before runPortfolioTest\n", numCandles);
+					fprintf(stderr, "[DEBUG] ERROR: numCandles=%d is invalid\n", numCandles);
+					fflush(stderr);
+					continue;
+				}
+				
+				fprintf(stderr, "[DEBUG] All parameters validated. About to call runPortfolioTest with testId=%d\n", currentTestId);
+				fprintf(stderr, "[DEBUG] Parameters: localSettings=%p, localSymbol=%p, localAccountInfo=%p, localTestSettings=%p, localRatesInfo=%p, localRates=%p, numCandles=%d\n",
+				        (void*)localSettings, (void*)localSymbol, (void*)localAccountInfo, (void*)localTestSettings, (void*)localRatesInfo, (void*)localRates, numCandles);
+				fflush(stderr);
+				
+				// CRITICAL: Log before calling runPortfolioTest
+				#ifdef _OPENMP
+				fprintf(stderr, "[OPT] ===== CALLING runPortfolioTest: iteration=%d, testId=%d, thread=%d/%d, numCandles=%d =====\n", 
+				        i, currentTestId, thread_id, num_threads, numCandles);
+				fflush(stderr);
+				logInfo("===== CALLING runPortfolioTest: iteration=%d, testId=%d, thread=%d/%d, numCandles=%d =====\n", 
+				        i, currentTestId, thread_id, num_threads, numCandles);
+				#else
+				fprintf(stderr, "[OPT] ===== CALLING runPortfolioTest: iteration=%d, testId=%d, numCandles=%d =====\n", 
+				        i, currentTestId, numCandles);
+				fflush(stderr);
+				logInfo("===== CALLING runPortfolioTest: iteration=%d, testId=%d, numCandles=%d =====\n", 
+				        i, currentTestId, numCandles);
+				#endif
+				
+				logInfo("Calling runPortfolioTest with testId=%d\n", currentTestId);
+				fprintf(stderr, "[DEBUG] About to call runPortfolioTest with testId=%d\n", currentTestId);
+				fflush(stderr);
+				// Cast AccountInfo** to double** for runPortfolioTest (it treats AccountInfo as double array)
+				// CRITICAL: Wrap in try-catch equivalent using setjmp/longjmp or check return
+				fprintf(stderr, "[DEBUG] Calling runPortfolioTest NOW...\n");
+				fflush(stderr);
+				testResult = runPortfolioTest(currentTestId, localSettings, localSymbol, safeAccountCurrency, safeBrokerName, safeRefBrokerName, (double**)localAccountInfo, 
+									localTestSettings, localRatesInfo, numCandles, 1, localRates, minLotSize, NULL, NULL, NULL);
+				
+				// CRITICAL: Log after runPortfolioTest returns
+				#ifdef _OPENMP
+				int thread_id_after = omp_get_thread_num();
+				fprintf(stderr, "[OPT] ===== runPortfolioTest RETURNED: iteration=%d, testId=%d, thread=%d/%d, totalTrades=%d, finalBalance=%lf =====\n", 
+				        i, currentTestId, thread_id_after, num_threads, testResult.totalTrades, testResult.finalBalance);
+				fflush(stderr);
+				logInfo("===== runPortfolioTest RETURNED: iteration=%d, testId=%d, thread=%d/%d, totalTrades=%d, finalBalance=%lf =====\n", 
+				        i, currentTestId, thread_id_after, num_threads, testResult.totalTrades, testResult.finalBalance);
+				#else
+				fprintf(stderr, "[OPT] ===== runPortfolioTest RETURNED: iteration=%d, testId=%d, totalTrades=%d, finalBalance=%lf =====\n", 
+				        i, currentTestId, testResult.totalTrades, testResult.finalBalance);
+				fflush(stderr);
+				logInfo("===== runPortfolioTest RETURNED: iteration=%d, testId=%d, totalTrades=%d, finalBalance=%lf =====\n", 
+				        i, currentTestId, testResult.totalTrades, testResult.finalBalance);
+				#endif
+				
+				fprintf(stderr, "[DEBUG] runPortfolioTest CALL COMPLETED. About to check return value...\n");
+				fflush(stderr);
+
+				#ifdef _OPENMP
+				// thread_id_after already declared above, just reuse it
+				fprintf(stderr, "[DEBUG] runPortfolioTest RETURNED successfully. testResult.totalTrades=%d, finalBalance=%lf (thread %d)\n", testResult.totalTrades, testResult.finalBalance, thread_id_after);
+				fflush(stderr);
+				logInfo("runPortfolioTest returned. totalTrades=%d, finalBalance=%lf (thread %d)\n", testResult.totalTrades, testResult.finalBalance, thread_id_after);
+				#else
+				fprintf(stderr, "[DEBUG] runPortfolioTest RETURNED successfully. testResult.totalTrades=%d, finalBalance=%lf\n", testResult.totalTrades, testResult.finalBalance);
+				fflush(stderr);
+				logInfo("runPortfolioTest returned. totalTrades=%d, finalBalance=%lf\n", testResult.totalTrades, testResult.finalBalance);
+				#endif
+				fprintf(stderr, "[DEBUG] About to call optimizationUpdate callback. optimizationUpdate=%p\n", (void*)optimizationUpdate);
+				fflush(stderr);
+				logInfo("About to call optimizationUpdate callback. optimizationUpdate=%p\n", (void*)optimizationUpdate);
+				if(optimizationUpdate != NULL) {
+					fprintf(stderr, "[DEBUG] Calling optimizationUpdate callback now...\n");
+					fflush(stderr);
+					logInfo("Calling optimizationUpdate callback now...\n");
+					// CRITICAL: Call the callback - this writes results to CSV
+					optimizationUpdate(testResult, currentSet, numParamsInSet);
+					fprintf(stderr, "[DEBUG] optimizationUpdate callback completed successfully\n");
+					fflush(stderr);
+					logInfo("optimizationUpdate callback completed successfully\n");
+				} else {
+					fprintf(stderr, "[DEBUG] ERROR: optimizationUpdate callback is NULL!\n");
+					fflush(stderr);
+					logError("ERROR: optimizationUpdate callback is NULL!\n");
+				}
 
 				for (p=0;p<10;p++){
-						free(localRates[0][p]); localRates[0][p] = NULL;
+						if (localRates[0][p] != NULL) {
+							free(localRates[0][p]); localRates[0][p] = NULL;
+						}
 					}
 
 					free(localTestSettings); localTestSettings = NULL;
@@ -505,11 +1021,42 @@ int __stdcall runOptimizationMultipleSymbols(
 					free(localAccountInfo); localAccountInfo = NULL;
 
 				}
-			}
+				}
+				
+				// Log when each iteration completes (before implicit barrier)
+				#ifdef _OPENMP
+				if(numThreads > 1) {
+					fprintf(stderr, "[SYNC] Iteration %d completed on thread %d/%d - reached end of loop\n", i, omp_get_thread_num(), omp_get_num_threads());
+					fflush(stderr);
+				} else {
+					fprintf(stderr, "[SYNC] Iteration %d completed - reached end of loop (sequential)\n", i);
+					fflush(stderr);
+				}
+				#else
+				fprintf(stderr, "[SYNC] Iteration %d completed - reached end of loop\n", i);
+				fflush(stderr);
+				#endif
 
 		}
+		// NOTE: Implicit barrier here - #pragma omp parallel for automatically waits for all threads
+		// All iterations must complete before execution continues past this point
+		// If we reach this point, ALL threads have finished their loop iterations
 
+		#ifdef _OPENMP
+		if(numThreads > 1) {
+			fprintf(stderr, "[SYNC] Implicit barrier reached - all OpenMP parallel iterations completed.\n");
+			fflush(stderr);
+			logInfo("Implicit barrier reached - all OpenMP parallel iterations completed.\n");
+			// Note: The implicit barrier ensures all threads have finished their loop iterations
+			// Detailed logging in runPortfolioTest tracks each test's lifecycle, so no additional wait needed
+		}
+		#endif
+
+		fprintf(stderr, "[SYNC] About to call optimizationFinished callback\n");
+		fflush(stderr);
 		if(optimizationFinished != NULL) optimizationFinished();
+		fprintf(stderr, "[SYNC] optimizationFinished callback completed\n");
+		fflush(stderr);
 		free(combination); combination = NULL;
 		free(sets); sets = NULL;
 
@@ -537,9 +1084,19 @@ int __stdcall runOptimizationMultipleSymbols(
 		globalRates[n] = (ASTRates **)malloc(10 * sizeof(ASTRates));
 
 			for(i=0;i<10;i++){
-				if (globalMultiRatesInfo[n][i].totalBarsRequired > 0) {
-				globalRates[n][i] = (ASTRates *)malloc(numCandles * sizeof(ASTRates));
-				memcpy (globalRates[n][i], pRates[n][i], numCandles * sizeof(ASTRates));
+				if (i == 0 || globalMultiRatesInfo[n][i].totalBarsRequired > 0) {
+					// Timeframe 0 must always be allocated as runPortfolioTest accesses it without NULL checks
+					// Higher timeframes are only allocated if needed
+					globalRates[n][i] = (ASTRates *)malloc(numCandles * sizeof(ASTRates));
+					if (globalMultiRatesInfo[n][i].totalBarsRequired > 0) {
+						memcpy (globalRates[n][i], pRates[n][i], numCandles * sizeof(ASTRates));
+					} else {
+						// Zero out timeframe 0 if not needed (shouldn't happen, but be safe)
+						memset (globalRates[n][i], 0, numCandles * sizeof(ASTRates));
+					}
+				} else {
+					// Initialize to NULL when not needed (only for timeframes > 0)
+					globalRates[n][i] = NULL;
 				}
 			}
 		}
@@ -562,10 +1119,10 @@ int __stdcall runOptimizationMultipleSymbols(
 		globalMultiTradeSymbol[n] = pInTradeSymbol[n];
 		}
 
-		globalAccountCurrency = pInAccountCurrency;
+		globalAccountCurrency = safeAccountCurrency;
 		globalMinLotSize = minLotSize;
-		globalBrokerName = pInBrokerName;
-		globalRefBrokerName = pInRefBrokerName;
+		globalBrokerName = safeBrokerName;
+		globalRefBrokerName = safeRefBrokerName;
 		globalOptimizationSettings = optimizationSettings;
 		globalOptimizationType = optimizationType;
 		globalOptimizationUpdate = optimizationUpdate;

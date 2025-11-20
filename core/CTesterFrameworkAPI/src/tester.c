@@ -17,6 +17,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 // Forward declaration for CTester Symbol Analyzer API functions
 // These are defined in AsirikuyFrameworkAPI which CTesterFrameworkAPI links to
@@ -998,6 +1001,18 @@ TestResult __stdcall runPortfolioTest (
 	void			(*signalUpdate)(TradeSignal signal)
 	)
 { 
+	// CRITICAL: Log function entry with comprehensive information
+	#ifdef _OPENMP
+	int entry_thread_id = omp_get_thread_num();
+	fprintf(stderr, "[TEST] ===== runPortfolioTest ENTRY: testId=%d, thread=%d, numCandles=%d, numSystems=%d =====\n", testId, entry_thread_id, numCandles, numSystems);
+	fflush(stderr);
+	logInfo("===== runPortfolioTest ENTRY: testId=%d, OpenMP thread=%d, numCandles=%d, numSystems=%d =====\n", testId, entry_thread_id, numCandles, numSystems);
+	#else
+	fprintf(stderr, "[TEST] ===== runPortfolioTest ENTRY: testId=%d, numCandles=%d, numSystems=%d =====\n", testId, numCandles, numSystems);
+	fflush(stderr);
+	logInfo("===== runPortfolioTest ENTRY: testId=%d, numCandles=%d, numSystems=%d =====\n", testId, numCandles, numSystems);
+	#endif
+	
 	//Test variables
 	int		j, n, m, s, openOrdersCount[2] = {0}, openOrdersCountSystem[2] = {0}, operation, tries;
 	int		sourceIndex = 0, currentBrokerTime = 0, totalTrades = 0, numShorts = 0, numLongs = 0;
@@ -1143,13 +1158,35 @@ TestResult __stdcall runPortfolioTest (
 
 	result = WAIT_FOR_INIT;
 	tries = 0;
+	// CRITICAL: Increase retry count and delay for OpenMP parallel execution
+	// Multiple threads may try to initialize simultaneously, so we need more retries
+	// Framework initialization can take several seconds, so we need longer delays
+	int maxTries = 50;  // Increased from 3 to 50 for parallel execution
+	int retryDelay = 500;  // Increased to 500ms - framework init can take time
+	int exponentialDelay = retryDelay;  // Start with base delay, increase exponentially
 
-	while(result == WAIT_FOR_INIT && tries <3){
-		logInfo("Calling initInstanceC: attempt %d, instanceId=%d\n", tries+1, (int)pInSettings[j][STRATEGY_INSTANCE_ID]);
+	while(result == WAIT_FOR_INIT && tries < maxTries){
+		fprintf(stderr, "[INIT] Calling initInstanceC: attempt %d/%d, instanceId=%d, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], exponentialDelay);
+		fflush(stderr);
+		logInfo("Calling initInstanceC: attempt %d/%d, instanceId=%d, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], exponentialDelay);
 		result = initInstanceC ((int)pInSettings[j][STRATEGY_INSTANCE_ID], 1, "./config/AsirikuyConfig.xml", "");
+		fprintf(stderr, "[INIT] initInstanceC returned: %d\n", result);
+		fflush(stderr);
 		logInfo("initInstanceC returned: %d\n", result);
-		sleepMilliseconds(500);
+		if(result == WAIT_FOR_INIT) {
+			sleepMilliseconds(exponentialDelay);
+			// Exponential backoff: increase delay up to 2 seconds max
+			if(exponentialDelay < 2000) {
+				exponentialDelay = (int)(exponentialDelay * 1.2);  // Increase by 20% each time
+			}
+		}
 		tries++;
+	}
+	
+	if(result == WAIT_FOR_INIT) {
+		fprintf(stderr, "[INIT] ERROR: initInstanceC failed after %d attempts with WAIT_FOR_INIT. Framework initialization may be taking too long or stuck.\n", maxTries);
+		fflush(stderr);
+		logError("initInstanceC failed after %d attempts with WAIT_FOR_INIT. Framework initialization may be taking too long or stuck.\n", maxTries);
 	}
 		if(result!=SUCCESS){
 			switch (result){
@@ -1170,6 +1207,16 @@ TestResult __stdcall runPortfolioTest (
 					break;
 			}
 			logError("%s", error_t);
+			fprintf(stderr, "[INIT] ERROR: initInstanceC failed with result=%d: %s\n", result, error_t);
+			fflush(stderr);
+			// CRITICAL: If initialization fails, return early with empty test result
+			// Continuing with uninitialized framework will produce invalid results
+			testResult.totalTrades = 0;
+			testResult.finalBalance = 0;
+			testResult.maxDDDepth = 0;
+			testResult.cagr = 0;
+			testResult.r2 = -1;  // Signal error
+			return testResult;
 		}
 	}
 
@@ -1300,11 +1347,33 @@ TestResult __stdcall runPortfolioTest (
 	
 	finishedCount = 0;
 
-	logDebug("Entering main test loop. numSystems = %d", numSystems);
+	#ifdef _OPENMP
+	int loop_thread_id = omp_get_thread_num();
+	fprintf(stderr, "[TEST] ===== Initialization complete. Entering main test loop. testId=%d, thread=%d, numSystems=%d, numCandles=%d =====\n", testId, loop_thread_id, numSystems, numCandles);
+	fflush(stderr);
+	logInfo("===== Initialization complete. Entering main test loop. testId=%d, thread=%d, numSystems=%d, numCandles=%d =====\n", testId, loop_thread_id, numSystems, numCandles);
+	#else
+	fprintf(stderr, "[TEST] ===== Initialization complete. Entering main test loop. testId=%d, numSystems=%d, numCandles=%d =====\n", testId, numSystems, numCandles);
+	fflush(stderr);
+	logInfo("===== Initialization complete. Entering main test loop. testId=%d, numSystems=%d, numCandles=%d =====\n", testId, numSystems, numCandles);
+	#endif
 	
 	//Run the test for each candle
+	int loopIteration = 0;
+	int lastLoggedIteration = 0;
 	while(finishedCount < numSystems){
-		logDebug("Main loop iteration: finishedCount = %d, numSystems = %d", finishedCount, numSystems);
+		loopIteration++;
+		// Log every 1000 iterations, but also log the first few iterations
+		if (loopIteration % 1000 == 0 || loopIteration <= 10) {
+			#ifdef _OPENMP
+			fprintf(stderr, "[TEST] Main loop iteration %d: testId=%d, thread=%d, finishedCount=%d/%d, numCandles=%d\n", loopIteration, testId, loop_thread_id, finishedCount, numSystems, numCandles);
+			#else
+			fprintf(stderr, "[TEST] Main loop iteration %d: testId=%d, finishedCount=%d/%d, numCandles=%d\n", loopIteration, testId, finishedCount, numSystems, numCandles);
+			#endif
+			fflush(stderr);
+			lastLoggedIteration = loopIteration;
+		}
+		logInfo("Main loop iteration: finishedCount = %d, numSystems = %d", finishedCount, numSystems);
 
 		//run each bar for all systems
 		for(s = 0; s<numSystems; s++)
@@ -1314,14 +1383,18 @@ TestResult __stdcall runPortfolioTest (
 			if (testsFinished[s] == 1) continue;
 
 			if (i[s] >= numCandles-2){
+				fprintf(stderr, "[TEST] System %d reached end of candles (bar %d >= %d), finishing test\n", s, i[s], numCandles-2);
+				fflush(stderr);
 				logInfo("System %d reached end of candles (bar %d >= %d), finishing test", s, i[s], numCandles-2);
 				testsFinished[s] = 1;
 				finishedCount++;
-				logDebug("System %d finished. finishedCount = %d", s, finishedCount);
+				fprintf(stderr, "[TEST] System %d finished. finishedCount = %d, numSystems = %d\n", s, finishedCount, numSystems);
+				fflush(stderr);
+				logInfo("System %d finished. finishedCount = %d", s, finishedCount);
 				continue;
 			}
 
-		logDebug("Processing bar = %d, finishedCount = %d, numSystem = %d", i[s], finishedCount, s);
+			logInfo("Processing bar = %d, finishedCount = %d, numSystem = %d", i[s], finishedCount, s);
 
 		currentBrokerTime = 0;
 
@@ -1803,31 +1876,51 @@ TestResult __stdcall runPortfolioTest (
 
 		}	
 
+		logInfo("Finished processing all systems. finishedCount = %d", finishedCount);
 		finishedCount = 0;
 
 		for(s = 0; s<numSystems; s++){
 			finishedCount += testsFinished[s];
 		}
 
+		logInfo("finishedCount = %d, finalBalance=%lf",finishedCount, finalBalance);
 		if (finalBalance <= 0){
+			logError("ERROR: finalBalance is negative or zero: %lf. This should not happen. Setting to 0.", finalBalance);
 			finalBalance = 0;
 			break;
 		}
 	}
+	
+	// CRITICAL: Log when main loop completes
+	#ifdef _OPENMP
+	int exit_thread_id = omp_get_thread_num();
+	fprintf(stderr, "[TEST] ===== Main loop COMPLETED: testId=%d, thread=%d, totalIterations=%d, finalBalance=%lf =====\n", testId, exit_thread_id, loopIteration, finalBalance);
+	fflush(stderr);
+	logInfo("===== Main loop COMPLETED: testId=%d, thread=%d, totalIterations=%d, finalBalance=%lf =====\n", testId, exit_thread_id, loopIteration, finalBalance);
+	#else
+	fprintf(stderr, "[TEST] ===== Main loop COMPLETED: testId=%d, totalIterations=%d, finalBalance=%lf =====\n", testId, loopIteration, finalBalance);
+	fflush(stderr);
+	logInfo("===== Main loop COMPLETED: testId=%d, totalIterations=%d, finalBalance=%lf =====\n", testId, loopIteration, finalBalance);
+	#endif
 
 	
 	//save_openorder_to_file(pInTradeSymbol[0], openOrders, openOrdersCount);
 
+
 	orderIndex = openOrdersCount[BUY] + openOrdersCount[SELL];
+	logInfo("Saving open orders to file. orderIndex = %d", orderIndex);
 	if (orderIndex > 0)
 		save_openorder_to_file();
 
+	logInfo("Saved open orders to file. orderIndex = %d", orderIndex);
 	//For all the open orders
 	for (index = 0; index<orderIndex; index++){
 		if (openOrders[index].isOpen){
 			openOrders[index].closeTime = currentBrokerTime;
 			openOrders[index].closePrice = 0;
-			testUpdate(0, percentageCompleted, openOrders[index], finalBalance, pInTradeSymbol[0]);
+			if(testUpdate != NULL) {
+				testUpdate(0, percentageCompleted, openOrders[index], finalBalance, pInTradeSymbol[0]);
+			}
 		}
 	}
 
@@ -1869,9 +1962,10 @@ TestResult __stdcall runPortfolioTest (
 
 	testResult.testId = s;
     
+	logInfo("Saving statistics to file. finalBalance = %lf, initialBalance = %lf", finalBalance, initialBalance);
     if ((pInSettings[0][DISABLE_COMPOUNDING] == FALSE) && (is_optimization == FALSE)){
-    save_statistics_to_file(testResult, finalBalance, initialBalance);
-        }
+    	save_statistics_to_file(testResult, finalBalance, initialBalance);
+    }
     
     if(testFinished!=NULL) {
 		testFinished(testResult); // callback finish test function
@@ -1922,5 +2016,26 @@ TestResult __stdcall runPortfolioTest (
 	free(numSignals); numSignals = NULL;
 	}
 
+	logInfo("Returning testResult. totalTrades = %d, finalBalance = %lf", testResult.totalTrades, testResult.finalBalance);
+	logInfo("numShorts = %d, numLongs = %d", testResult.numShorts, testResult.numLongs);
+	
+	// CRITICAL: Log function exit with comprehensive information
+	#ifdef _OPENMP
+	int exit_thread_id_final = omp_get_thread_num();
+	fprintf(stderr, "[TEST] ===== runPortfolioTest EXIT: testId=%d, thread=%d, totalTrades=%d, finalBalance=%lf, numShorts=%d, numLongs=%d =====\n", 
+	        testId, exit_thread_id_final, testResult.totalTrades, testResult.finalBalance, testResult.numShorts, testResult.numLongs);
+	fflush(stderr);
+	logInfo("===== runPortfolioTest EXIT: testId=%d, thread=%d, totalTrades=%d, finalBalance=%lf, numShorts=%d, numLongs=%d =====\n", 
+	        testId, exit_thread_id_final, testResult.totalTrades, testResult.finalBalance, testResult.numShorts, testResult.numLongs);
+	#else
+	fprintf(stderr, "[TEST] ===== runPortfolioTest EXIT: testId=%d, totalTrades=%d, finalBalance=%lf, numShorts=%d, numLongs=%d =====\n", 
+	        testId, testResult.totalTrades, testResult.finalBalance, testResult.numShorts, testResult.numLongs);
+	fflush(stderr);
+	logInfo("===== runPortfolioTest EXIT: testId=%d, totalTrades=%d, finalBalance=%lf, numShorts=%d, numLongs=%d =====\n", 
+	        testId, testResult.totalTrades, testResult.finalBalance, testResult.numShorts, testResult.numLongs);
+	#endif
+	
+	fprintf(stderr, "[TEST] About to return from runPortfolioTest. testId=%d\n", testId);
+	fflush(stderr);
     return testResult;
 }

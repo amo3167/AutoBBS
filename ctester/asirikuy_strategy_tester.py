@@ -12,15 +12,20 @@ from include.mt import *
 from time import *
 from include.misc import *
 import decimal
-import datetime, ctypes, os, platform, configparser, math, csv, calendar, argparse,  sys,  signal, shutil
+import datetime, ctypes, os, platform, configparser, math, csv, calendar, argparse,  sys,  signal, shutil, threading
 import xml.etree.ElementTree as ET
 from include.asirikuy import *
 
+# Global lock for thread-safe optimizationUpdate callback
+optimizationUpdateLock = threading.Lock()
+
 def main():
+    print("[DEBUG] ===== Starting main() =====")
     main_start_time = datetime.datetime.now()
     global iterationNumber, lines, numSystemsInPortfolio, numPairs, setFilePaths
     global fromDate, toDate
     global astdll
+    print("[DEBUG] Globals initialized")
     global xmlRoot, xmlTrades, no, write_xml
     global signalCounter
 
@@ -60,6 +65,7 @@ def main():
         version()
         quit()
 
+    print("[DEBUG] Loading library...")
     system = platform.system()
     if (system == "Windows"):
         astdll = loadLibrary('CTesterFrameworkAPI')
@@ -70,8 +76,11 @@ def main():
     else:
         print("No shared library loading support for OS %s" % (system))
         return False
+    print("[DEBUG] Library loaded successfully")
 
+    print("[DEBUG] Importing graphics module...")
     from include.graphics import plotTestResult, plotMultipleTestResults, plotOptimizationResult, plotPortfolioTestResult
+    print("[DEBUG] Graphics module imported")
 
     #Paths
     historyPath = "./history/"
@@ -98,11 +107,13 @@ def main():
     outputXMLPath = outputFile + '.xml'
 
     #Read config file
+    print(f"[DEBUG] Reading config file: {configFilePath}")
     global config
     config = readConfigFile(configFilePath)
     if not config:
         print("Error reading config file %s" % (configFilePath))
         return False
+    print("[DEBUG] Config file read successfully")
 
     #Get portfolio data
     setFilePaths = []
@@ -194,10 +205,16 @@ def main():
     #Read set files
     sets = []
     for index, s in enumerate(setFilePaths):
+        print(f"[DEBUG] Reading set file {index}: {s}")
         sets.append(MT4Set(s))
         if not sets[index].content:
             print("Error reading set file %s" % (s))
             return False
+        print(f"[DEBUG] Set file {index} read successfully")
+        if hasattr(sets[index], 'optimizationArray'):
+            print(f"[DEBUG] Set file {index} optimizationArray: {sets[index].optimizationArray}")
+        else:
+            print(f"[DEBUG] Set file {index} has no optimizationArray attribute")
 
         
     #Optimization 
@@ -205,21 +222,37 @@ def main():
     # Handle inline comments in config values (Python 3 configparser is stricter)
     optimization_type_str = config.get("optimization", "optimizationType").split(';')[0].strip()
     optimizationType    = int(optimization_type_str)
-    num_cores_str = config.get("optimization", "numCores").split(';')[0].strip()
-    numCores            = int(num_cores_str)
+    # Handle case-insensitive config key (numCores vs numcores)
+    # Note: ConfigParser is case-insensitive by default, but we check both for safety
+    try:
+        num_cores_str = config.get("optimization", "numCores").split(';')[0].strip()
+        print("[DEBUG] Read numCores from config (numCores): %s" % num_cores_str, flush=True)
+    except (configparser.NoOptionError, KeyError):
+        try:
+            num_cores_str = config.get("optimization", "numcores").split(';')[0].strip()
+            print("[DEBUG] Read numCores from config (numcores): %s" % num_cores_str, flush=True)
+        except (configparser.NoOptionError, KeyError):
+            num_cores_str = "1"  # Default to 1 if not found
+            print("[DEBUG] WARNING: numCores not found in config, defaulting to 1", flush=True)
+    numCores = int(num_cores_str)
+    print("[DEBUG] Final numCores value: %d" % numCores, flush=True)
 
     #Config values
     accountCurrency = config.get("account", "currency")
     
-    #hardcode brokerName and refBrokerName
-    #brokerName        = config.get("account", "brokerName")
-    #refBrokerName     = config.get("account", "refBrokerName")
-    
+    # Read brokerName and refBrokerName from config, with fallback defaults
     # IMPORTANT: Encode to bytes to ensure the string buffer persists
     # ctypes creates temporary buffers for Python strings, which can be freed
     # Encoding to bytes and keeping a reference ensures the buffer stays alive
-    brokerName        = "Pepperstone Group Limited".encode('utf-8')
-    refBrokerName     = "Pepperstone Group Limited".encode('utf-8')
+    try:
+        brokerName = config.get("account", "brokerName").encode('utf-8')
+    except:
+        brokerName = "Pepperstone Group Limited".encode('utf-8')
+    
+    try:
+        refBrokerName = config.get("account", "refBrokerName").encode('utf-8')
+    except:
+        refBrokerName = brokerName  # Use same as brokerName if not specified
     
     
     #passedTimeFrame   = config.get("strategy", "passedTimeFrame")
@@ -280,6 +313,8 @@ def main():
         settings[i][ADDITIONAL_PARAM_8] = float(sets[i].additionalParams["DSL_EXIT_TYPE"]['value']) if sets[i].content.has_option('additional', 'DSL_EXIT_TYPE') else 0
            
         optimizationArrays.append(sets[i].optimizationArray)
+        print(f"[DEBUG] System {i}: optimizationArray length = {len(sets[i].optimizationArray)}")
+        print(f"[DEBUG] System {i}: optimizationArray contents = {sets[i].optimizationArray}")
 
         paramNamesArray.append(paramNames)
         index = 0
@@ -297,19 +332,29 @@ def main():
         optimizationParams.append(OptimizationParamType())
 
         numOptimizationParams.append(0)
+        print(f"[DEBUG] System {i}: Processing {len(optimizationArrays[i])} optimization parameters")
         for key, value in list(optimizationArrays[i].items()):
+            print(f"[DEBUG] System {i}: Adding param - key={key}, value={value}, index={numOptimizationParams[i]}")
             optimizationParams[i][numOptimizationParams[i]].index = key
             optimizationParams[i][numOptimizationParams[i]].start = value[0]
             optimizationParams[i][numOptimizationParams[i]].step  = value[1]
             optimizationParams[i][numOptimizationParams[i]].stop  = value[2]
             numOptimizationParams[i] += 1
+        print(f"[DEBUG] System {i}: Total optimization params = {numOptimizationParams[i]}")
 
         testSettings[i] = TestSettings()
         testSettings[i].spread = spreads[i]
         testSettings[i].is_calculate_expectancy = is_calculate_expectancy
 
+    print(f"[DEBUG] After processing all systems:", flush=True)
+    print(f"[DEBUG] optimize = {optimize}", flush=True)
+    print(f"[DEBUG] numOptimizationParams[0] = {numOptimizationParams[0]}", flush=True)
+    import sys
+    sys.stdout.flush()
     if numOptimizationParams[0] == 0 and optimize:
-        print("Nothing to optimize. Check your set file.")
+        print("[DEBUG] ERROR: Nothing to optimize. Check your set file.", flush=True)
+        print("[DEBUG] This means no parameters with ',F = 1' were found in the set file.", flush=True)
+        sys.stdout.flush()
         return True
 
     #Account info values
@@ -501,15 +546,47 @@ def main():
     start = time()
     global f
     if optimize:
+        print("[DEBUG] Optimization mode enabled", flush=True)
+        print("[DEBUG] numOptimizationParams[0] =", numOptimizationParams[0], flush=True)
+        print("[DEBUG] optimizationType =", optimizationType, flush=True)
+        # CRITICAL: Verify numCores value before printing
+        print("[DEBUG] numCores variable type:", type(numCores), flush=True)
+        print("[DEBUG] numCores variable value:", numCores, flush=True)
+        print("[DEBUG] numCores =", numCores, flush=True)
+        print("[DEBUG] numPairs =", numPairs, flush=True)
+        print("[DEBUG] numCandles =", numCandles, flush=True)
+        import sys
+        sys.stdout.flush()
+        
+        # Debug: Print optimization parameters
+        if numOptimizationParams[0] > 0:
+            print("[DEBUG] Optimization parameters:", flush=True)
+            for i in range(numOptimizationParams[0]):
+                param = optimizationParams[0][i]
+                print(f"  [DEBUG] Param {i}: index={param.index}, start={param.start}, step={param.step}, stop={param.stop}", flush=True)
+        else:
+            print("[DEBUG] WARNING: No optimization parameters found!", flush=True)
+        import sys
+        sys.stdout.flush()
+        
         if execUnderMPI == False or (execUnderMPI == True and rank == 1):
-            f = open(outputOptimizationFile + ".txt", 'w', 0)
-            f.write("Iteration, Symbol, NumTrades, Profit, maxDD, maxDDLength, PF, R2, ulcerIndex, Sharpe, CAGR, CAGR to Max DD, numShorts, numLongs, Set Parameters\n")
+            f = open(outputOptimizationFile + ".csv", 'w')
+            header = "Iteration, Symbol, NumTrades, Profit, maxDD, maxDDLength, PF, R2, ulcerIndex, Sharpe, CAGR, CAGR to Max DD, numShorts, numLongs, Set Parameters\n"
+            f.write(header)
+            f.flush()  # CRITICAL: Flush immediately to ensure header is written
+            print("[DEBUG] Opened optimization output file:", outputOptimizationFile + ".csv")
+            print("[DEBUG] Wrote header, file handle:", f)
+            import os as os_module
+            print("[DEBUG] File exists:", os_module.path.exists(outputOptimizationFile + ".csv"))
+            print("[DEBUG] File size:", os_module.path.getsize(outputOptimizationFile + ".csv") if os_module.path.exists(outputOptimizationFile + ".csv") else "N/A")
 
         OPTIMIZATION_UPDATE = CFUNCTYPE(c_void_p, TestResult, POINTER(c_double), c_int)
         optimizationUpdate_c = OPTIMIZATION_UPDATE(optimizationUpdate)
+        print("[DEBUG] Created optimizationUpdate callback:", optimizationUpdate_c)
 
         OPTIMIZATION_FINISHED = CFUNCTYPE(c_void_p)
         optimizationFinished_c = OPTIMIZATION_FINISHED(optimizationFinished)
+        print("[DEBUG] Created optimizationFinished callback:", optimizationFinished_c)
 
         astdll.runOptimizationMultipleSymbols.restype = c_int
 
@@ -528,29 +605,112 @@ def main():
         optimizationSettings.discardAssymetricSets = config.getint("optimization", "discardAssymetricSets")
         optimizationSettings.minTradesAYear = config.getint("optimization", "minTradesAYear")
         optimizationSettings.optimizationGoal = config.getint("optimization", "optimizationGoal")
+        
+        print("[DEBUG] Optimization settings configured:")
+        print(f"  [DEBUG] population={optimizationSettings.population}, maxGenerations={optimizationSettings.maxGenerations}")
+        print(f"  [DEBUG] optimizationGoal={optimizationSettings.optimizationGoal}")
+        print("[DEBUG] About to call runOptimizationMultipleSymbols...", flush=True)
+        print("[DEBUG] optimizationParams[0] pointer:", ctypes.pointer(optimizationParams[0]), flush=True)
+        print("[DEBUG] settings[0] pointer:", settings[0], flush=True)
+        print("[DEBUG] symbols pointer:", ctypes.pointer(symbols), flush=True)
+        print("[DEBUG] accountCurrency:", accountCurrency, flush=True)
+        print("[DEBUG] brokerName:", brokerName, flush=True)
+        print("[DEBUG] refBrokerName:", refBrokerName, flush=True)
+        
+        # Parameter validation
+        print("[DEBUG] Validating parameters...", flush=True)
+        if optimizationParams[0] is None:
+            print("[DEBUG] ERROR: optimizationParams[0] is None!", flush=True)
+            return False
+        if settings[0] is None:
+            print("[DEBUG] ERROR: settings[0] is None!", flush=True)
+            return False
+        if symbols is None or symbols[0] is None:
+            print("[DEBUG] ERROR: symbols is None!", flush=True)
+            return False
+        if accountInfo[0] is None:
+            print("[DEBUG] ERROR: accountInfo[0] is None!", flush=True)
+            return False
+        if testSettings is None or testSettings[0] is None:
+            print("[DEBUG] ERROR: testSettings is None!", flush=True)
+            return False
+        if ratesInfoArray is None or ratesInfoArray[0] is None:
+            print("[DEBUG] ERROR: ratesInfoArray is None!", flush=True)
+            return False
+        if ratesArray is None or ratesArray[0] is None:
+            print("[DEBUG] ERROR: ratesArray is None!", flush=True)
+            return False
+        if optimizationUpdate_c is None:
+            print("[DEBUG] ERROR: optimizationUpdate_c callback is None!", flush=True)
+            return False
+        if optimizationFinished_c is None:
+            print("[DEBUG] ERROR: optimizationFinished_c callback is None!", flush=True)
+            return False
+        print("[DEBUG] All parameters validated successfully", flush=True)
+        
+        import sys
+        sys.stdout.flush()
 
-        if not astdll.runOptimizationMultipleSymbols (
-                ctypes.pointer(optimizationParams[0]),
-                c_int(numOptimizationParams[0]),
-                c_int(optimizationType),
-                optimizationSettings,
-                c_int(numCores),
-                settings[0],
-                ctypes.pointer(symbols),
-                accountCurrency,
-                brokerName,
-                refBrokerName,
-                accountInfo[0],
-                ctypes.pointer(testSettings),
-                ctypes.pointer(ratesInfoArray),
-                c_int(numCandles),
-                c_int(numPairs),
-                ctypes.pointer(ratesArray),
-                c_double(minLotSize),
-                optimizationUpdate_c,
-                optimizationFinished_c,
-                byref(error_c)
-        ):
+        print("[DEBUG] Calling runOptimizationMultipleSymbols NOW...", flush=True)
+        # CRITICAL: Verify numCores value right before passing to C function
+        print("[DEBUG] RIGHT BEFORE C CALL: numCores = %d (type: %s)" % (numCores, type(numCores).__name__), flush=True)
+        print("[DEBUG] RIGHT BEFORE C CALL: c_int(numCores) = %d" % c_int(numCores).value, flush=True)
+        sys.stdout.flush()
+        # Write to file to ensure we capture the call
+        with open("debug_optimization.txt", "w") as dbg:
+            dbg.write("About to call runOptimizationMultipleSymbols\n")
+            dbg.flush()
+        try:
+            result = astdll.runOptimizationMultipleSymbols (
+                    ctypes.pointer(optimizationParams[0]),
+                    c_int(numOptimizationParams[0]),
+                    c_int(optimizationType),
+                    optimizationSettings,
+                    c_int(numCores),
+                    settings[0],
+                    ctypes.pointer(symbols),
+                    accountCurrency,
+                    brokerName,
+                    refBrokerName,
+                    accountInfo[0],
+                    ctypes.pointer(testSettings),
+                    ctypes.pointer(ratesInfoArray),
+                    c_int(numCandles),
+                    c_int(numPairs),
+                    ctypes.pointer(ratesArray),
+                    c_double(minLotSize),
+                    optimizationUpdate_c,
+                    optimizationFinished_c,
+                    byref(error_c)
+            )
+            print("[DEBUG] runOptimizationMultipleSymbols returned:", result, flush=True)
+            print("[DEBUG] error_c.value:", error_c.value if error_c.value else "None", flush=True)
+            sys.stdout.flush()
+            # Write to file
+            with open("debug_optimization.txt", "a") as dbg:
+                dbg.write(f"Function returned: {result}\n")
+                dbg.write(f"Error: {error_c.value if error_c.value else 'None'}\n")
+                dbg.flush()
+        except Exception as e:
+            print(f"[DEBUG] EXCEPTION in runOptimizationMultipleSymbols: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
+            # Write exception to file
+            with open("debug_optimization.txt", "a") as dbg:
+                dbg.write(f"EXCEPTION: {e}\n")
+                traceback.print_exc(file=dbg)
+                dbg.flush()
+            result = 0
+        
+        # Always write this
+        with open("debug_optimization.txt", "a") as dbg:
+            dbg.write("AFTER function call - checking result\n")
+            dbg.flush()
+        print("[DEBUG] AFTER runOptimizationMultipleSymbols call - checking result...", flush=True)
+        sys.stdout.flush()
+        
+        if not result:
             print("Error executing framework: " + str(error_c.value))
         else:
             if execUnderMPI == True:
@@ -704,47 +864,70 @@ def version():
 
 
 def optimizationUpdate(testResults, settings, numSettings):
-    global f, paramNames, iterationNumber, execUnderMPI, rank, lines
+    global f, paramNames, iterationNumber, execUnderMPI, rank, lines, optimizationUpdateLock
+    
+    try:
+        # CRITICAL: Flush immediately to ensure output appears
+        print("[DEBUG] optimizationUpdate CALLED: testResults.totalTrades=%d, finalBalance=%lf" % (testResults.totalTrades, testResults.finalBalance), flush=True)
+        sys.stdout.flush()
+        
+        parameters = []
+        lines = ""
 
-    if execUnderMPI == False:
-        iterationNumber+=1
-        print("Iteration %d finished" % (iterationNumber))
+        if testResults.maxDDDepth != 0:
+            ratio = testResults.cagr/testResults.maxDDDepth
+        else:
+            ratio = 0
 
-    parameters = []
-    lines = ""
+        for i in range(numSettings):
+            parameters.append("%s=%lf" % (paramNames[int(settings[i*2])], settings[i*2+1]))
 
-    if testResults.maxDDDepth != 0:
-        ratio = testResults.cagr/testResults.maxDDDepth
-    else:
-        ratio = 0
-
-    for i in range(numSettings):
-        parameters.append("%s=%lf" % (paramNames[int(settings[i*2])], settings[i*2+1]))
-
-    if execUnderMPI == False:
-        line = "%d,%s,%d,%lf,%lf,%d,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%s\n" % (iterationNumber, testResults.symbol, testResults.totalTrades, testResults.finalBalance-initialBalance, testResults.maxDDDepth,
-                                                                           int(testResults.maxDDLength/60/60/24), float(testResults.pf), testResults.r2, testResults.ulcerIndex, testResults.sharpe, testResults.cagr, ratio,
-                                                                           testResults.numShorts, testResults.numLongs, " ".join(parameters))
-    else:
-        line = "%d,%s,%d,%lf,%lf,%d,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%s\n" % (iterationNumber, testResults.symbol, testResults.totalTrades,testResults.finalBalance-initialBalance, testResults.maxDDDepth,
-                                                                           int(testResults.maxDDLength/60/60/24), float(testResults.pf), testResults.r2, testResults.ulcerIndex, testResults.sharpe, testResults.cagr, ratio,
-                                                                           testResults.numShorts, testResults.numLongs, " ".join(parameters))
-    if execUnderMPI == False:
-        f.write(line)
-    else:
-        if rank == 1:
-            iterationNumber+=1
-            iterationString = "%d," % (iterationNumber)
-            lines = iterationString + line
-            print("Iteration %d finished, %d" % (iterationNumber, rank))
-            for i in range(2, size):
+        # Thread-safe: Use lock to protect shared state (iterationNumber and file writes)
+        # All file I/O and shared variable access must be inside the lock
+        with optimizationUpdateLock:
+            if execUnderMPI == False:
+                iterationNumber+=1
+                print("Iteration %d finished" % (iterationNumber), flush=True)
+                sys.stdout.flush()
+                
+                line = "%d,%s,%d,%lf,%lf,%d,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%s\n" % (iterationNumber, testResults.symbol, testResults.totalTrades, testResults.finalBalance-initialBalance, testResults.maxDDDepth,
+                                                                                   int(testResults.maxDDLength/60/60/24), float(testResults.pf), testResults.r2, testResults.ulcerIndex, testResults.sharpe, testResults.cagr, ratio,
+                                                                                   testResults.numShorts, testResults.numLongs, " ".join(parameters))
+                print("[DEBUG] optimizationUpdate: Writing line to CSV: %s" % line.strip(), flush=True)
+                sys.stdout.flush()
+                f.write(line)
+                f.flush()  # Ensure data is written immediately
+                print("[DEBUG] optimizationUpdate: Line written and flushed (iteration %d)" % iterationNumber, flush=True)
+                sys.stdout.flush()
+            else:
+                # MPI mode - line construction (file write happens later in MPI code)
+                line = "%d,%s,%d,%lf,%lf,%d,%lf,%lf,%lf,%lf,%lf,%lf,%d,%d,%s\n" % (iterationNumber, testResults.symbol, testResults.totalTrades,testResults.finalBalance-initialBalance, testResults.maxDDDepth,
+                                                                                   int(testResults.maxDDLength/60/60/24), float(testResults.pf), testResults.r2, testResults.ulcerIndex, testResults.sharpe, testResults.cagr, ratio,
+                                                                                   testResults.numShorts, testResults.numLongs, " ".join(parameters))
+        
+        # MPI-specific code (outside lock, but MPI handles its own synchronization)
+        if execUnderMPI == True:
+            if rank == 1:
                 iterationNumber+=1
                 iterationString = "%d," % (iterationNumber)
-                lines = lines + iterationString + comm.recv(source=i, tag=11)
-                print("Iteration %d finished, %d" % (iterationNumber, rank))
-            f.write(lines)
-        else:
-            comm.send(line, dest=1, tag=11)
+                lines = iterationString + line
+                print("Iteration %d finished, %d" % (iterationNumber, rank), flush=True)
+                for i in range(2, size):
+                    iterationNumber+=1
+                    iterationString = "%d," % (iterationNumber)
+                    lines = lines + iterationString + comm.recv(source=i, tag=11)
+                    print("Iteration %d finished, %d" % (iterationNumber, rank), flush=True)
+                f.write(lines)
+                f.flush()
+            else:
+                comm.send(line, dest=1, tag=11)
+    except Exception as e:
+        # CRITICAL: Catch and log any exceptions to prevent silent failures
+        print("[ERROR] optimizationUpdate callback failed with exception: %s" % str(e), flush=True)
+        import traceback
+        traceback.print_exc()
+        sys.stdout.flush()
+        sys.stderr.flush()
 
 def optimizationFinished():
     if execUnderMPI == False:
