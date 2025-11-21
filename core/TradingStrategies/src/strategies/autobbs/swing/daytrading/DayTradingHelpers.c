@@ -25,22 +25,6 @@
 #define DAILY_ATR_MAX 20.0           /* Maximum daily ATR */
 #define DAILY_CLOSE_GAP_MAX 10.0     /* Maximum daily close gap */
 
-/**
- * Determines if XAUUSD day trading is allowed based on market conditions.
- * 
- * Filtering criteria:
- * - Must be after start trading hour
- * - Filters out key dates (NFP, etc.)
- * - Asia session ATR must be < 7.5
- * - Daily ATR must be < 20
- * - Daily close gap must be < 10
- * - Price must be within pivot S3/R3 range
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure to modify
- * @param pBase_Indicators Base indicators structure
- * @return TRUE if trading is allowed, FALSE otherwise
- */
 BOOL XAUUSD_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
 	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
@@ -157,23 +141,6 @@ BOOL XAUUSD_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicat
 	return TRUE;
 }
 
-/**
- * Sets up entry signals for XAUUSD day trading strategy.
- * 
- * Entry conditions:
- * - ATR0_EURO must be > Range
- * - lossTimes < 2
- * - winTimes == 0
- * - Current hour < 22
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure to modify
- * @param pBase_Indicators Base indicators structure (unused)
- * @param orderType Order type (BUY or SELL)
- * @param ATR0_EURO Euro session ATR value
- * @param stopLoss Stop loss distance
- * @param Range Minimum ATR range required for entry
- */
 void XAUUSD_DayTrading_Entry(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, OrderType orderType, double ATR0_EURO, double stopLoss, double Range)
 {
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
@@ -213,132 +180,6 @@ void XAUUSD_DayTrading_Entry(StrategyParams* pParams, Indicators* pIndicators, B
 
 		pIndicators->exitSignal = EXIT_BUY;
 	}
-}
-/**
- * Version 2 of XAUUSD day trading filter with additional ATR-based filtering.
- * 
- * Enhanced filtering criteria:
- * - Must be within trading hours (startHour to endHour)
- * - Filters out Non-Farm Payroll (NFP) days (first Friday of month)
- * - Filters out non-full trading days
- * - Daily predicted ATR must be >= euro ATR range
- * - Weekly ATR must be within predicted range
- * - Daily ATR must be < max(20, weeklyPredictATR/2)
- * - Daily close gap must be < max(10, weeklyPredictATR/3)
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure to modify
- * @param pBase_Indicators Base indicators structure containing ATR predictions
- * @param shouldFilter If FALSE, skips ATR-based filtering
- * @return TRUE if trading is allowed, FALSE otherwise
- */
-BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL shouldFilter)
-{
-	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int    shift1Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
-	int execution_tf;
-	time_t currentTime;
-	struct tm timeInfo1;
-	char timeString[MAX_TIME_STRING_SIZE] = "";
-	double close_prev1 = iClose(B_DAILY_RATES, 1);
-	double close_prev2 = iClose(B_DAILY_RATES, 2);
-	int startTradingTime = pIndicators->startHour;
-	double ATRWeekly0, ATRDaily0;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
-	safe_gmtime(&timeInfo1, currentTime);
-	safe_timeString(timeString, currentTime);
-	
-	execution_tf = (int)pParams->settings[TIMEFRAME];
-
-	ATRDaily0 = iAtr(B_DAILY_RATES, 1, 0);
-	if (timeInfo1.tm_hour < startTradingTime || 
-		(timeInfo1.tm_hour >= pIndicators->endHour 
-		//&& ATRDaily0 > pBase_Indicators->pDailyMaxATR
-		)
-	  )
-	{
-		
-		return FALSE;
-	}
-
-	// filter ��ũ
-	if (timeInfo1.tm_wday == 5 && timeInfo1.tm_mday - 7 < 1)
-	{
-	
-		strcpy(pIndicators->status, "Filter Non-farm day\n");
-
-		logWarning("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		return FALSE;	
-	}
-
-	
-	/* Filter: Skip non-full trading days */
-	if (XAUUSD_not_full_trading_day(pParams, pIndicators, pBase_Indicators) == TRUE)
-	{
-		logWarning("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-		return FALSE;
-	}
-
-	/* Skip ATR-based filtering if shouldFilter is FALSE */
-	if (shouldFilter == FALSE)
-		return TRUE;
-
-	ATRWeekly0 = iAtr(B_WEEKLY_RATES, 1, 0);
-
-	logInfo("System InstanceID = %d, BarTime = %s, pDailyPredictATR =%lf, ATRWeekly0 = %lf,pWeeklyPredictMaxATR=%lf,pWeeklyPredictATR=%lf",
-		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->pDailyPredictATR, ATRWeekly0, pBase_Indicators->pWeeklyPredictMaxATR, pBase_Indicators->pWeeklyPredictATR);
-
-	/* Filter: Daily predicted ATR must be >= euro ATR range */
-	if (pBase_Indicators->pDailyPredictATR < pIndicators->atr_euro_range)
-	{
-		sprintf(pIndicators->status, "pDailyPredictATR %lf is less than atr_euro_range %lf",
-			pBase_Indicators->pDailyPredictATR, pIndicators->atr_euro_range);
-
-		logInfo("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		return FALSE;
-	}
-
-	/* Filter: Weekly ATR must be within predicted range if daily ATR is low */
-	if (ATRWeekly0 > pBase_Indicators->pWeeklyPredictMaxATR && pBase_Indicators->pDailyPredictATR < 10.0)	
-	{
-		sprintf(pIndicators->status, "ATRWeekly0 %lf is greater than pWeeklyPredictMaxATR %lf and pDailyPredictATR > 10",
-			ATRWeekly0, pBase_Indicators->pWeeklyPredictMaxATR, pBase_Indicators->pDailyPredictATR);
-
-		logInfo("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		return FALSE;
-	}
-
-	if (iAtr(B_DAILY_RATES, 1, 1) - max(20, pBase_Indicators->pWeeklyPredictATR / 2) >= 0) //�ղ���������С���ܲ���
-	{
-		sprintf(pIndicators->status, "ATR1 %lf is greater than half of pWeeklyPredictATR %lf",
-			iAtr(B_DAILY_RATES, 1, 1), max(20, pBase_Indicators->pWeeklyPredictATR / 2));
-
-		logInfo("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		return FALSE;
-	}
-
-	if (fabs(close_prev1 - close_prev2) >= max(10, pBase_Indicators->pWeeklyPredictATR / 3)) //������������һ�����С�ܲ���
-	{
-		sprintf(pIndicators->status, "Previous close gap %lf is greater than third of pWeeklyPredictATR %lf",
-			fabs(close_prev1 - close_prev2), max(10, pBase_Indicators->pWeeklyPredictATR / 3));
-
-		logInfo("System InstanceID = %d, BarTime = %s, %s",
-			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		return FALSE;
-	}
-
-	return TRUE;
 }
 BOOL GBPJPY_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
@@ -448,37 +289,6 @@ BOOL GBPJPY_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicat
 	return TRUE;
 }
 
-/**
- * Check if commodity day trading is allowed (XAUUSD, XAGUSD, etc.).
- * 
- * This is a wrapper function that uses XAUUSD_DayTrading_Allow_Trade_Ver2
- * for commodity symbols (XAUUSD, XAGUSD).
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure to modify
- * @param pBase_Indicators Base indicators structure
- * @param shouldFilter Whether to apply ATR-based filtering
- * @return TRUE if trading is allowed, FALSE otherwise
- */
-BOOL Commodity_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL shouldFilter)
-{
-	// Use XAUUSD filter for commodities (XAUUSD, XAGUSD)
-	return XAUUSD_DayTrading_Allow_Trade_Ver2(pParams, pIndicators, pBase_Indicators, shouldFilter);
-}
-
-/**
- * Check if BTCUSD/ETHUSD day trading is allowed.
- * 
- * For crypto symbols, this function applies basic time-based filtering.
- * Currently returns TRUE if shouldFilter is FALSE, otherwise applies
- * basic time checks.
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure to modify
- * @param pBase_Indicators Base indicators structure
- * @param shouldFilter Whether to apply filtering
- * @return TRUE if trading is allowed, FALSE otherwise
- */
 BOOL BTCUSD_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL shouldFilter)
 {
 	// Skip filtering if shouldFilter is FALSE

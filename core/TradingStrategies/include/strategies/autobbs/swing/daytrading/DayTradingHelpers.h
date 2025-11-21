@@ -25,17 +25,6 @@ extern "C" {
 BOOL XAUUSD_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
 /**
- * Check if XAUUSD day trading is allowed (Version 2).
- * 
- * @param pParams Strategy parameters
- * @param pIndicators Strategy indicators
- * @param pBase_Indicators Base indicators
- * @param shouldFilter Whether to apply filtering
- * @return TRUE if trading is allowed, FALSE otherwise
- */
-BOOL XAUUSD_DayTrading_Allow_Trade_Ver2(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL shouldFilter);
-
-/**
  * Check if GBPJPY day trading is allowed.
  * 
  * @param pParams Strategy parameters
@@ -57,17 +46,6 @@ BOOL GBPJPY_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicat
  * @param Range Range value
  */
 void XAUUSD_DayTrading_Entry(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, OrderType orderType, double ATR0_EURO, double stopLoss, double Range);
-
-/**
- * Check if commodity day trading is allowed (XAUUSD, XAGUSD, etc.).
- * 
- * @param pParams Strategy parameters
- * @param pIndicators Strategy indicators
- * @param pBase_Indicators Base indicators
- * @param shouldFilter Whether to apply filtering
- * @return TRUE if trading is allowed, FALSE otherwise
- */
-BOOL Commodity_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, BOOL shouldFilter);
 
 /**
  * Check if BTCUSD/ETHUSD day trading is allowed.

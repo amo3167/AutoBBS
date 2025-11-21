@@ -8,6 +8,8 @@
 #include "AsirikuyDefines.h"
 #endif
 
+#include "strategies/autobbs/base/Base.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -176,8 +178,6 @@ extern "C" {
 
 	BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 	BOOL XAUUSD_not_full_trading_day(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
-
-	AsirikuyReturnCode workoutExecutionTrend_XAUUSD_DayTrading(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators);
 
 	void splitBuyOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
 	void splitSellOrders_ShortTerm_Hedge(StrategyParams *pParams, Indicators *pIndicators, Base_Indicators *pBase_Indicators, double takePrice_primary, double stopLoss);
