@@ -33,7 +33,7 @@
   <!-- Info           6      -->
   <!-- Debug          7      -->
   <!-- The selected severity level plus all lower levels will be logged -->
-  <MaxSeverity>6</MaxSeverity>
+  <MaxSeverity>4</MaxSeverity>
   
   <!-- Enable = 1, Disable = 0 -->
   <EnableEquityLog>0</EnableEquityLog>
