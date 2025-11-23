@@ -38,6 +38,11 @@
 #include "AsirikuyDefines.h"
 #include "InstanceStates.h"
 #include "strategies/autobbs/trend/macd/MACDDailyStrategy.h"
+#if defined _WIN32 || defined _WIN64
+#include <windows.h>
+#elif defined __APPLE__ || defined __linux__
+#include <sys/time.h>
+#endif
 
 /* Strategy configuration constants */
 #define SPLIT_TRADE_MODE_MACD_DAILY 24     /* Split trade mode for MACD Daily strategy */
@@ -75,6 +80,23 @@
 
 /* Historical MACD bars to check */
 #define HISTORICAL_MACD_BARS 5             /* Number of historical MACD bars to check */
+
+// Timing helper function for performance measurement
+static double getCurrentTimeMs(void)
+{
+#if defined _WIN32 || defined _WIN64
+	LARGE_INTEGER frequency, counter;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&counter);
+	return (double)counter.QuadPart * 1000.0 / (double)frequency.QuadPart;
+#elif defined __APPLE__ || defined __linux__
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double)tv.tv_sec * 1000.0 + (double)tv.tv_usec / 1000.0;
+#else
+	return 0.0;
+#endif
+}
 
 /**
  * @brief Symbol-specific configuration structure for MACD Daily strategy.
@@ -732,6 +754,14 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
  */
 AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {	
+	// Track total time for workoutExecutionTrend_MACD_Daily to determine if we should log granular details
+	double macdDailyTotalStartTime = getCurrentTimeMs();
+	
+	// Timing variables for granular breakdown (only keep heavy operations)
+	double macdAllDuration = 0.0;
+	double beiLiBuyDuration = 0.0;
+	double beiLiSellDuration = 0.0;
+	
 	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
@@ -854,7 +884,6 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		weekly_baseline_short = (shortWeeklyHigh + shortWeeklyLow) / 2;
 
 		pIndicators->cmfVolume = getCMFVolume(B_DAILY_RATES, fastMAPeriod, startShift);
-
 		pIndicators->CMFVolumeGap = getCMFVolumeGap(B_DAILY_RATES, 1, fastMAPeriod, startShift);
 
 		/* Volume indicator: current volume vs previous volume */
@@ -866,11 +895,14 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->cmfVolume, pIndicators->CMFVolumeGap, weekly_baseline, weekly_baseline_short, pIndicators->volume1, pIndicators->volume2, volume_ma_5);
 
 		/* Load MACD indicators for current and historical bars */
+		double macdAllStartTime = getCurrentTimeMs();
 		iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift, &fast1, &slow1, &preHist1);
 		iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift + 1, &fast2, &slow2, &preHist2);
 		iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift + 2, &fast3, &slow3, &preHist3);
 		iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift + 3, &fast4, &slow4, &preHist4);
 		iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift + 4, &fast5, &slow5, &preHist5);
+		double macdAllEndTime = getCurrentTimeMs();
+		macdAllDuration = macdAllEndTime - macdAllStartTime;
 				
 		pIndicators->fast = fast1;
 		pIndicators->slow = slow1;
@@ -879,7 +911,6 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 		
 
 		orderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
-
 		pIndicators->stopLoss = stopLoss;
 
 		/* Find the highest/lowest close price after order is opened for stop loss calculation */
@@ -946,15 +977,26 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				&& pIndicators->fast > pIndicators->preFast		
 				)
 			{
-				
-				safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].closeTime);
-
-				logInfo("System InstanceID = %d, BarTime = %s, timeInfo1.tm_mday =%ld, timeInfo2.tm_mday%ld",
-					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, timeInfo1.tm_mday, timeInfo2.tm_mday);
-
-				if ( timeInfo1.tm_mday != timeInfo2.tm_mday || timeInfo1.tm_mon != timeInfo2.tm_mon)
+				/* If no previous order (orderIndex < 0), allow entry without day/month check */
+				if (orderIndex < 0)
 				{
 					pIndicators->entrySignal = 1;
+				}
+				else
+				{
+					safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].closeTime);
+
+					logInfo("System InstanceID = %d, BarTime = %s, timeInfo1.tm_mday =%ld, timeInfo2.tm_mday%ld",
+						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, timeInfo1.tm_mday, timeInfo2.tm_mday);
+
+					if ( timeInfo1.tm_mday != timeInfo2.tm_mday || timeInfo1.tm_mon != timeInfo2.tm_mon)
+					{
+						pIndicators->entrySignal = 1;
+					}
+				}
+				
+				if (pIndicators->entrySignal == 1)
+				{
 
 					if ((config.isVolumeControlRisk == TRUE && pIndicators->volume1 > pIndicators->volume2 )
 						|| (config.isCMFVolumeGapRisk == TRUE && pIndicators->CMFVolumeGap > 0)
@@ -1063,7 +1105,10 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 					}
 
 					
+					double beiLiBuyStartTime = getCurrentTimeMs();
 					isMACDBeili = iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, BUY, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint);
+					double beiLiBuyEndTime = getCurrentTimeMs();
+					beiLiBuyDuration = beiLiBuyEndTime - beiLiBuyStartTime;
 
 					if (config.isEnableMaxLevelBuy == TRUE
 						&& pIndicators->entrySignal != 0
@@ -1154,15 +1199,26 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				&& pIndicators->fast < pIndicators->preFast			
 				)
 			{
-				safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].closeTime);
-
-				logWarning("System InstanceID = %d, BarTime = %s, timeInfo1.tm_mday =%ld, timeInfo2.tm_mday%ld",
-					(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, timeInfo1.tm_mday, timeInfo2.tm_mday);
-
-				if (timeInfo1.tm_mday != timeInfo2.tm_mday || timeInfo1.tm_mon != timeInfo2.tm_mon)
+				/* If no previous order (orderIndex < 0), allow entry without day/month check */
+				if (orderIndex < 0)
 				{
-
 					pIndicators->entrySignal = -1;
+				}
+				else
+				{
+					safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].closeTime);
+
+					logWarning("System InstanceID = %d, BarTime = %s, timeInfo1.tm_mday =%ld, timeInfo2.tm_mday%ld",
+						(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, timeInfo1.tm_mday, timeInfo2.tm_mday);
+
+					if (timeInfo1.tm_mday != timeInfo2.tm_mday || timeInfo1.tm_mon != timeInfo2.tm_mon)
+					{
+						pIndicators->entrySignal = -1;
+					}
+				}
+				
+				if (pIndicators->entrySignal == -1)
+				{
 
 					if ((config.isVolumeControlRisk == TRUE && pIndicators->volume1 > pIndicators->volume2)
 						|| (config.isCMFVolumeGapRisk == TRUE && pIndicators->CMFVolumeGap < 0)
@@ -1270,7 +1326,10 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 						pIndicators->entrySignal = 0;
 					}
 
+					double beiLiSellStartTime = getCurrentTimeMs();
 					isMACDBeili = iMACDTrendBeiLiEasy(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, 1, 0, SELL, &truningPointIndex, &turningPoint, &minPointIndex, &minPoint);
+					double beiLiSellEndTime = getCurrentTimeMs();
+					beiLiSellDuration = beiLiSellEndTime - beiLiSellStartTime;
 
 					if (config.isEnableMaxLevelSell == TRUE
 						&& pIndicators->entrySignal != 0
@@ -1394,6 +1453,38 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_Daily(StrategyParams* pParams, Ind
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
 		}
 
+	}
+
+	// Calculate total duration to determine if we should log granular details
+	double macdDailyTotalEndTime = getCurrentTimeMs();
+	double macdDailyTotalDuration = macdDailyTotalEndTime - macdDailyTotalStartTime;
+	
+	// Debug: Always log when total is significant (helps verify code path is reached)
+	// Removed debug log to avoid log corruption - the breakdown log below provides the same information
+	
+	// Always log granular details when total is slow (>1000ms), or log individual slow operations (>10ms)
+	BOOL shouldLogGranular = (macdDailyTotalDuration > 1000.0);
+	
+	// Log individual timings when total is slow or individual is slow (only heavy operations)
+	if (shouldLogGranular || macdAllDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend_MACD_Daily: iMACDAll (5 calls) took %.3f ms (instanceId=%d, barTime=%s)", 
+			macdAllDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	if (shouldLogGranular || beiLiBuyDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend_MACD_Daily: iMACDTrendBeiLiEasy(BUY) took %.3f ms (instanceId=%d, barTime=%s)", 
+			beiLiBuyDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	if (shouldLogGranular || beiLiSellDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend_MACD_Daily: iMACDTrendBeiLiEasy(SELL) took %.3f ms (instanceId=%d, barTime=%s)", 
+			beiLiSellDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	
+	// Log summary breakdown when total is slow
+	if (macdDailyTotalDuration > 1000.0) {
+		// Use actual measured values - if they're still 0.0, it means those functions weren't called in this execution path
+		logInfo("[TIMING] workoutExecutionTrend_MACD_Daily: TOTAL took %.3f ms (instanceId=%d, barTime=%s) - breakdown: macdAll=%.1f, beiLiBuy=%.1f, beiLiSell=%.1f", 
+			macdDailyTotalDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString,
+			macdAllDuration, beiLiBuyDuration, beiLiSellDuration);
 	}
 
 	return SUCCESS;
