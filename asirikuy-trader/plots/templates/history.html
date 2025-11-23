@@ -1,0 +1,83 @@
+<%!
+    import os
+%>
+<%inherit file="base.html" />
+
+<%block name="content">
+    <div class='graphblock'>
+	<table id='history_analysis'>
+            <thead>
+                <tr>
+			        <th>System</th>
+                    <th>Absolute P/L</th>
+                    <th>%P/L</th>
+                    <th>Max DD</th>
+                    <th>WC</th>
+                </tr>
+            </thead>
+             % for system in historyAnalysis:
+                <%
+                    pl_class = 'green' if system['instancePL'] >= 0 else 'red'
+                    plp_class = 'green' if system['instancePL'] >= 0 else 'red'
+                    if os.path.exists(os.path.join(os.getcwd(), 'plots', '{}_WorstCaseTrack.png'.format(system['strategy_id']))):
+                        wc_link = '<a title=\'WC strategy {}\' rel=\'lightbox\' href=\'/{}_WorstCaseTrack.png\'><img class=\'thumb\' src=\'/{}_WorstCaseTrack.png\' /></a>'.format(system['strategyName'],system['strategy_id'],system['strategy_id'])
+                    else:
+                        wc_link = 'N/A'
+                %>
+                <tr>
+                    <td>${system['strategyName']}</td>
+                    <td class="${pl_class}">${'{:.2f}'.format(system['instancePL'])}</td>
+                    <td class="${plp_class}">${'{:.2f}%'.format(system['instancePL_percentage'])}</td>
+                    <td>${'{:.2f}%'.format(system['maxDrawdown'])}</td>
+                    <td>${wc_link}</td>
+                </tr>
+            % endfor
+		</table>
+	</div><br/>
+    <div class='graphblock'>
+        <table id='tradesh'>
+            <thead>
+                <tr>
+			        <th>ID</th>
+                    <th>Strategy</th>
+                    <th>Type</th>
+                    <th>Open Time</th>
+                    <th>Close Time</th>
+                    <th>Lots</th>
+                    <th>Symbol</th>
+                    <th>Open Price</th>
+                    <th>ClosePrice</th>
+                    <th>SL</th>
+                    <th>TP</th>
+                    <th>Profit</th>
+                </tr>
+            </thead>
+            % for trade in historyTrades:
+                <%
+                    profit_class = 'green' if trade['profit'] >= 0 else 'red'
+                %>
+                <tr>
+                    <td>${int(float(trade['id']))}</td>
+                    <td>${trade['strategy_name']}</td>
+                    <td>${trade['direction']}</td>
+                    <td>${trade['openTime']}</td>
+                    <td>${trade['closeTime']}</td>
+                    <td>${'{:.5f}'.format(trade['lots'])}</td>
+                    <td>${trade['symbol']}</td>
+                    % if 'JPY' in trade['symbol']:
+                        <td class='right'>${'{:.3f}'.format(trade['openPrice'])}</td>
+                        <td class='right'>${'{:.3f}'.format(trade['closePrice'])}</td>
+                        <td class='right'>${'{:.3f}'.format(trade['sl'])}</td>
+                        <td class='right'>${'{:.3f}'.format(trade['tp'])}</td>
+                    % else:
+                        <td class='right'>${'{:.5f}'.format(trade['openPrice'])}</td>
+                        <td class='right'>${'{:.5f}'.format(trade['closePrice'])}</td>
+                        <td class='right'>${'{:.5f}'.format(trade['sl'])}</td>
+                        <td class='right'>${'{:.5f}'.format(trade['tp'])}</td>
+                    % endif
+                    <td class='${profit_class} right'>${'{:.2f} ({:.2%})'.format(trade['profit'],trade['profitPL'])}</td>
+                </tr>
+            % endfor
+        </table>
+    </div><br/>
+</%block>

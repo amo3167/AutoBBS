@@ -1,0 +1,23 @@
+# lldb commands for debugging GBPJPY optimization
+# Load this with: lldb --source lldb_commands.txt -- python3 asirikuy_strategy_tester.py ...
+
+# Set breakpoints at critical locations
+breakpoint set --name runOptimizationMultipleSymbols
+breakpoint set --file optimizer.c --line 335
+breakpoint set --file optimizer.c --line 400  
+breakpoint set --file optimizer.c --line 440
+breakpoint set --file optimizer.c --line 750
+
+# Configure breakpoint to show backtrace
+breakpoint command add 1 -o "frame thread backtrace"
+
+# Run the program
+run
+
+# When it stops, show context
+frame info
+thread backtrace
+
+# Continue (will stop at next breakpoint or hang)
+continue
+
