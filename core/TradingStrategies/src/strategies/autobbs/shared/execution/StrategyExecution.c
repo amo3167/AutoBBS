@@ -24,6 +24,11 @@
 #include "InstanceStates.h"
 #include "AsirikuyLogger.h"
 #include "strategies/autobbs/shared/execution/StrategyExecution.h"
+#if defined _WIN32 || defined _WIN64
+#include <windows.h>
+#elif defined __APPLE__ || defined __linux__
+#include <sys/time.h>
+#endif
 
 // Commodity symbol prefixes that use start hour = 1
 #define COMMODITY_SYMBOL_XAU "XAU"
@@ -33,6 +38,23 @@
 #define COMMODITY_SYMBOL_XPD "XPD"
 #define COMMODITY_START_HOUR 1
 #define DEFAULT_START_HOUR 0
+
+// Timing helper function for performance measurement
+static double getCurrentTimeMs(void)
+{
+#if defined _WIN32 || defined _WIN64
+	LARGE_INTEGER frequency, counter;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&counter);
+	return (double)counter.QuadPart * 1000.0 / (double)frequency.QuadPart;
+#elif defined __APPLE__ || defined __linux__
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double)tv.tv_sec * 1000.0 + (double)tv.tv_usec / 1000.0;
+#else
+	return 0.0;
+#endif
+}
 
 /**
  * Main strategy execution dispatcher.
@@ -100,13 +122,28 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 	safe_gmtime(&timeInfo, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 	safe_timeString(timeString, pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index]);
 
-	// Calculate strategy risk metrics
+	// Track total time for workoutExecutionTrend to determine if we should log granular details
+	double workoutTotalStartTime = getCurrentTimeMs();
+	
+	// Calculate strategy risk metrics with timing
+	double riskStartTime = getCurrentTimeMs();
 	pIndicators->strategyMarketVolRisk = caculateStrategyVolRiskEasy(pBase_Indicators->dailyATR);
+	double riskVolEndTime = getCurrentTimeMs();
+	double riskVolDuration = riskVolEndTime - riskStartTime;
+	
+	double riskStartTime2 = getCurrentTimeMs();
 	pIndicators->strategyRisk = caculateStrategyRiskEasy(FALSE);
 	pIndicators->strategyRiskWithoutLockedProfit = caculateStrategyRiskEasy(TRUE);
+	double riskEndTime = getCurrentTimeMs();
+	double riskDuration = riskEndTime - riskStartTime2;
+	
+	double pnlStartTime = getCurrentTimeMs();
 	pIndicators->riskPNL = caculateStrategyPNLEasy(FALSE);
 	pIndicators->riskPNLWithoutLockedProfit = caculateStrategyPNLEasy(TRUE);
+	double pnlEndTime = getCurrentTimeMs();
+	double pnlDuration = pnlEndTime - pnlStartTime;
 
+	double strategyStartTime = getCurrentTimeMs();
 	switch ((int)parameter(AUTOBBS_TREND_MODE)) {
 	case 0:
 		workoutExecutionTrend_4HBBS_Swing(pParams, pIndicators, pBase_Indicators);
@@ -187,7 +224,39 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 		workoutExecutionTrend_ASI(pParams, pIndicators, pBase_Indicators);
 		break;
 	}
-
+	double strategyEndTime = getCurrentTimeMs();
+	double strategyDuration = strategyEndTime - strategyStartTime;
+	
+	// Calculate total duration to determine if we should log granular details
+	double workoutTotalEndTime = getCurrentTimeMs();
+	double workoutTotalDuration = workoutTotalEndTime - workoutTotalStartTime;
+	
+	// Always log granular details when total is slow (>1000ms), or log individual slow operations (>10ms)
+	BOOL shouldLogGranular = (workoutTotalDuration > 1000.0);
+	
+	if (shouldLogGranular || riskVolDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend: caculateStrategyVolRiskEasy took %.3f ms (instanceId=%d, barTime=%s)", 
+			riskVolDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	if (shouldLogGranular || riskDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend: caculateStrategyRiskEasy (2 calls) took %.3f ms (instanceId=%d, barTime=%s)", 
+			riskDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	if (shouldLogGranular || pnlDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend: caculateStrategyPNLEasy (2 calls) took %.3f ms (instanceId=%d, barTime=%s)", 
+			pnlDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	if (shouldLogGranular || strategyDuration > 10.0) {
+		logInfo("[TIMING] workoutExecutionTrend: Strategy function (mode=%d) took %.3f ms (instanceId=%d, barTime=%s)", 
+			(int)parameter(AUTOBBS_TREND_MODE), strategyDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
+	
+	// Log summary breakdown when total is slow
+	if (workoutTotalDuration > 1000.0) {
+		logInfo("[TIMING] workoutExecutionTrend: TOTAL took %.3f ms (instanceId=%d, barTime=%s) - breakdown: riskVol=%.1f, risk=%.1f, pnl=%.1f, strategy=%.1f", 
+			workoutTotalDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString,
+			riskVolDuration, riskDuration, pnlDuration, strategyDuration);
+	}
 
 	// Apply account risk limit filter (only in live trading, not backtesting)
 	// If account risk exceeds maximum allowed, prevent new entries

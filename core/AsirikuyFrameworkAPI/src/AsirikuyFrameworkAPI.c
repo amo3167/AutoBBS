@@ -120,43 +120,12 @@ static int initFramework(char* pAsirikuyConfig, char* pAccountName)
 
   if(initialized)
   {
-    // Framework already initialized, but we should still add the Framework log file
-    // to the logger (logger now supports multiple files)
-    logInfo("initFramework: Framework already initialized, adding log file\n");
-    // Parse config to get log folder
-    AsirikuyConfig tempConfig;
-    strcpy(tempConfig.configFileName, pAsirikuyConfig);
-    tempConfig.ratesBufferExtension = DEFAULT_RATES_BUF_EXT;
-    result = parseConfigFile(&tempConfig);
-    logInfo("initFramework: Framework already initialized. Config parse result: %d\n", result);
-    if(result == SUCCESS)
-    {
-      logInfo("initFramework: Config parsed. Log folder: '%s', length: %zu\n", 
-               tempConfig.loggingConfig.logFolder, strlen(tempConfig.loggingConfig.logFolder));
-      if(strlen(tempConfig.loggingConfig.logFolder) > 0)
-      {
-        char logFilePath[MAX_FILE_PATH_CHARS] = "";
-        strcpy(logFilePath, tempConfig.loggingConfig.logFolder);
-        strcat(logFilePath, "/");
-        if(pAccountName != NULL && strlen(pAccountName) > 0)
-        {
-          strcat(logFilePath, pAccountName);
-        }
-        strcat(logFilePath, LOG_FILENAME);
-        logInfo("initFramework: Adding Framework log file: %s\n", logFilePath);
-        // Add Framework log file to logger (logger supports multiple files now)
-        int loggerResult = asirikuyLoggerInit(logFilePath, tempConfig.loggingConfig.severityLevel);
-        logNotice("AsirikuyFramework logger added log file: %s (framework already initialized, logger result: %d)\n", logFilePath, loggerResult);
-      }
-      else
-      {
-        logWarning("initFramework: Log folder is empty in config\n");
-      }
-    }
-    else
-    {
-      logError("initFramework: Failed to parse config file: %s, result: %d\n", pAsirikuyConfig, result);
-    }
+    // Framework already initialized - don't add new log files for each test instance
+    // The logger was already initialized during the first initFramework call
+    // Adding multiple log files for different test instances would cause confusion
+    // and waste resources. The duplicate detection in asirikuyLoggerInit will prevent
+    // opening the same file twice, but we shouldn't even try to add new files here.
+    logInfo("initFramework: Framework already initialized, skipping log file addition (logger already configured)\n");
     initializing = FALSE;
     return (int)SUCCESS;
   }

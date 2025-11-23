@@ -9,6 +9,7 @@
 
 #include <stdlib.h>
 #include "AsirikuyLogger.h"
+#include "AsirikuyDefines.h"
 #include "CriticalSection.h"
 #include <stdio.h>
 #include <string.h>
@@ -23,6 +24,7 @@
 
 // Logger state
 static FILE* gLogFiles[MAX_LOG_FILES] = {NULL, NULL, NULL, NULL};
+static char gLogFilePaths[MAX_LOG_FILES][MAX_FILE_PATH_CHARS] = {{0}}; // Track file paths to prevent duplicates
 static int gSeverityLevel = LOG_INFO; // Default to Info level
 static BOOL gInitialized = FALSE;
 
@@ -127,16 +129,31 @@ int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel)
   {
     fprintf(stderr, "[DEBUG] asirikuyLoggerInit: Opening log file: %s\n", pLogFilePath);
     fflush(stderr);
-    // Check if this log file is already open
+    
+    // Check if this log file is already open (prevent duplicates)
     int i;
+    int existingSlot = -1;
     for(i = 0; i < MAX_LOG_FILES; i++)
     {
-      if(gLogFiles[i] != NULL)
+      if(gLogFiles[i] != NULL && strlen(gLogFilePaths[i]) > 0)
       {
-        // Check if this is the same file (simple string comparison)
-        // Note: This is a simple check - in practice, we'd need to track file paths
-        // For now, we'll allow multiple files to be opened
+        // Check if this is the same file path (case-sensitive string comparison)
+        if(strcmp(gLogFilePaths[i], pLogFilePath) == 0)
+        {
+          existingSlot = i;
+          fprintf(stderr, "[DEBUG] asirikuyLoggerInit: File already open in slot %d, reusing: %s\n", i, pLogFilePath);
+          fflush(stderr);
+          break;
+        }
       }
+    }
+    
+    // If file is already open, just update severity level and return
+    if(existingSlot >= 0)
+    {
+      // File already open, no need to open again - just update severity if needed
+      leaveCriticalSection();
+      return 0;
     }
     
     // Find an empty slot for the new log file
@@ -156,8 +173,11 @@ int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel)
       fprintf(stderr, "[WARNING] Maximum log files (%d) reached. Reusing first slot.\n", MAX_LOG_FILES);
       if(gLogFiles[0] != NULL && gLogFiles[0] != stderr)
       {
+        fflush(gLogFiles[0]); // Flush before closing
         fclose(gLogFiles[0]);
       }
+      gLogFiles[0] = NULL;
+      gLogFilePaths[0][0] = '\0'; // Clear the path
       slot = 0;
     }
     
@@ -174,6 +194,10 @@ int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel)
     
     if(gLogFiles[slot] != NULL)
     {
+      // Store the file path to prevent duplicate opens
+      strncpy(gLogFilePaths[slot], pLogFilePath, MAX_FILE_PATH_CHARS - 1);
+      gLogFilePaths[slot][MAX_FILE_PATH_CHARS - 1] = '\0';
+      
       fprintf(stderr, "[DEBUG] asirikuyLoggerInit: Successfully opened log file in slot %d: %s\n", slot, pLogFilePath);
       fflush(stderr);
       // Write header (bypass severity check for initialization)
@@ -191,6 +215,7 @@ int asirikuyLoggerInit(const char* pLogFilePath, int severityLevel)
       fprintf(stderr, "[WARNING] Error details: errno=%d, path='%s'\n", errno, pLogFilePath);
       fflush(stderr);
       gLogFiles[slot] = NULL;
+      gLogFilePaths[slot][0] = '\0'; // Clear the path
     }
   }
 
@@ -248,13 +273,14 @@ void asirikuyLogMessage(int severity, const char* format, ...)
   }
   
   // Write to all open log files (protected by critical section)
+  // Use OS default buffering - no explicit flushes, let OS handle it
   int i;
   for(i = 0; i < MAX_LOG_FILES; i++)
   {
     if(gLogFiles[i] != NULL && gLogFiles[i] != stderr)
     {
       fprintf(gLogFiles[i], "%s", logLine);
-      fflush(gLogFiles[i]); // Ensure immediate write
+      // No explicit flush - rely on OS buffering for best performance
     }
   }
   

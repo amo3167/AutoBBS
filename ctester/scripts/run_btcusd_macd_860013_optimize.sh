@@ -65,6 +65,37 @@ done
 # Change to script directory
 cd "$SCRIPT_DIR/.."
 
+# Extract STRATEGY_INSTANCE_ID from set file (single source of truth)
+# First, get the set file path from config
+SET_FILE=$(grep "^set = " "$CONFIG_FILE" | sed 's/^set = //' | sed 's/^\.\///')
+if [ -z "$SET_FILE" ]; then
+    # Try setFile instead of set
+    SET_FILE=$(grep "^setFile = " "$CONFIG_FILE" | sed 's/^setFile = //' | sed 's/^\.\///')
+fi
+
+# If set file path is relative, make it absolute
+if [ -n "$SET_FILE" ] && [[ ! "$SET_FILE" = /* ]]; then
+    SET_FILE="$(pwd)/$SET_FILE"
+fi
+
+# Extract STRATEGY_INSTANCE_ID from set file
+if [ -f "$SET_FILE" ]; then
+    EXTRACTED_INSTANCE_ID=$(grep "^STRATEGY_INSTANCE_ID=" "$SET_FILE" | sed 's/^STRATEGY_INSTANCE_ID=//' | tr -d '\r\n' | head -1)
+    if [ -n "$EXTRACTED_INSTANCE_ID" ]; then
+        STRATEGY_ID="$EXTRACTED_INSTANCE_ID"
+        echo "✓ Extracted STRATEGY_INSTANCE_ID=${STRATEGY_ID} from set file: $SET_FILE"
+    else
+        echo "⚠️  WARNING: Could not find STRATEGY_INSTANCE_ID in set file: $SET_FILE"
+        echo "  Using hardcoded STRATEGY_ID=${STRATEGY_ID} as fallback"
+    fi
+else
+    echo "⚠️  WARNING: Set file not found: $SET_FILE"
+    echo "  Using hardcoded STRATEGY_ID=${STRATEGY_ID} as fallback"
+fi
+
+# Update RESULTS_FOLDER with the extracted/fallback ID
+RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
+
 echo "=== Running ${SYMBOL} MACD Strategy ${STRATEGY_ID} Optimization ==="
 echo ""
 echo "Optimization Parameters:"

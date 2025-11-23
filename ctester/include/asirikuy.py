@@ -63,6 +63,12 @@ def loadLibrary(library):
         for path in possible_paths:
             abs_path = os.path.abspath(path)
             if os.path.exists(abs_path):
+                # Log which library path is being loaded (for verification)
+                import stat
+                import time
+                mtime = os.path.getmtime(abs_path)
+                mtime_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))
+                print(f"[DEBUG] Loading library from: {abs_path} (modified: {mtime_str})")
                 return cdll.LoadLibrary(abs_path)
         # Fallback to system search
         try:

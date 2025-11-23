@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to run GBPAUD MACD 860008 Strategy (Hourly)
-# Cleans ctester folder and saves results to tmp folder with renamed files
+# Script to run XAUUSD MACD 860007 Strategy Optimization
+# Cleans ctester folder and saves optimization results to tmp folder
 #
-# Usage: ./run_gbpaud_macd_860008.sh [OPTIONS]
+# Usage: ./run_xauusd_macd_860007_optimize.sh [OPTIONS]
 # Options:
 #   --fromdate YYYY-MM-DD    Start date (default: from config file)
 #   --todate YYYY-MM-DD      End date (default: from config file)
@@ -12,11 +12,11 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Peso_MACD_GBPAUD-1H_860008.config"
-SYMBOL="GBPAUD"
-STRATEGY_ID="860008"
+CONFIG_FILE="config/Peso_MACD_XAUUSD-1H_860007_optimize.config"
+SYMBOL="XAUUSD"
+STRATEGY_ID="860007"
 OUTPUT_DIR="tmp"
-RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
+RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_CONFIG=""
 
@@ -44,14 +44,14 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --fromdate YYYY-MM-DD    Start date (e.g., 2020-01-02)"
-      echo "  --todate YYYY-MM-DD      End date (e.g., 2021-01-01)"
-      echo "  --logseverity LEVEL      Log level 0-7 (0=Emergency, 4=Warning, 7=Debug)"
-      echo "  -h, --help               Show this help message"
+      echo "  --fromdate YYYY-MM-DD    Start date (e.g., 2020-01-01)"
+      echo "  --todate YYYY-MM-DD       End date (e.g., 2023-01-01)"
+      echo "  --logseverity LEVEL       Log level 0-7 (0=Emergency, 4=Warning, 7=Debug)"
+      echo "  -h, --help                Show this help message"
       echo ""
       echo "Examples:"
-      echo "  $0 --fromdate 2020-01-02 --todate 2021-01-01 --logseverity 4"
-      echo "  $0 --fromdate 2019-01-01 --todate 2020-12-31"
+      echo "  $0 --fromdate 2020-01-01 --todate 2023-01-01 --logseverity 4"
+      echo "  $0 --fromdate 2019-01-01 --todate 2022-12-31"
       exit 0
       ;;
     *)
@@ -64,6 +64,17 @@ done
 
 # Change to script directory
 cd "$SCRIPT_DIR/.."
+
+# Check if optimize config exists, fallback to regular config if not
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "⚠️  WARNING: Optimize config file not found: $CONFIG_FILE"
+    echo "  Falling back to regular config: config/Peso_MACD_XAUUSD-1H_860007.config"
+    CONFIG_FILE="config/Peso_MACD_XAUUSD-1H_860007.config"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "❌ ERROR: Config file not found: $CONFIG_FILE"
+        exit 1
+    fi
+fi
 
 # Extract STRATEGY_INSTANCE_ID from set file (single source of truth)
 # First, get the set file path from config
@@ -94,14 +105,17 @@ else
 fi
 
 # Update RESULTS_FOLDER with the extracted/fallback ID
-# Check if this is an optimization script (has "_optimize" in script name)
-if [[ "$(basename "$0")" == *"_optimize"* ]]; then
-    RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
-else
-    RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
-fi
+RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 
-echo "=== Running ${SYMBOL} MACD Strategy ${STRATEGY_ID} (Hourly) ==="
+echo "=== Running ${SYMBOL} MACD Strategy ${STRATEGY_ID} Optimization ==="
+echo ""
+echo "Optimization Parameters:"
+echo "  - AUTOBBS_RISK_CAP: 1.0 to 10.0 (step 1.0)"
+echo "  - AUTOBBS_MAX_ACCOUNT_RISK: 10.0 to 30.0 (step 5.0)"
+echo "  - AUTOBBS_MAX_STRATEGY_RISK: 1.0 to 10.0 (step 1.0)"
+echo "  - Total combinations: 500 (10 × 5 × 10)"
+echo "  - Optimization method: Genetic Algorithm"
+echo "  - Optimization goal: CAGR/MaxDD (risk-adjusted return)"
 echo ""
 
 # Step 1: Clean and create results folder (needed for temp config)
@@ -167,18 +181,72 @@ fi
 
 # Step 3: Clean ctester folder (remove old output files)
 echo "Step 3: Cleaning ctester folder..."
-rm -f results.* test_results.* allStatistics.csv
+rm -f results.* test_results.* allStatistics.csv optimization_results.txt optimization_results.csv
 echo "✓ Cleaned old output files"
 echo ""
 
-# Step 4: Run the backtest
-echo "Step 4: Running backtest..."
-python3 asirikuy_strategy_tester.py -c "$CONFIG_FILE" -ot results 2>&1 | tee "${RESULTS_FOLDER}/backtest_${STRATEGY_ID}.log"
-
-# Step 5: Rename and move files to results folder
+# Step 4: Run the optimization
+echo "Step 4: Running optimization..."
+echo "  This may take a while depending on your system..."
+echo "  Progress will be logged to: ${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
 echo ""
-echo "Step 5: Renaming and moving results to ${RESULTS_FOLDER}/..."
 
+# Run Python process - this should block until completion
+# Capture exit code using PIPESTATUS to get the Python process exit code, not tee's
+set +e  # Temporarily disable exit on error to capture exit code
+python3 asirikuy_strategy_tester.py -c "$CONFIG_FILE" -ot results -oo optimization_results 2>&1 | tee "${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
+PYTHON_EXIT_CODE=${PIPESTATUS[0]}
+# If PIPESTATUS didn't work (shouldn't happen in bash), fall back to $?
+if [ -z "$PYTHON_EXIT_CODE" ]; then
+    PYTHON_EXIT_CODE=$?
+fi
+set -e  # Re-enable exit on error
+
+# Verify the Python process actually exited
+# Check if any Python processes matching our script are still running
+if pgrep -f "asirikuy_strategy_tester.py.*${CONFIG_FILE}" > /dev/null 2>&1; then
+    echo "⚠️  WARNING: Found Python processes still running matching our optimization!"
+    echo "  Waiting up to 60 seconds for processes to complete..."
+    
+    # Wait up to 60 seconds for the process to finish
+    for i in {1..60}; do
+        if ! pgrep -f "asirikuy_strategy_tester.py.*${CONFIG_FILE}" > /dev/null 2>&1; then
+            echo "  ✓ All Python processes completed after additional wait"
+            break
+        fi
+        sleep 1
+        if [ $i -eq 60 ]; then
+            echo "  ⚠️  Python processes still running after 60 seconds"
+            echo "  You may need to check processes manually: pgrep -f 'asirikuy_strategy_tester.py.*${CONFIG_FILE}'"
+        fi
+    done
+fi
+
+# Check exit code
+if [ $PYTHON_EXIT_CODE -ne 0 ]; then
+    echo "⚠️  WARNING: Python process exited with code $PYTHON_EXIT_CODE"
+    echo "  The optimization may not have completed successfully."
+    echo "  Check the log file for details: ${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
+else
+    echo "  ✓ Python process completed successfully (exit code: $PYTHON_EXIT_CODE)"
+fi
+
+# Give a moment for any final file writes to complete
+sleep 1
+
+# Step 5: Move optimization results
+echo ""
+echo "Step 5: Moving optimization results to ${RESULTS_FOLDER}/..."
+
+if [ -f "optimization_results.csv" ]; then
+    mv "optimization_results.csv" "${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv"
+    echo "✓ Moved optimization_results.csv -> ${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv"
+elif [ -f "optimization_results.txt" ]; then
+    mv "optimization_results.txt" "${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.txt"
+    echo "✓ Moved optimization_results.txt -> ${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.txt"
+fi
+
+# Step 6: Rename and move other result files (if any)
 if [ -f "results.txt" ]; then
     mv "results.txt" "${RESULTS_FOLDER}/results_${STRATEGY_ID}.txt"
     echo "✓ Moved results.txt -> ${RESULTS_FOLDER}/results_${STRATEGY_ID}.txt"
@@ -209,7 +277,7 @@ if [ -f "results.xml" ]; then
     echo "✓ Moved results.xml -> ${RESULTS_FOLDER}/results_${STRATEGY_ID}.xml"
 fi
 
-# Step 6: Keep temporary config file for reference (if created)
+# Step 7: Keep temporary config file for reference (if created)
 if [ -n "$TEMP_CONFIG" ] && [ -f "$TEMP_CONFIG" ]; then
     # Rename temp config to a more descriptive name
     FINAL_CONFIG_NAME="${RESULTS_FOLDER}/config_${STRATEGY_ID}.config"
@@ -218,7 +286,38 @@ if [ -n "$TEMP_CONFIG" ] && [ -f "$TEMP_CONFIG" ]; then
 fi
 
 echo ""
-echo "=== Backtest Complete ==="
-echo "Results saved to: ${RESULTS_FOLDER}/"
+# Verify optimization actually completed successfully
+OPTIMIZATION_SUCCESS=true
+if [ $PYTHON_EXIT_CODE -ne 0 ]; then
+    OPTIMIZATION_SUCCESS=false
+    echo "=== Optimization Failed ==="
+    echo "Python process exited with error code: $PYTHON_EXIT_CODE"
+elif [ -f "${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv" ]; then
+    # Check if CSV has more than just the header
+    CSV_LINES=$(wc -l < "${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv" 2>/dev/null || echo "0")
+    if [ "$CSV_LINES" -le 1 ]; then
+        OPTIMIZATION_SUCCESS=false
+        echo "=== Optimization Incomplete ==="
+        echo "CSV file exists but contains no results (only header)"
+        echo "The optimization may still be running or may have failed silently"
+    fi
+else
+    OPTIMIZATION_SUCCESS=false
+    echo "=== Optimization Incomplete ==="
+    echo "No results CSV file found"
+fi
+
+if [ "$OPTIMIZATION_SUCCESS" = true ]; then
+    echo "=== Optimization Complete ==="
+    echo "Results saved to: ${RESULTS_FOLDER}/"
+    echo ""
+    echo "To view top results, run:"
+    echo "  sort -t, -k11 -rn ${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv | head -20"
+else
+    echo "Results saved to: ${RESULTS_FOLDER}/"
+    echo "Please check the log file for details: ${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
+fi
+
+echo ""
 ls -lh "${RESULTS_FOLDER}/" 2>/dev/null || true
 

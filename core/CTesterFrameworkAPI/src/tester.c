@@ -17,8 +17,15 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
+#include <dirent.h>
+#include <string.h>
 #ifdef _OPENMP
 #include <omp.h>
+#endif
+#if defined _WIN32 || defined _WIN64
+#include <windows.h>
+#elif defined __APPLE__ || defined __linux__
+#include <sys/time.h>
 #endif
 
 // Forward declaration for CTester Symbol Analyzer API functions
@@ -29,6 +36,23 @@ int C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char* pBaseCon
 #define MATHEMATICAL_EXPECTANCY_DIVISION 5
 
 static void (*globalSignalUpdate)(TradeSignal signal);
+
+// Timing helper functions for performance measurement
+static double getCurrentTimeMs(void)
+{
+#if defined _WIN32 || defined _WIN64
+	LARGE_INTEGER frequency, counter;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&counter);
+	return (double)counter.QuadPart * 1000.0 / (double)frequency.QuadPart;
+#elif defined __APPLE__ || defined __linux__
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double)tv.tv_sec * 1000.0 + (double)tv.tv_usec / 1000.0;
+#else
+	return 0.0;
+#endif
+}
 
 static void sleepMilliseconds(int milliseconds)
 {
@@ -1156,6 +1180,102 @@ TestResult __stdcall runPortfolioTest (
 
 	logInfo("About to call initInstanceC for system %d, instanceId=%d\n", j, (int)pInSettings[j][STRATEGY_INSTANCE_ID]);
 
+	// Construct instance-specific config path: tmp/{SYMBOL}_{INSTANCE_ID}/AsirikuyConfig.xml or tmp/{SYMBOL}_{INSTANCE_ID}_optimize/AsirikuyConfig.xml
+	// Check for optimization mode (is_optimization flag) to determine folder name
+	char instanceConfigPath[MAX_FILE_PATH_CHARS] = "";
+	int instanceId = (int)pInSettings[j][STRATEGY_INSTANCE_ID];
+	char* configPathToUse = "./config/AsirikuyConfig.xml";  // Default fallback
+	
+	// Try instance-specific config path first (for both optimization and backtest)
+	if(instanceId > 0) {
+		if(is_optimization) {
+			sprintf(instanceConfigPath, "./tmp/%s_%d_optimize/AsirikuyConfig.xml", pInTradeSymbol[j], instanceId);
+		} else {
+			sprintf(instanceConfigPath, "./tmp/%s_%d/AsirikuyConfig.xml", pInTradeSymbol[j], instanceId);
+		}
+		fprintf(stderr, "[INIT] Checking for instance-specific config: %s (instanceId=%d, symbol=%s, is_optimization=%d)\n", 
+		        instanceConfigPath, instanceId, pInTradeSymbol[j], is_optimization);
+		fflush(stderr);
+		logInfo("Trying instance-specific config: %s\n", instanceConfigPath);
+		
+		// Use instance-specific config if it exists, otherwise try to find by pattern
+		FILE* configTest = fopen(instanceConfigPath, "r");
+		if(configTest != NULL) {
+			fclose(configTest);
+			configPathToUse = instanceConfigPath;
+			fprintf(stderr, "[INIT] ✓ Found and using instance-specific config: %s\n", configPathToUse);
+			fflush(stderr);
+			logInfo("Using instance-specific config: %s\n", configPathToUse);
+		} else {
+			// Instance ID from settings might be wrong (test/iteration ID), try to find by pattern
+			fprintf(stderr, "[INIT] ✗ Instance-specific config not found at: %s, searching by pattern...\n", instanceConfigPath);
+			fflush(stderr);
+			
+			// Instance ID from settings might be wrong (test/iteration ID), try to find by pattern
+			// Try to find instance-specific config by scanning tmp directory
+			DIR* dir = opendir("./tmp");
+			if(dir != NULL) {
+				struct dirent* entry;
+				char searchPattern[256];
+				char foundConfigPath[MAX_FILE_PATH_CHARS] = "";
+				int found = 0;
+				
+				// Build search pattern: {SYMBOL}_*_optimize (for optimization) or {SYMBOL}_* (for backtest)
+				sprintf(searchPattern, "%s_", pInTradeSymbol[j]);
+				
+				while((entry = readdir(dir)) != NULL) {
+					// Check if directory name starts with symbol pattern
+					if(entry->d_type == DT_DIR && strncmp(entry->d_name, searchPattern, strlen(searchPattern)) == 0) {
+						// For optimization, check if it ends with "_optimize"
+						if(is_optimization) {
+							if(strstr(entry->d_name, "_optimize") != NULL) {
+								sprintf(foundConfigPath, "./tmp/%s/AsirikuyConfig.xml", entry->d_name);
+							} else {
+								continue;
+							}
+						} else {
+							// For backtest, just check if it starts with symbol and has an underscore
+							if(strstr(entry->d_name, "_") != NULL && strstr(entry->d_name, "_optimize") == NULL) {
+								sprintf(foundConfigPath, "./tmp/%s/AsirikuyConfig.xml", entry->d_name);
+							} else {
+								continue;
+							}
+						}
+						
+						// Check if config file exists in this directory
+						FILE* foundConfig = fopen(foundConfigPath, "r");
+						if(foundConfig != NULL) {
+							fclose(foundConfig);
+							// Copy to a static buffer that persists
+							static char staticConfigPath[MAX_FILE_PATH_CHARS];
+							strcpy(staticConfigPath, foundConfigPath);
+							configPathToUse = staticConfigPath;
+							found = 1;
+							fprintf(stderr, "[INIT] ✓ Found instance-specific config by pattern: %s\n", configPathToUse);
+							fflush(stderr);
+							logInfo("Found instance-specific config by pattern: %s\n", configPathToUse);
+							break;
+						}
+					}
+				}
+				closedir(dir);
+				
+				if(!found) {
+					fprintf(stderr, "[INIT] ✗ No instance-specific config found by pattern, using default: %s\n", configPathToUse);
+					fflush(stderr);
+					logInfo("Instance-specific config not found, using default: %s\n", configPathToUse);
+				}
+			} else {
+				fprintf(stderr, "[INIT] ✗ Cannot open ./tmp directory, using default: %s\n", configPathToUse);
+				fflush(stderr);
+				logInfo("Cannot open tmp directory, using default: %s\n", configPathToUse);
+			}
+		}
+	} else {
+		fprintf(stderr, "[INIT] Instance ID is 0 or invalid, using default config: %s\n", configPathToUse);
+		fflush(stderr);
+	}
+
 	result = WAIT_FOR_INIT;
 	tries = 0;
 	// CRITICAL: Increase retry count and delay for OpenMP parallel execution
@@ -1166,10 +1286,10 @@ TestResult __stdcall runPortfolioTest (
 	int exponentialDelay = retryDelay;  // Start with base delay, increase exponentially
 
 	while(result == WAIT_FOR_INIT && tries < maxTries){
-		fprintf(stderr, "[INIT] Calling initInstanceC: attempt %d/%d, instanceId=%d, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], exponentialDelay);
+		fprintf(stderr, "[INIT] Calling initInstanceC: attempt %d/%d, instanceId=%d, config=%s, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], configPathToUse, exponentialDelay);
 		fflush(stderr);
-		logInfo("Calling initInstanceC: attempt %d/%d, instanceId=%d, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], exponentialDelay);
-		result = initInstanceC ((int)pInSettings[j][STRATEGY_INSTANCE_ID], 1, "./config/AsirikuyConfig.xml", "");
+		logInfo("Calling initInstanceC: attempt %d/%d, instanceId=%d, config=%s, waiting %dms\n", tries+1, maxTries, (int)pInSettings[j][STRATEGY_INSTANCE_ID], configPathToUse, exponentialDelay);
+		result = initInstanceC ((int)pInSettings[j][STRATEGY_INSTANCE_ID], 1, configPathToUse, "");
 		fprintf(stderr, "[INIT] initInstanceC returned: %d\n", result);
 		fflush(stderr);
 		logInfo("initInstanceC returned: %d\n", result);
@@ -1342,6 +1462,20 @@ TestResult __stdcall runPortfolioTest (
 			} else {
 			rates[s][n] = (CRates*)malloc(sizeof(CRates) * 1);
 			}
+		}
+	}
+	
+	// Skip invalid times before starting main loop
+	// This prevents getAdjustedBrokerTime from receiving invalid input times
+	for(s = 0; s<numSystems; s++){
+		// Skip bars with invalid times (negative or -1) at the start
+		while(i[s] < numCandles - 1 && (pRates[s][0][i[s]].time < 0 || pRates[s][0][i[s]].time == -1)){
+			logDebug("Skipping invalid time bar %d (time=%zd) for system %d before main loop", i[s], pRates[s][0][i[s]].time, s);
+			i[s]++;
+		}
+		// Ensure we have enough valid bars to start
+		if(i[s] < maxNumbarsRequired - 1){
+			logWarning("System %d: Not enough valid bars at start. Starting at bar %d, but need at least %d bars. This may cause issues.", s, i[s], maxNumbarsRequired - 1);
 		}
 	}
 	
@@ -1737,6 +1871,7 @@ TestResult __stdcall runPortfolioTest (
 
 		//Run Strategy
 		if((currentBrokerTime > testSettings[s].fromDate) && (currentBrokerTime < testSettings[s].toDate)){
+		BOOL isFirstStrategyRun = (i[s] == maxNumbarsRequired);
 		logDebug("Running strategy for system %d at bar %d, time = %d", s, i[s], currentBrokerTime);
 		result = c_runStrategy(pInSettings[s], pInTradeSymbol[s], pInAccountCurrency, pInBrokerName, pInRefBrokerName, &currentBrokerTime, openOrdersCountSystem, systemOrders,
 								pInAccountInfo[s], bidAsk, pRatesInfo[s], rates[s][0], rates[s][1], rates[s][2], rates[s][3], rates[s][4], rates[s][5], rates[s][6], rates[s][7], rates[s][8], rates[s][9], (double *)strategyResults);
