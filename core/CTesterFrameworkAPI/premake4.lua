@@ -32,12 +32,24 @@ project "CTesterFrameworkAPI"
   configuration{"macosx"}
     libdirs{
       (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/mpich/lib",
-      "/Users/andym/homebrew/opt/mpich/lib"
+      "/Users/andym/homebrew/opt/mpich/lib",
+      (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/libomp/lib",
+      "/Users/andym/homebrew/opt/libomp/lib"
+    }
+    includedirs{
+      (os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/libomp/include",
+      "/Users/andym/homebrew/opt/libomp/include"
+    }
+    buildoptions{
+      "-Xpreprocessor", "-fopenmp",
+      "-D_OPENMP"
     }
     linkoptions{
       "-L" .. ((os.getenv("HOMEBREW_PREFIX") or "/opt/homebrew") .. "/opt/mpich/lib"),
       "-L/Users/andym/homebrew/opt/mpich/lib",
-      "-headerpad_max_install_names"
+      "-headerpad_max_install_names",
+      "-Xpreprocessor", "-fopenmp",
+      "-lomp"
     }
   configuration{"not windows"}
     excludes {
@@ -46,12 +58,16 @@ project "CTesterFrameworkAPI"
   configuration{"windows"}
     linkoptions{"/DEF:../../../core/CTesterFrameworkAPI/src/CTesterFrameworkAPI.def"}
     links{"mpi"}
+    buildoptions{"/openmp"}
+    defines{"_OPENMP"}
   configuration{"macosx", "x64"}
     links{"mpi", "pmpi", "mpl"}
   configuration{"macosx", "x32"}
     links{"mpi", "pmpi", "mpl"}
   configuration{"linux"}
     links{"mpich", "mpl"}
+    buildoptions{"-fopenmp", "-D_OPENMP"}
+    linkoptions{"-fopenmp"}
   os.chdir("../..")
   cwd = os.getcwd()
   -- Windows

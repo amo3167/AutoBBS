@@ -426,13 +426,9 @@ int __stdcall runOptimizationMultipleSymbols(
 		#else
 		putenv("OMP_STACKSIZE=256M");
 		#endif
-		// FORCE single-threaded execution for reliability (OpenMP enabled but numThreads=1)
-		int originalNumThreads = numThreads;
-		numThreads = 1;  // Force to 1 thread for reliability
-		omp_set_num_threads(1);  // Explicitly set OpenMP to 1 thread
-		fprintf(stderr, "[OPT] OpenMP enabled but FORCED to 1 thread for reliability (was %d, now %d)\n", originalNumThreads, numThreads);
-		fflush(stderr);
-		fprintf(stderr, "[OPENMP] Enabled with %d thread (forced from %d) on %d available CPU cores\n", numThreads, originalNumThreads, omp_get_num_procs());
+		// Set OpenMP thread count based on numThreads parameter
+		omp_set_num_threads(numThreads);
+		fprintf(stderr, "[OPENMP] Enabled with %d threads on %d available CPU cores\n", numThreads, omp_get_num_procs());
 		fflush(stderr);
 	#endif
 
