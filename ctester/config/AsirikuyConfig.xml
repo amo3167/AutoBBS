@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
+<AsirikuyConfig>
 <!-- Reduce this value to lower RAM usage. Increase it to improve speed -->
 <RatesBufferExtension>20</RatesBufferExtension>
 
@@ -33,7 +33,7 @@
   <!-- Info           6      -->
   <!-- Debug          7      -->
   <!-- The selected severity level plus all lower levels will be logged -->
-  <MaxSeverity>4</MaxSeverity>
+  <MaxSeverity>6</MaxSeverity>
   
   <!-- Enable = 1, Disable = 0 -->
   <EnableEquityLog>0</EnableEquityLog>
@@ -65,3 +65,4 @@
   <!-- The number of hours to crop before 23:00 Friday night. -->
   <CropFridayHours>4</CropFridayHours>
 </TradingWeekBoundaries>
+</AsirikuyConfig>

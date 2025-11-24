@@ -26,15 +26,14 @@
  * - Stop orders for breakout trades
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
+#include <math.h>
+#include <string.h>
+#include <stdlib.h>
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
 #include "StrategyUserInterface.h"
 #include "strategies/autobbs/trend/limit/LimitStrategy.h"
 #include "strategies/autobbs/trend/limit/LimitOrderSplitting.h"
@@ -397,7 +396,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 1)
 		{
-			if (fabs(pBase_Indicators->dailyTrend) >= 6
+			if (abs(pBase_Indicators->dailyTrend) >= 6
 				&& iAtr(B_DAILY_RATES, 1, 1) < 0.7 * pBase_Indicators->pDailyATR
 				)
 				pIndicators->risk = 0.5;
@@ -481,7 +480,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 1)
 		{
-			if (fabs(pBase_Indicators->dailyTrend) >= 6
+			if (abs(pBase_Indicators->dailyTrend) >= 6
 				&& iAtr(B_DAILY_RATES, 1, 1) < 0.7 * pBase_Indicators->pDailyATR
 				)
 				pIndicators->risk = 0.5;
@@ -703,30 +702,12 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	pIndicators->stopMovingBackSL = TRUE;
 	pIndicators->entrySignal = 0;
 
-	////////////////////
-	//Check pending order and save in the virutal ordder info
-
-	//readVirtualOrderInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo);
-
-	//if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen
-	//	&& (pParams->orderInfo[orderIndex].type == SELL || pParams->orderInfo[orderIndex].type == BUY)
-	//	&& orderInfo.ticket > 0
-	//	&& orderInfo.ticket != pParams->orderInfo[orderIndex].ticket
-	//	&& orderInfo.openPrice == 
-	//	)
-	//{
-	//	saveVirutalOrdergInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->orderInfo[orderIndex]);	
-	//}
-
-	if (isEnableRSI && (rsi >= rsiHigh || rsi <= rsiLow) 
-		//&& (pIndicators->fast >= 0.012 || pIndicators->fast <=-0.012)
-		)
+	if (isEnableRSI && (rsi >= rsiHigh || rsi <= rsiLow))
 	{
 		logInfo("System InstanceID = %d, BarTime = %s,skip trading on rsi=%lf",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, rsi);
 
 		return SUCCESS;
-		//pIndicators->risk = 0.5;
 	}
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == FALSE && orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen)
@@ -985,7 +966,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			//}
 
 		}
-	else if (trend == RANGE && isEnableRangeTrade == TRUE)
+		else if (trend == RANGE && isEnableRangeTrade == TRUE)
 	{
 		pIndicators->risk = RISK_REDUCED_RANGE_TRADE;
 			entryBuyRangeOrder(pParams, pIndicators, pBase_Indicators, orderIndex, stopHour, FALSE, TRUE);

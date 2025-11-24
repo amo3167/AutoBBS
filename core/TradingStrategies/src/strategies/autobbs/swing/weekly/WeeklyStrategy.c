@@ -5,15 +5,12 @@
  * Includes Weekly Swing and Weekly ATR Prediction strategies.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
+#include <math.h>
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
 #include "StrategyUserInterface.h"
 #include "strategies/autobbs/swing/weekly/WeeklyStrategy.h"
 

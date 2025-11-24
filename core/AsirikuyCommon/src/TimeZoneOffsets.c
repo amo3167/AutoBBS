@@ -227,7 +227,7 @@ time_t getAdjustedBrokerTime(time_t brokerTime, TZOffsets* pTZOffsets)
   /* Validate input time - negative times are invalid */
   if(brokerTime < 0)
   {
-    logError("DATA ISSUE: getAdjustedBrokerTime() received invalid input time: %zd (before Unix epoch 1970-01-01). This indicates corrupted or uninitialized time data. Check data sources.", brokerTime);
+    logWarning("DATA ISSUE: getAdjustedBrokerTime() received invalid input time: %zd (before Unix epoch 1970-01-01). This indicates corrupted or uninitialized time data. Check data sources.", brokerTime);
     return brokerTime; /* Return invalid time as-is to avoid further corruption */
   }
   
@@ -236,7 +236,7 @@ time_t getAdjustedBrokerTime(time_t brokerTime, TZOffsets* pTZOffsets)
   /* Validate tm_yday before using as array index */
   if(timeInfo.tm_yday < 0 || timeInfo.tm_yday > 365)
   {
-    logError("DATA ISSUE: getAdjustedBrokerTime() Invalid tm_yday (%d) for time %zd. This indicates corrupted time data. Returning original time.", timeInfo.tm_yday, brokerTime);
+    logWarning("DATA ISSUE: getAdjustedBrokerTime() Invalid tm_yday (%d) for time %zd. This indicates corrupted time data. Returning original time.", timeInfo.tm_yday, brokerTime);
     return brokerTime;
   }
   
@@ -245,7 +245,7 @@ time_t getAdjustedBrokerTime(time_t brokerTime, TZOffsets* pTZOffsets)
   /* Validate adjusted time before returning */
   if(adjustedBrokerTime < 0)
   {
-    logError("DATA ISSUE: getAdjustedBrokerTime() Adjusted time is negative (%zd) for input time %zd. Timezone offset calculation resulted in date before Unix epoch. Check timezone configuration.", adjustedBrokerTime, brokerTime);
+    logWarning("DATA ISSUE: getAdjustedBrokerTime() Adjusted time is negative (%zd) for input time %zd. Timezone offset calculation resulted in date before Unix epoch. Check timezone configuration.", adjustedBrokerTime, brokerTime);
     return brokerTime;
   }
 
@@ -274,7 +274,7 @@ time_t getAdjustedLocalTime(time_t localTimeUTC, TZOffsets* pTZOffsets)
   /* Validate input time - negative times are invalid */
   if(localTimeUTC < 0)
   {
-    logError("DATA ISSUE: getAdjustedLocalTime() received invalid input time: %zd (before Unix epoch 1970-01-01). This indicates corrupted or uninitialized time data. Check data sources.", localTimeUTC);
+    logWarning("DATA ISSUE: getAdjustedLocalTime() received invalid input time: %zd (before Unix epoch 1970-01-01). This indicates corrupted or uninitialized time data. Check data sources.", localTimeUTC);
     return localTimeUTC; /* Return invalid time as-is to avoid further corruption */
   }
 
@@ -283,7 +283,7 @@ time_t getAdjustedLocalTime(time_t localTimeUTC, TZOffsets* pTZOffsets)
   /* Validate tm_yday before using as array index */
   if(timeInfo.tm_yday < 0 || timeInfo.tm_yday > 365)
   {
-    logError("DATA ISSUE: getAdjustedLocalTime() Invalid tm_yday (%d) for time %zd. This indicates corrupted time data. Returning original time.", timeInfo.tm_yday, localTimeUTC);
+    logWarning("DATA ISSUE: getAdjustedLocalTime() Invalid tm_yday (%d) for time %zd. This indicates corrupted time data. Returning original time.", timeInfo.tm_yday, localTimeUTC);
     return localTimeUTC;
   }
   
@@ -292,7 +292,7 @@ time_t getAdjustedLocalTime(time_t localTimeUTC, TZOffsets* pTZOffsets)
   /* Validate adjusted time before returning */
   if(adjustedLocalTime < 0)
   {
-    logError("DATA ISSUE: getAdjustedLocalTime() Adjusted time is negative (%zd) for input time %zd. Timezone offset calculation resulted in date before Unix epoch. Check timezone configuration.", adjustedLocalTime, localTimeUTC);
+    logWarning("DATA ISSUE: getAdjustedLocalTime() Adjusted time is negative (%zd) for input time %zd. Timezone offset calculation resulted in date before Unix epoch. Check timezone configuration.", adjustedLocalTime, localTimeUTC);
     return localTimeUTC;
   }
 

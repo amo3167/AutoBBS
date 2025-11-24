@@ -5,9 +5,7 @@
  * These functions are called from AutoBBS.c and various strategy modules.
  */
 
-#include "Precompiled.h"
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"

@@ -16,9 +16,10 @@
  * RangeOrderManagement.c and TimeManagement.c. These duplicates should be removed.
  */
 
-#include "Precompiled.h"
+#include <stdio.h>
+#include <string.h>
+#include <math.h>
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
@@ -27,10 +28,7 @@
 #include "InstanceStates.h"
 #include "StrategyUserInterface.h"
 #include "strategies/autobbs/trend/misc/MiscStrategies.h"
-#include "strategies/autobbs/trend/misc/KeyKOrderSplitting.h"
 #include "strategies/autobbs/trend/bbs/BBSBreakOutStrategy.h"
-#include "strategies/autobbs/trend/macd/MACDDailyStrategy.h"
-#include "strategies/autobbs/trend/macd/MACDWeeklyStrategy.h"
 #include "strategies/autobbs/trend/limit/LimitOrderSplitting.h"
 #include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"
 
@@ -2031,8 +2029,7 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 			pBase_Indicators->weeklyTrend_Phase == RANGE
 			)
 		{
-			sprintf(pIndicators->status, "pBase_Indicators->weeklyTrend_Phase %lf is in Range",
-				pBase_Indicators->weeklyTrend_Phase);
+			sprintf(pIndicators->status, "pBase_Indicators->weeklyTrend_Phase %d is in Range", pBase_Indicators->weeklyTrend_Phase);
 
 			logWarning("System InstanceID = %d, BarTime = %s, %s",
 				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);

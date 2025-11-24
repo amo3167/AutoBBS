@@ -10,9 +10,10 @@
  * - Risk adjustment based on daily ATR and price gaps
  */
 
-#include "Precompiled.h"
+
+#include <stdio.h>
+#include <math.h>
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"

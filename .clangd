@@ -1,18 +1,28 @@
 CompileFlags:
   Add:
-    - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/include
-    - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/src
+    # Core project includes
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyCommon/include
+    - -I/Users/andym/projects/AutoBBS/core/SymbolAnalyzer/include
     - -I/Users/andym/projects/AutoBBS/core/Log/include
-    - -I/Users/andym/projects/AutoBBS/core/OrderManager/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyTechnicalAnalysis/include
+    - -I/Users/andym/projects/AutoBBS/core/OrderManager/include
+    - -I/Users/andym/projects/AutoBBS/core/OrderManager/src
+    - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/include
+    - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/include/strategies
+    - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/src
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyEasyTrade/include
+    - -I/Users/andym/projects/AutoBBS/core/NTPClient/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/CTester
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/MQL
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/jforex
     - -I/Users/andym/projects/AutoBBS/core/CTesterFrameworkAPI/include
+    - -I/Users/andym/projects/AutoBBS/core/UnitTests/include
+    # Vendor includes
     - -I/Users/andym/projects/AutoBBS/vendor/TALib/c/include
+    - -I/Users/andym/projects/AutoBBS/vendor/MiniXML
+    - -I/Users/andym/projects/AutoBBS/vendor/Gaul/src
+    - -I/Users/andym/projects/AutoBBS/vendor/Gaul/util/gaul
 
 ---
 If:

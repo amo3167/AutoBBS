@@ -4,17 +4,22 @@
  * Provides Ichimoko Daily strategy execution functions.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
+#include <string.h>
+#include <math.h>
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
+
+// Define min/max macros for compatibility
+#ifndef min
+#define min(a, b) fmin(a, b)
+#endif
+#ifndef max
+#define max(a, b) fmax(a, b)
+#endif
 #include "strategies/autobbs/trend/ichimoko/IchimokoDailyStrategy.h"
-#include "strategies/autobbs/trend/ichimoko/IchimokoOrderSplitting.h"
 
 AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
@@ -22,11 +27,9 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 	int    shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
 	int    shift1Index_Weekly = pParams->ratesBuffers->rates[B_WEEKLY_RATES].info.arraySize - 2;
-	int   dailyTrend;
 	time_t currentTime;
 	struct tm timeInfo1, timeInfo2;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preDailyClose, preDailyClose1;
 	double preWeeklyClose;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0;
@@ -35,7 +38,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 	int dailyOnly = 1;
 
 	double targetPNL = 0;
-	double strategyMarketVolRisk = 0.0;
 	double strategyVolRisk = 0.0;
 
 	int openOrderCount = 0;
@@ -43,15 +45,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
 	safe_timeString(timeString, currentTime);
-
-	// Determine trend direction from daily chart
-
-	if (pBase_Indicators->dailyTrend_Phase > 0)
-		dailyTrend = 1;
-	else if (pBase_Indicators->dailyTrend_Phase < 0)
-		dailyTrend = -1;
-	else
-		dailyTrend = 0;
 
 	shift1Index = filterExcutionTF(pParams, pIndicators, pBase_Indicators);
 
@@ -110,9 +103,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 		logInfo("System InstanceID = %d, BarTime = %s, dailyOnly=%ld,preDailyClose =%lf, preDailyClose1=%lf, preWeeklyClose=%lf,pWeeklyPredictMaxATR =%lf,weekly_baseline=%lf",
 			(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, dailyOnly, preDailyClose, preDailyClose1, preWeeklyClose, pBase_Indicators->pWeeklyPredictMaxATR, weekly_baseline);
 
-		if (//pBase_Indicators->weeklyTrend_Phase > 0 &&						
-			preDailyClose > daily_baseline
-			) // Buy
+		if (preDailyClose > daily_baseline) // Buy
 		{
 
 			pIndicators->executionTrend = 1;
@@ -128,7 +119,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 				&& preDailyClose > daily_baseline_short
 				&& daily_baseline_short > daily_baseline
 				&& preWeeklyClose > weekly_baseline
-				//&& isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3) == FALSE
 				)
 			{
 				pIndicators->entrySignal = 1;
@@ -137,9 +127,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 
 		}
 
-		if (//pBase_Indicators->weeklyTrend_Phase < 0 &&			
-			preDailyClose < daily_baseline
-			) // Sell
+		if (preDailyClose < daily_baseline) // Sell
 		{
 
 			pIndicators->executionTrend = -1;
@@ -155,7 +143,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 				&& preDailyClose < daily_baseline_short
 				&& daily_baseline_short < daily_baseline
 				&& preWeeklyClose < weekly_baseline
-				//&& isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3) == FALSE
 				)
 			{
 				pIndicators->entrySignal = -1;
@@ -179,11 +166,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pP
 	
 	profitManagement_base(pParams, pIndicators, pBase_Indicators);
 
-	//targetPNL = parameter(AUTOBBS_MAX_STRATEGY_RISK) * 3;
-	//// when floating profit is too high, fe 10%
-	//if (pIndicators->riskPNL >targetPNL)
-	//	closeWinningPositionsEasy(pIndicators->riskPNL, targetPNL);
-
 	return SUCCESS;
 }
 
@@ -197,16 +179,14 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	time_t currentTime, preBarTime;
 	struct tm timeInfo1, timeInfo2, timeInfoPreBar;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preDailyClose, preDailyClose1;
 	double preWeeklyClose, preWeeklyClose1;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0, shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0;
-	double weekly_baseline = 0.0,weekly_baseline_short = 0.0;
+	double weekly_baseline = 0.0, weekly_baseline_short = 0.0;
 	int orderIndex;
 	int dailyOnly = 1;
 
 	double targetPNL = 0;
-	double strategyMarketVolRisk = 0.0;
 	double strategyVolRisk = 0.0;
 		
 	double dailyMA20 = 0.0;
@@ -216,9 +196,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	double fast1;
 	double slow1;
 	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
-	int latestOrderIndex = 0;
 
-	double preMonthHigh = 0.0, preMonthLow = 0.0;
 	double rangeHigh = 0.0, rangeLow = 0.0;
 
 	BOOL isEnableRange = TRUE;
@@ -229,10 +207,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	BOOL isExitFromShortBaseLine = FALSE;
 	BOOL isMACDBeiLi = TRUE;
 	BOOL is3KBreak = FALSE;
-	BOOL isMaxLevel = FALSE;
 	BOOL isEnableCMFVolume = FALSE;
 		
-	double maxLevel = 0.0;
 	int pre3KTrend;
 
 	double exitBaseLine = 0.0;
@@ -240,7 +216,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	double level = 0.0;
 
 	BOOL isDailyOnly = TRUE;
-	BOOL isEnableEntryEOD = FALSE;
 	int truningPointIndex = -1, minPointIndex = -1;
 	double turningPoint, minPoint;
 
@@ -256,8 +231,6 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 	//Long term: tradeMode = 1
 	//Short term: tradeMode = 0
 	pIndicators->tradeMode = 1;
-
-	//latestOrderIndex = getLastestOrderIndexEasy(B_PRIMARY_RATES);
 
 	if (pIndicators->tradeMode == 1)
 	{
@@ -487,20 +460,9 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 
 		iSRLevels(pParams, pBase_Indicators, B_DAILY_RATES, shift1Index_Daily - 1, range, &rangeHigh, &rangeLow);
 
-		//load pBase_Indicators
-		//pBase_Indicators->dailyATR = iAtr(B_DAILY_RATES, (int)parameter(ATR_AVERAGING_PERIOD), 1);
-		//pBase_Indicators->pDailyMaxATR = 1.5 * pBase_Indicators->dailyATR;
-
-		
-		//get the last month high low 
-		preMonthHigh = iHigh(B_MONTHLY_RATES, 1);
-		preMonthLow = iLow(B_MONTHLY_RATES, 1);
-
 		openOrderCount = getOrderCountEasy();
 
-		if (//pBase_Indicators->weeklyTrend_Phase > 0 &&						
-			preDailyClose > pIndicators->daily_baseline
-			) // Buy
+		if (preDailyClose > pIndicators->daily_baseline) // Buy
 		{
 
 			pIndicators->executionTrend = 1;
@@ -512,8 +474,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 			if (
 				dailyOnly == 1
 				&& preDailyClose > preDailyClose1
-				&& preDailyClose > pIndicators->daily_baseline_short
-				&& pIndicators->daily_baseline_short - pIndicators->daily_baseline > 0 * pBase_Indicators->dailyATR
+			&& preDailyClose > pIndicators->daily_baseline_short
+			&& pIndicators->daily_baseline_short > pIndicators->daily_baseline
 				&& (isWeeklyBaseLine == FALSE ||
 				(preWeeklyClose > weekly_baseline && (weekly_baseline_short > weekly_baseline || pre3KTrend == UP))
 				)
@@ -545,9 +507,7 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 
 		}
 
-		if (//pBase_Indicators->weeklyTrend_Phase < 0 &&			
-			preDailyClose < pIndicators->daily_baseline
-			) // Sell
+		if (preDailyClose < pIndicators->daily_baseline) // Sell
 		{
 
 			pIndicators->executionTrend = -1;
@@ -559,8 +519,8 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_New(StrategyParams* pPar
 			if (
 				dailyOnly == 1
 				&& preDailyClose < preDailyClose1
-				&& preDailyClose < pIndicators->daily_baseline_short
-				&& pIndicators->daily_baseline - pIndicators->daily_baseline_short  > 0 * pBase_Indicators->dailyATR
+			&& preDailyClose < pIndicators->daily_baseline_short
+			&& pIndicators->daily_baseline > pIndicators->daily_baseline_short
 				&& (isWeeklyBaseLine == FALSE ||
 				(preWeeklyClose < weekly_baseline
 				&& (weekly_baseline_short < weekly_baseline || pre3KTrend == DOWN))

@@ -41,26 +41,59 @@
  */
 
 #include "CriticalSection.h"
+#include "AsirikuyDefines.h"
 
 #if defined _WIN32 || defined _WIN64
   #include <windows.h>
   CRITICAL_SECTION criticalSection;
+  static volatile LONG initialized = 0;  // Use LONG for InterlockedCompareExchange
 #elif defined __linux__ || defined __APPLE__
   #include <pthread.h>
   pthread_mutex_t criticalSection;
+  static volatile int initialized = 0;
+  static pthread_mutex_t initLock = PTHREAD_MUTEX_INITIALIZER;
 #else
   #error "Unsupported operating system"
 #endif
 
 void initCriticalSection()
 {
+  // Make initialization idempotent and thread-safe
+  // Use double-checked locking pattern for thread-safe initialization
+  if(initialized)
+  {
+    return;
+  }
+  
 #if defined _WIN32 || defined _WIN64
-  InitializeCriticalSection(&criticalSection);
+  // On Windows, use InterlockedCompareExchange for atomic initialization
+  // Try to set initialized from 0 to 1 atomically
+  LONG expected = 0;
+  LONG desired = 1;
+  if(InterlockedCompareExchange(&initialized, desired, expected) == expected)
+  {
+    // We won the race, initialize the critical section
+    InitializeCriticalSection(&criticalSection);
+  }
+  // If we lost the race, another thread is initializing, just wait
+  // The critical section will be ready soon
+  while(initialized == 0)
+  {
+    Sleep(0);  // Yield to other threads
+  }
 #elif defined __linux__ || defined __APPLE__
-  pthread_mutexattr_t mutexattr;
-  pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
-  pthread_mutex_init(&criticalSection, &mutexattr);
-  pthread_mutexattr_destroy(&mutexattr);
+  // On POSIX, use a static initializer mutex to protect initialization
+  pthread_mutex_lock(&initLock);
+  if(!initialized)
+  {
+    pthread_mutexattr_t mutexattr;
+    pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_settype(&mutexattr, PTHREAD_MUTEX_RECURSIVE);
+    pthread_mutex_init(&criticalSection, &mutexattr);
+    pthread_mutexattr_destroy(&mutexattr);
+    initialized = 1;
+  }
+  pthread_mutex_unlock(&initLock);
 #else
   #error "Unsupported operating system"
 #endif
@@ -68,10 +101,17 @@ void initCriticalSection()
 
 void deinitCriticalSection()
 {
+  if(!initialized)
+  {
+    return;
+  }
+  
 #if defined _WIN32 || defined _WIN64
   DeleteCriticalSection(&criticalSection);
+  initialized = 0;
 #elif defined __linux__ || defined __APPLE__
   pthread_mutex_destroy(&criticalSection);
+  initialized = 0;
 #else
   #error "Unsupported operating system"
 #endif

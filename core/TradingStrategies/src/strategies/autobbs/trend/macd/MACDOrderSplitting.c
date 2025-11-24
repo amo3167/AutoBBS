@@ -6,13 +6,13 @@
  * levels based on risk management parameters and trade mode settings.
  */
 
-#include "Precompiled.h"
+
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "strategies/autobbs/trend/macd/MACDOrderSplitting.h"
+#include "AsirikuyLogger.h"
 
 // Constants for take profit and risk calculations
 #define TP_MULTIPLIER_DAILY_ATR 1.5        // Take profit multiplier for daily ATR (1.5x)
@@ -67,6 +67,8 @@ void splitBuyOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators, 
 		}
 		else
 		{
+			logInfo("[DEBUG] splitBuyOrders_MACDDaily: Condition NOT MET - riskCap=%.3f (<=0) OR lots=%.3f < minLotSize=%.3f, using single order", 
+				pIndicators->riskCap, lots, pIndicators->minLotSize);
 			openSingleLongEasy(takePrice, stopLoss, lots, 0);
 		}
 	}
@@ -126,6 +128,7 @@ void splitSellOrders_MACDDaily(StrategyParams* pParams, Indicators* pIndicators,
 		}
 		else
 		{
+			logInfo("[DEBUG] splitSellOrders_MACDDaily: Condition NOT MET - riskCap=%.3f (<=0), using single order", pIndicators->riskCap);
 			openSingleShortEasy(takePrice, stopLoss, lots, 0);
 		}
 	}

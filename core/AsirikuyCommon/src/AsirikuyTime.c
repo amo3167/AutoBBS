@@ -97,7 +97,8 @@ char* safe_timeString(char timeString[MAX_TIME_STRING_SIZE], time_t time)
     || (timeInfo.tm_yday > 365))
   {
     logError("safe_timeString() Invalid time: %zd", time);
-    strcpy(timeString, "Invalid Time");
+    strncpy(timeString, "Invalid Time", MAX_TIME_STRING_SIZE - 1);
+    timeString[MAX_TIME_STRING_SIZE - 1] = '\0';
   }
   else
   {

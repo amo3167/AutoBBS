@@ -6,10 +6,8 @@
  * levels based on trade mode (long-term vs short-term).
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "OrderManagement.h"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "strategies/autobbs/trend/ichimoko/IchimokoOrderSplitting.h"

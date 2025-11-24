@@ -8,7 +8,8 @@ project "OrderManager"
 	"**.hpp"
   }
   includedirs{
-    "src"
+    "src",
+    "../SymbolAnalyzer/include"
   }
   
   -- Target directory configurations (all libraries go to root bin/ directory)

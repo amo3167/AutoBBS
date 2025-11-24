@@ -95,6 +95,7 @@ def main():
         configFilePath = os.path.join(os.getcwd(), 'config', 'ast.config')
     else:
         configFilePath = args.config_file
+    # Note: outputOptimizationFile and outputFile will be updated later to use instance-specific folder
     if args.output_optimization_file == None:
         outputOptimizationFile = 'optimization'
     else:
@@ -137,6 +138,121 @@ def main():
             setFilePaths.append("./sets/%s" % (s))
     for index,s in enumerate(config.get("strategy", "pair").split(',')):
         symbols[index] = s.encode('utf-8')  # Python 3: encode string to bytes
+    
+    # Read set files early to extract instance IDs for instance-specific log folders
+    sets = []
+    instanceIds = []
+    for index, s in enumerate(setFilePaths):
+        print(f"[DEBUG] Reading set file {index} early for instance ID: {s}")
+        sets.append(MT4Set(s))
+        if not sets[index].content:
+            print("Error reading set file %s" % (s))
+            return False
+        # Extract instance ID from set file
+        instanceId = 0
+        if sets[index].content.has_option('main', 'STRATEGY_INSTANCE_ID'):
+            instanceId = int(float(sets[index].mainParams["STRATEGY_INSTANCE_ID"]['value']))
+        instanceIds.append(instanceId)
+        print(f"[DEBUG] Set file {index} instance ID: {instanceId}")
+    
+    # Determine if this is an optimization run
+    optimize = config.getboolean("optimization", "optimize") if config.has_option("optimization", "optimize") else False
+    
+    # Create instance-specific log folder if we have instance IDs
+    # Format: tmp/{SYMBOL}_{INSTANCE_ID}_optimize/log/ for optimization, tmp/{SYMBOL}_{INSTANCE_ID}/log/ for backtest
+    instanceLogFolder = None
+    instanceConfigPath = None
+    if len(instanceIds) > 0 and instanceIds[0] > 0:
+        symbol_str = symbols[0].decode('utf-8') if isinstance(symbols[0], bytes) else symbols[0]
+        if optimize:
+            instanceLogFolder = f"./tmp/{symbol_str}_{instanceIds[0]}_optimize/log"
+            instanceTmpFolder = f"./tmp/{symbol_str}_{instanceIds[0]}_optimize"
+        else:
+            instanceLogFolder = f"./tmp/{symbol_str}_{instanceIds[0]}/log"
+            instanceTmpFolder = f"./tmp/{symbol_str}_{instanceIds[0]}"
+        os.makedirs(instanceLogFolder, exist_ok=True)
+        print(f"[DEBUG] Created instance-specific log folder: {instanceLogFolder}")
+        
+        # Update CTester log path
+        asirikuyCtesterLogPath = os.path.join(instanceLogFolder, 'AsirikuyCTester.log')
+        if execUnderMPI and rank > 0:
+            asirikuyCtesterLogPath = os.path.join(instanceLogFolder, f'AsirikuyCTester_{rank}.log')
+        print(f"[DEBUG] Updated CTester log path to: {asirikuyCtesterLogPath}")
+        
+        # Create instance-specific AsirikuyConfig.xml with updated log folder
+        if sets[0].content.has_option('main', 'FRAMEWORK_CONFIG'):
+            originalConfigPath = sets[0].mainParams["FRAMEWORK_CONFIG"]['value']
+            # Handle relative paths
+            if not os.path.isabs(originalConfigPath):
+                originalConfigPath = os.path.join(os.getcwd(), originalConfigPath.lstrip('./'))
+            
+            if os.path.exists(originalConfigPath):
+                import xml.etree.ElementTree as ET
+                # Read original config
+                tree = ET.parse(originalConfigPath)
+                root = tree.getroot()
+                
+                # Update log folder path
+                logging_elem = root.find('Logging')
+                if logging_elem is not None:
+                    folder_elem = logging_elem.find('Folder')
+                    if folder_elem is not None:
+                        # Use absolute path for log folder
+                        abs_log_folder = os.path.abspath(instanceLogFolder)
+                        folder_elem.text = abs_log_folder
+                        print(f"[DEBUG] Updated AsirikuyConfig.xml log folder to: {abs_log_folder}")
+                    
+                    # Update MaxSeverity based on logseverity from config file (if available)
+                    # This prevents DEBUG logs from filling up disk space during optimization
+                    if config.has_option("misc", "logSeverity") or config.has_option("misc", "logseverity"):
+                        try:
+                            log_severity_key = "logSeverity" if config.has_option("misc", "logSeverity") else "logseverity"
+                            log_severity_str = config.get("misc", log_severity_key).split(';')[0].strip()
+                            log_severity = int(log_severity_str)
+                            max_severity_elem = logging_elem.find('MaxSeverity')
+                            if max_severity_elem is not None:
+                                max_severity_elem.text = str(log_severity)
+                                print(f"[DEBUG] Updated AsirikuyConfig.xml MaxSeverity to: {log_severity} (from config logseverity)")
+                            else:
+                                # Create MaxSeverity element if it doesn't exist
+                                max_severity_elem = ET.SubElement(logging_elem, 'MaxSeverity')
+                                max_severity_elem.text = str(log_severity)
+                                print(f"[DEBUG] Created AsirikuyConfig.xml MaxSeverity: {log_severity} (from config logseverity)")
+                        except (ValueError, KeyError) as e:
+                            print(f"[DEBUG] Could not parse logseverity from config, keeping original MaxSeverity: {e}")
+                
+                # Update TempFileFolderPath to use instance-specific tmp folder
+                # This controls where state files, OrderInfo files, etc. are written
+                temp_file_folder_elem = root.find('TempFileFolderPath')
+                if temp_file_folder_elem is not None:
+                    abs_tmp_folder = os.path.abspath(instanceTmpFolder)
+                    temp_file_folder_elem.text = abs_tmp_folder
+                    print(f"[DEBUG] Updated AsirikuyConfig.xml TempFileFolderPath to: {abs_tmp_folder}")
+                
+                # Save instance-specific config
+                instanceConfigPath = os.path.join(instanceTmpFolder, 'AsirikuyConfig.xml')
+                os.makedirs(instanceTmpFolder, exist_ok=True)
+                tree.write(instanceConfigPath, encoding='utf-8', xml_declaration=True)
+                print(f"[DEBUG] Created instance-specific config: {instanceConfigPath}")
+                
+                # Update set file's FRAMEWORK_CONFIG reference
+                sets[0].mainParams["FRAMEWORK_CONFIG"]['value'] = instanceConfigPath
+                print(f"[DEBUG] Updated set file FRAMEWORK_CONFIG to: {instanceConfigPath}")
+                
+                # Update output file paths to use instance-specific folder
+                # For optimization files
+                if optimize:
+                    # Extract just the filename if a path was provided
+                    optFileBase = os.path.basename(outputOptimizationFile) if os.path.dirname(outputOptimizationFile) else outputOptimizationFile
+                    outputOptimizationFile = os.path.join(instanceTmpFolder, optFileBase)
+                    print(f"[DEBUG] Updated outputOptimizationFile to: {outputOptimizationFile}")
+                # For test result files
+                # Extract just the filename if a path was provided
+                testFileBase = os.path.basename(outputFile) if os.path.dirname(outputFile) else outputFile
+                outputFile = os.path.join(instanceTmpFolder, testFileBase)
+                outputXMLPath = outputFile + '.xml'
+                print(f"[DEBUG] Updated outputFile to: {outputFile}")
+                print(f"[DEBUG] Updated outputXMLPath to: {outputXMLPath}")
 
     for s in config.get("strategy", "strategyID").split(','): strategyIDs.append(int(s))
     for s in config.get("account", "spread").split(','): spreads.append(float(s))
@@ -202,23 +318,13 @@ def main():
     log_severity_str = config.get("misc", "logSeverity").split(';')[0].strip()  # Remove inline comment
     astdll.initCTesterFramework(asirikuyCtesterLogPath.encode('utf-8'), int(log_severity_str))
 
-    #Read set files
-    sets = []
-    for index, s in enumerate(setFilePaths):
-        print(f"[DEBUG] Reading set file {index}: {s}")
-        sets.append(MT4Set(s))
-        if not sets[index].content:
-            print("Error reading set file %s" % (s))
-            return False
-        print(f"[DEBUG] Set file {index} read successfully")
+    # Sets are already read earlier for instance ID extraction
+    # Print optimization array info for debugging
+    for index in range(len(sets)):
         if hasattr(sets[index], 'optimizationArray'):
             print(f"[DEBUG] Set file {index} optimizationArray: {sets[index].optimizationArray}")
         else:
             print(f"[DEBUG] Set file {index} has no optimizationArray attribute")
-
-        
-    #Optimization 
-    optimize            = config.getboolean("optimization", "optimize")
     # Handle inline comments in config values (Python 3 configparser is stricter)
     optimization_type_str = config.get("optimization", "optimizationType").split(';')[0].strip()
     optimizationType    = int(optimization_type_str)
@@ -311,6 +417,9 @@ def main():
         settings[i][ATR_AVERAGING_PERIOD] = float(sets[i].mainParams["ATR_AVERAGING_PERIOD"]['value']) if sets[i].content.has_option('main',  'ATR_AVERAGING_PERIOD') else 0
         settings[i][ORDERINFO_ARRAY_SIZE] = settings[i][MAX_OPEN_ORDERS]+1;
         settings[i][ADDITIONAL_PARAM_8] = float(sets[i].additionalParams["DSL_EXIT_TYPE"]['value']) if sets[i].content.has_option('additional', 'DSL_EXIT_TYPE') else 0
+        
+        print(f"[DEBUG] System {i}: BEFORE loading additional params - settings[{i}][3] (AUTOBBS_RISK_CAP) = {settings[i][3]}")
+        print(f"[DEBUG] System {i}: optimizationArray BEFORE append: {sets[i].optimizationArray}")
            
         optimizationArrays.append(sets[i].optimizationArray)
         print(f"[DEBUG] System {i}: optimizationArray length = {len(sets[i].optimizationArray)}")
@@ -318,14 +427,25 @@ def main():
 
         paramNamesArray.append(paramNames)
         index = 0
+        print(f"[DEBUG] System {i}: Starting to load parameters from 'additional' section...")
         for param in sets[i].content.items("additional"):
             if param[0].find(",") == -1:
                 param_key = param[0].upper()
+                print(f"[DEBUG] System {i}: Found param in additional section: {param_key} = {param[1]}")
                 if param_key in paramIndexes:
-                    settings[i][paramIndexes[param_key]] = float(param[1])
+                    param_index = paramIndexes[param_key]
+                    old_value = settings[i][param_index]
+                    settings[i][param_index] = float(param[1])
+                    print(f"[DEBUG] System {i}: LOADED {param_key} -> settings[{i}][{param_index}] = {param[1]} (was {old_value})")
+                    if param_key == "AUTOBBS_RISK_CAP":
+                        print(f"[DEBUG] System {i}: *** AUTOBBS_RISK_CAP loaded: settings[{i}][3] = {settings[i][3]} ***")
                     paramNamesArray[i][index] = param_key
                     index += 1
+                else:
+                    print(f"[DEBUG] System {i}: SKIPPED {param_key} - not in paramIndexes")
                 # Skip unknown parameters (they may be for other strategies)
+        
+        print(f"[DEBUG] System {i}: AFTER loading additional params - settings[{i}][3] (AUTOBBS_RISK_CAP) = {settings[i][3]}")
 
 
         OptimizationParamType = OptimizationParam * len(optimizationArrays[i])
@@ -334,13 +454,16 @@ def main():
         numOptimizationParams.append(0)
         print(f"[DEBUG] System {i}: Processing {len(optimizationArrays[i])} optimization parameters")
         for key, value in list(optimizationArrays[i].items()):
-            print(f"[DEBUG] System {i}: Adding param - key={key}, value={value}, index={numOptimizationParams[i]}")
+            print(f"[DEBUG] System {i}: Adding param - key={key} (paramIndex), value={value}, optimizationIndex={numOptimizationParams[i]}")
+            if key == 3:
+                print(f"[DEBUG] System {i}: *** Found AUTOBBS_RISK_CAP in optimizationArray: key=3, range=({value[0]}, {value[1]}, {value[2]}) ***")
             optimizationParams[i][numOptimizationParams[i]].index = key
             optimizationParams[i][numOptimizationParams[i]].start = value[0]
             optimizationParams[i][numOptimizationParams[i]].step  = value[1]
             optimizationParams[i][numOptimizationParams[i]].stop  = value[2]
             numOptimizationParams[i] += 1
         print(f"[DEBUG] System {i}: Total optimization params = {numOptimizationParams[i]}")
+        print(f"[DEBUG] System {i}: Final settings[{i}][3] (AUTOBBS_RISK_CAP) = {settings[i][3]}")
 
         testSettings[i] = TestSettings()
         testSettings[i].spread = spreads[i]
@@ -655,6 +778,14 @@ def main():
         # CRITICAL: Verify numCores value right before passing to C function
         print("[DEBUG] RIGHT BEFORE C CALL: numCores = %d (type: %s)" % (numCores, type(numCores).__name__), flush=True)
         print("[DEBUG] RIGHT BEFORE C CALL: c_int(numCores) = %d" % c_int(numCores).value, flush=True)
+        print(f"[DEBUG] RIGHT BEFORE C CALL: settings[0][3] (AUTOBBS_RISK_CAP) = {settings[0][3]}", flush=True)
+        print(f"[DEBUG] RIGHT BEFORE C CALL: numOptimizationParams[0] = {numOptimizationParams[0]}", flush=True)
+        if numOptimizationParams[0] > 0:
+            for p in range(numOptimizationParams[0]):
+                param_idx = optimizationParams[0][p].index
+                print(f"[DEBUG] RIGHT BEFORE C CALL: optimizationParams[0][{p}]: index={param_idx}, start={optimizationParams[0][p].start}, step={optimizationParams[0][p].step}, stop={optimizationParams[0][p].stop}", flush=True)
+                if param_idx == 3:
+                    print(f"[DEBUG] *** RIGHT BEFORE C CALL: Found AUTOBBS_RISK_CAP in optimizationParams[0][{p}]: index=3, range=({optimizationParams[0][p].start}, {optimizationParams[0][p].step}, {optimizationParams[0][p].stop}) ***", flush=True)
         sys.stdout.flush()
         # Write to file to ensure we capture the call
         with open("debug_optimization.txt", "w") as dbg:

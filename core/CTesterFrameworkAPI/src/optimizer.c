@@ -58,7 +58,8 @@ static boolean generationHook(int generation, population *pop)
 	//Stop optmization if we get to max number of generations
 	if (globalOptimizationSettings.maxGenerations > 0 && generation > globalOptimizationSettings.maxGenerations - 1)
 	{
-		logInfo("Max num of generations (%d) reached!\n", globalOptimizationSettings.maxGenerations);
+		fprintf(stderr, "[OPT] Max num of generations (%d) reached!\n", globalOptimizationSettings.maxGenerations);
+		fflush(stderr);
 		return FALSE;
 	}
 
@@ -81,16 +82,19 @@ static boolean generationHook(int generation, population *pop)
 
 		for (i=0;i<5;i++){
 			standardDeviation += (generationDifferences[i]-averageDifference)*(generationDifferences[i]-averageDifference)/5 ;
-			logInfo("Past %d generation -> best fit = %lf\n", i, generationDifferences[i]);
+			fprintf(stderr, "[OPT] Past %d generation -> best fit = %lf\n", i, generationDifferences[i]);
+			fflush(stderr);
 			if(generationDifferences[i] < 0) generationDifferencesFull = 0;
 		}
 
 		standardDeviation = sqrt(standardDeviation);
 
-		logInfo("Best fit average = %lf, stdDev = %lf\n", averageDifference, standardDeviation);
+		fprintf(stderr, "[OPT] Best fit average = %lf, stdDev = %lf\n", averageDifference, standardDeviation);
+		fflush(stderr);
 
 		if ( standardDeviation < 0.05*averageDifference && generationDifferencesFull == 1){
-		logInfo("Solutions have converged!\n");
+		fprintf(stderr, "[OPT] Solutions have converged!\n");
+		fflush(stderr);
 		return FALSE;
 		}
 	
@@ -99,11 +103,13 @@ static boolean generationHook(int generation, population *pop)
 	//Stop optimization if stopOptimization was called
 	if (stopOpti == 1)
 	{
-		logInfo("stopOptimization was called -> Stoping optimization\n");
+		fprintf(stderr, "[OPT] stopOptimization was called -> Stoping optimization\n");
+		fflush(stderr);
 		return FALSE;
 	}
 	
-	logInfo("Generation %d started\n", generation +1);
+	fprintf(stderr, "[OPT] Generation %d started\n", generation +1);
+	fflush(stderr);
 	return TRUE;	/* TRUE indicates that evolution should continue. */
 }
 
@@ -150,9 +156,11 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	}
 	
 	#ifdef _OPENMP
-		logInfo("Starting Iteration %d on thread %d\n", localCurrentIteration, omp_get_thread_num());	
+		fprintf(stderr, "[OPT] Starting Iteration %d on thread %d\n", localCurrentIteration, omp_get_thread_num());
+		fflush(stderr);
 	#else
-		logInfo("Starting Iteration %d\n", localCurrentIteration);
+		fprintf(stderr, "[OPT] Starting Iteration %d\n", localCurrentIteration);
+		fflush(stderr);
 	#endif
 
 	entity->fitness = 0.0;
@@ -178,7 +186,8 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	localRates = (ASTRates ***)malloc(1 * sizeof(ASTRates**));
 	localRates[0] = (ASTRates **)malloc(10 * sizeof(ASTRates*));
 
-	logInfo("SavingRates\n");
+	fprintf(stderr, "[OPT] SavingRates\n");
+	fflush(stderr);
 	// Always allocate ALL timeframes - runPortfolioTest may access them without NULL checks
 	for (k=0;k<10;k++){
 		localRates[0][k] = (ASTRates *)malloc(globalNumCandles * sizeof(ASTRates));
@@ -189,7 +198,8 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 			memcpy (localRates[0][k], globalRates[n][k], globalNumCandles * sizeof(ASTRates));
 		}
 	}
-	logInfo("endSavingRates\n");
+	fprintf(stderr, "[OPT] endSavingRates\n");
+	fflush(stderr);
 
 	localAccountInfo = (AccountInfo**)malloc(1 * sizeof(AccountInfo*));
 	localAccountInfo[0] = (AccountInfo*)malloc(sizeof(AccountInfo));
@@ -202,7 +212,8 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
     {
 		chromosomeValue = ((int*)entity->chromosome[0])[k];
 		chromosomeMappedValue = mapParamValue(chromosomeValue, globalOptimizationParams[k]);
-		logInfo("Iteration: %d. Gen %d mapped to %lf from gen value %d\n", localCurrentIteration, k, chromosomeMappedValue, chromosomeValue);
+		fprintf(stderr, "[OPT] Iteration: %d. Gen %d mapped to %lf from gen value %d\n", localCurrentIteration, k, chromosomeMappedValue, chromosomeValue);
+		fflush(stderr);
 		localSettings[0][globalOptimizationParams[k].index] = chromosomeMappedValue;
 		currentSet[k*2] = (double)globalOptimizationParams[k].index;
 		currentSet[k*2+1] = chromosomeMappedValue;
@@ -214,7 +225,14 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	testId = omp_get_thread_num();	
 	#endif
 
-	localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
+	// Preserve instance ID from set file if set, otherwise use calculated value for uniqueness
+	// Note: For multi-threaded optimization, all threads will use the same instance ID from set file.
+	// This is safe because: (1) state files aren't written during backtesting/optimization,
+	// (2) in-memory state access is protected by critical sections, and (3) config lookup needs
+	// the original instance ID to find the correct config file.
+	if (localSettings[0][STRATEGY_INSTANCE_ID] == 0) {
+		localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
+	}
 	
 	// Cast AccountInfo** to double** for runPortfolioTest (it treats AccountInfo as double array)
 	testResult = runPortfolioTest(testId+1, localSettings, localSymbol, globalAccountCurrency, globalBrokerName, globalRefBrokerName, (double**)localAccountInfo, 
@@ -250,23 +268,27 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 			entity->fitness += testResult.cagr/testResult.maxDDDepth;
 			break;
 		default:
-			logInfo("Optimization Goal %d not supported\n", globalOptimizationSettings.optimizationGoal);
+			fprintf(stderr, "[OPT] ERROR: Optimization Goal %d not supported\n", globalOptimizationSettings.optimizationGoal);
+			fflush(stderr);
 			return false;
 	}
 
 	if (testResult.finalBalance-localAccountInfo[0]->balance < 0){ 
 		entity->fitness = 0.0;
-		logInfo("Iteration %d gave negative balance ... killing it\n", localCurrentIteration);
+		fprintf(stderr, "[OPT] Iteration %d gave negative balance ... killing it\n", localCurrentIteration);
+		fflush(stderr);
 	}
 	
 	if (globalOptimizationSettings.discardAssymetricSets && fabs(testResult.numShorts - testResult.numLongs) > 0.5*min(testResult.numShorts, testResult.numLongs)){
 		entity->fitness = 0.0;
-		logInfo("Iteration %d gave assymetric results (%d longs %d shorts) ... killing it\n", localCurrentIteration, testResult.numShorts, testResult.numLongs);
+		fprintf(stderr, "[OPT] Iteration %d gave assymetric results (%d longs %d shorts) ... killing it\n", localCurrentIteration, testResult.numShorts, testResult.numLongs);
+		fflush(stderr);
 	}
 
 	if (testResult.totalTrades/testResult.yearsTraded < globalOptimizationSettings.minTradesAYear){
 		entity->fitness = 0.0;
-		logInfo("Iteration %d gave less than %d trades a year in average... killing it\n", localCurrentIteration, globalOptimizationSettings.minTradesAYear);
+		fprintf(stderr, "[OPT] Iteration %d gave less than %d trades a year in average... killing it\n", localCurrentIteration, globalOptimizationSettings.minTradesAYear);
+		fflush(stderr);
 	}
 
 	for (k=0;k<10;k++){
@@ -339,11 +361,16 @@ int __stdcall runOptimizationMultipleSymbols(
 	fflush(stderr);
 	
 	// CRITICAL: Log immediately at function entry, before any variable declarations
-	logInfo("=== runOptimizationMultipleSymbols ENTRY ===\n");
-	logInfo("=== runOptimizationMultipleSymbols called ===\n");
-	logInfo("  numOptimizedParams=%d, optimizationType=%d, numThreads=%d\n", numOptimizedParams, optimizationType, numThreads);
-	logInfo("  numSymbols=%d, numCandles=%d, minLotSize=%lf\n", numSymbols, numCandles, minLotSize);
-	logInfo("  optimizationUpdate=%p, optimizationFinished=%p\n", (void*)optimizationUpdate, (void*)optimizationFinished);
+	fprintf(stderr, "[OPT] === runOptimizationMultipleSymbols ENTRY ===\n");
+	fflush(stderr);
+	fprintf(stderr, "[OPT] === runOptimizationMultipleSymbols called ===\n");
+	fflush(stderr);
+	fprintf(stderr, "[OPT]   numOptimizedParams=%d, optimizationType=%d, numThreads=%d\n", numOptimizedParams, optimizationType, numThreads);
+	fflush(stderr);
+	fprintf(stderr, "[OPT]   numSymbols=%d, numCandles=%d, minLotSize=%lf\n", numSymbols, numCandles, minLotSize);
+	fflush(stderr);
+	fprintf(stderr, "[OPT]   optimizationUpdate=%p, optimizationFinished=%p\n", (void*)optimizationUpdate, (void*)optimizationFinished);
+	fflush(stderr);
 	
 	//General variables
 	char error_t[MAX_ERROR_LENGTH];
@@ -386,8 +413,10 @@ int __stdcall runOptimizationMultipleSymbols(
 	if (globalExecUnderMPI){	
 		MPI_Comm_size(MPI_COMM_WORLD ,&numProcs);
 		MPI_Comm_rank(MPI_COMM_WORLD ,&myId);
-		logInfo("MPI enabled. Using %d cores\n", numProcs);
-		logInfo("MPI thread %d up & running\n", myId);
+		fprintf(stderr, "[OPT] MPI enabled. Using %d cores\n", numProcs);
+		fflush(stderr);
+		fprintf(stderr, "[OPT] MPI thread %d up & running\n", myId);
+		fflush(stderr);
 	}
 	#endif
 
@@ -397,10 +426,9 @@ int __stdcall runOptimizationMultipleSymbols(
 		#else
 		putenv("OMP_STACKSIZE=256M");
 		#endif
-		if(numThreads > omp_get_num_procs()) numThreads = omp_get_num_procs();
+		// Set OpenMP thread count based on numThreads parameter
 		omp_set_num_threads(numThreads);
-		logInfo("OpenMP enabled. Using %d threads on %d available CPU cores\n", numThreads, omp_get_num_procs());
-		fprintf(stderr, "[OPENMP] Enabled with %d threads on %d CPU cores\n", numThreads, omp_get_num_procs());
+		fprintf(stderr, "[OPENMP] Enabled with %d threads on %d available CPU cores\n", numThreads, omp_get_num_procs());
 		fflush(stderr);
 	#endif
 
@@ -410,14 +438,17 @@ int __stdcall runOptimizationMultipleSymbols(
 		//Parameter space generation
 		fprintf(stderr, "[DEBUG] Calculating possible parameter combinations...\n");
 		fflush(stderr);
-		logInfo("Calculating possible parameter combinations.\n");
+		fprintf(stderr, "[OPT] Calculating possible parameter combinations.\n");
+		fflush(stderr);
 		numCombinations = getParameterSetsNumber(0, numOptimizedParams, optimizationParams);
 		fprintf(stderr, "[DEBUG] Number of parameter combinations: %d\n", numCombinations);
 		fflush(stderr);
-		logInfo("Number of parameter combinations is %d\n", numCombinations);
+		fprintf(stderr, "[OPT] Number of parameter combinations is %d\n", numCombinations);
+		fflush(stderr);
 
 		if (numCombinations > MAXIMUM_PARAMETER_COMBINATIONS){
-			logInfo("Number of parameter combinations is too large (exceeds 10 million). Try a genetic optimization instead.\n");
+			fprintf(stderr, "[OPT] Number of parameter combinations is too large (exceeds 10 million). Try a genetic optimization instead.\n");
+			fflush(stderr);
 			if(optimizationFinished != NULL) optimizationFinished();
 			return true;
 		}
@@ -445,7 +476,8 @@ int __stdcall runOptimizationMultipleSymbols(
 			n++;
 		}
 
-		logInfo("Finished parameter generation, starting runs.\n");
+		fprintf(stderr, "[OPT] Finished parameter generation, starting runs.\n");
+		fflush(stderr);
 		fprintf(stderr, "[DEBUG] Finished parameter generation. Starting runs. numCombinations=%d, myId=%d, numProcs=%d\n", numCombinations, myId, numProcs);
 		fflush(stderr);
 		
@@ -461,7 +493,8 @@ int __stdcall runOptimizationMultipleSymbols(
 			fflush(stderr);
 			fprintf(stderr, "[INIT] Pre-initializing framework before parallel loop (using instanceId=1)\n");
 			fflush(stderr);
-			logInfo("Pre-initializing framework before parallel loop\n");
+			fprintf(stderr, "[OPT] Pre-initializing framework before parallel loop\n");
+			fflush(stderr);
 			int preInitResult = WAIT_FOR_INIT;
 			int preInitTries = 0;
 			int maxPreInitTries = 50;
@@ -486,11 +519,13 @@ int __stdcall runOptimizationMultipleSymbols(
 			if(preInitResult == SUCCESS) {
 				fprintf(stderr, "[INIT] Framework pre-initialized successfully. All threads can now use it.\n");
 				fflush(stderr);
-				logInfo("Framework pre-initialized successfully\n");
+				fprintf(stderr, "[OPT] Framework pre-initialized successfully\n");
+				fflush(stderr);
 			} else {
 				fprintf(stderr, "[INIT] WARNING: Framework pre-initialization failed with code %d. Threads will retry individually.\n", preInitResult);
 				fflush(stderr);
-				logWarning("Framework pre-initialization failed with code %d\n", preInitResult);
+				fprintf(stderr, "[OPT] WARNING: Framework pre-initialization failed with code %d\n", preInitResult);
+				fflush(stderr);
 			}
 		}
 		#endif
@@ -516,6 +551,10 @@ int __stdcall runOptimizationMultipleSymbols(
 		#pragma omp parallel for private(i, n, p, localSettings, currentSet, localRatesInfo, localSymbol, localRates, localAccountInfo, localTestSettings, testResult) schedule(dynamic) if(numThreads > 1)
 		#endif
 		for (i = 0; i<numCombinations; i++){
+			// Thread-local copies of strings that may be modified by normalizeCurrency
+			char *localAccountCurrency = NULL;
+			char *localBrokerName = NULL;
+			char *localRefBrokerName = NULL;
 		#endif
 			#ifdef _OPENMP
 			int thread_id = (numThreads > 1) ? omp_get_thread_num() : 0;
@@ -530,10 +569,7 @@ int __stdcall runOptimizationMultipleSymbols(
 			//Stop optimization if stopOptimization was called
 			fprintf(stderr, "[DEBUG] Checking stopOpti: stopOpti=%d\n", stopOpti);
 			fflush(stderr);
-			fprintf(stderr, "[DEBUG] About to call logInfo (logger may not be initialized yet)\n");
-			fflush(stderr);
-			logInfo("[DEBUG] Loop iteration: i=%d, stopOpti=%d, thread=%d/%d\n", i, stopOpti, thread_id, num_threads);
-			fprintf(stderr, "[DEBUG] After logInfo call\n");
+			fprintf(stderr, "[DEBUG] Loop iteration: i=%d, stopOpti=%d, thread=%d/%d\n", i, stopOpti, thread_id, num_threads);
 			fflush(stderr);
 			fprintf(stderr, "[DEBUG] After stopOpti check, entering if block\n");
 			fflush(stderr);
@@ -542,11 +578,13 @@ int __stdcall runOptimizationMultipleSymbols(
 				fprintf(stderr, "[DEBUG] stopOpti is 0, starting iteration %d on thread %d/%d\n", i, thread_id, num_threads);
 				fflush(stderr);
 				#ifdef _OPENMP
-					logInfo("Starting Iteration %d on thread %d/%d (OpenMP parallel)\n", i, thread_id, num_threads);
+					fprintf(stderr, "[OPT] Starting Iteration %d on thread %d/%d (OpenMP parallel)\n", i, thread_id, num_threads);
+					fflush(stderr);
 					fprintf(stderr, "[THREAD] Iteration %d running on OpenMP thread %d of %d\n", i, thread_id, num_threads);
 					fflush(stderr);
 				#else
-					logInfo("Starting Iteration %d (sequential)\n", i);
+					fprintf(stderr, "[OPT] Starting Iteration %d (sequential)\n", i);
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] Logged: Starting Iteration %d\n", i);
 					fflush(stderr);
 				#endif			
@@ -567,6 +605,29 @@ int __stdcall runOptimizationMultipleSymbols(
 				localSymbol = (char**)malloc(1 * sizeof(char*));
 				localSymbol[0] = (char*)malloc(256*sizeof(char*));
 				strcpy( localSymbol[0], pInTradeSymbol[n] );
+				
+				// Allocate thread-local copies of strings that may be modified by normalizeCurrency
+				localAccountCurrency = (char*)malloc(32 * sizeof(char));
+				localBrokerName = (char*)malloc(256 * sizeof(char));
+				localRefBrokerName = (char*)malloc(256 * sizeof(char));
+				if (localAccountCurrency && safeAccountCurrency) {
+					strncpy(localAccountCurrency, safeAccountCurrency, 31);
+					localAccountCurrency[31] = '\0';
+					fprintf(stderr, "[DEBUG] Allocated localAccountCurrency: '%s' (len=%zu) from '%s'\n", 
+					        localAccountCurrency, strlen(localAccountCurrency), safeAccountCurrency);
+					fflush(stderr);
+				} else {
+					fprintf(stderr, "[DEBUG] ERROR: Failed to allocate localAccountCurrency or safeAccountCurrency is NULL\n");
+					fflush(stderr);
+				}
+				if (localBrokerName && safeBrokerName) {
+					strncpy(localBrokerName, safeBrokerName, 255);
+					localBrokerName[255] = '\0';
+				}
+				if (localRefBrokerName && safeRefBrokerName) {
+					strncpy(localRefBrokerName, safeRefBrokerName, 255);
+					localRefBrokerName[255] = '\0';
+				}
 
 				localRates    = (ASTRates ***)malloc(1 * sizeof(ASTRates**));
 				localRates[0] = (ASTRates **)malloc(10 * sizeof(ASTRates*));
@@ -584,7 +645,8 @@ int __stdcall runOptimizationMultipleSymbols(
 
 				// Check if pInAccountInfo is NULL before using it
 				if (pInAccountInfo == NULL) {
-					logError("ERROR: pInAccountInfo is NULL, cannot allocate localAccountInfo\n");
+					fprintf(stderr, "[OPT] ERROR: pInAccountInfo is NULL, cannot allocate localAccountInfo\n");
+					fflush(stderr);
 					// Clean up and skip this iteration
 					for (p=0;p<10;p++){
 						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
@@ -623,7 +685,8 @@ int __stdcall runOptimizationMultipleSymbols(
 
 				localAccountInfo = (AccountInfo**)malloc(1 * sizeof(AccountInfo*));
 				if (localAccountInfo == NULL) {
-					logError("ERROR: Failed to allocate localAccountInfo\n");
+					fprintf(stderr, "[OPT] ERROR: Failed to allocate localAccountInfo\n");
+					fflush(stderr);
 					// Clean up and skip this iteration
 					for (p=0;p<10;p++){
 						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
@@ -661,7 +724,8 @@ int __stdcall runOptimizationMultipleSymbols(
 				}
 				localAccountInfo[0] = (AccountInfo*)malloc(sizeof(AccountInfo));
 				if (localAccountInfo[0] == NULL) {
-					logError("ERROR: Failed to allocate localAccountInfo[0]\n");
+					fprintf(stderr, "[OPT] ERROR: Failed to allocate localAccountInfo[0]\n");
+					fflush(stderr);
 					free(localAccountInfo); localAccountInfo = NULL;
 					// Clean up and skip this iteration
 					for (p=0;p<10;p++){
@@ -702,7 +766,8 @@ int __stdcall runOptimizationMultipleSymbols(
 
 				localTestSettings = (TestSettings*)malloc(1*sizeof(TestSettings));
 				if (localTestSettings == NULL) {
-					logError("ERROR: Failed to allocate localTestSettings\n");
+					fprintf(stderr, "[OPT] ERROR: Failed to allocate localTestSettings\n");
+					fflush(stderr);
 					// Clean up and skip this iteration
 					if (localAccountInfo != NULL && localAccountInfo[0] != NULL) {
 						free(localAccountInfo[0]); localAccountInfo[0] = NULL;
@@ -750,8 +815,9 @@ int __stdcall runOptimizationMultipleSymbols(
 					localSettings[0][optimizationParams[p].index] = sets[i*numOptimizedParams+p];
 					currentSet[p*2] = (double)optimizationParams[p].index;
 					currentSet[p*2+1] = (double)sets[i*numOptimizedParams+p];
-					logInfo("localSettings[0][optimizationParams[p].index]= %lf, currentSet[p*2] =%lf,currentSet[p*2+1]=%lf\n", 
+					fprintf(stderr, "[OPT] localSettings[0][optimizationParams[p].index]= %lf, currentSet[p*2] =%lf,currentSet[p*2+1]=%lf\n", 
 						localSettings[0][optimizationParams[p].index],currentSet[p*2],currentSet[p*2+1]);
+					fflush(stderr);
 				}
 
 				//testId = 1;
@@ -765,9 +831,17 @@ int __stdcall runOptimizationMultipleSymbols(
 					testId = 1;
 				}
 
-				localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
+				// Preserve instance ID from set file if set, otherwise use calculated value for uniqueness
+				// Note: For multi-threaded optimization, all threads will use the same instance ID from set file.
+				// This is safe because: (1) state files aren't written during backtesting/optimization,
+				// (2) in-memory state access is protected by critical sections, and (3) config lookup needs
+				// the original instance ID to find the correct config file.
+				if (localSettings[0][STRATEGY_INSTANCE_ID] == 0) {
+					localSettings[0][STRATEGY_INSTANCE_ID] = (testId+1)+2*(n+1);
+				}
 
-				logInfo("localSettings[0][ADDITIONAL_PARAM_8]= %lf\n", localSettings[0][ADDITIONAL_PARAM_8]);
+				fprintf(stderr, "[OPT] localSettings[0][ADDITIONAL_PARAM_8]= %lf\n", localSettings[0][ADDITIONAL_PARAM_8]);
+				fflush(stderr);
 
 				// Safety check: ensure all critical parameters are valid before calling runPortfolioTest
 				// Check all timeframes are allocated (runPortfolioTest may access any of them)
@@ -776,7 +850,8 @@ int __stdcall runOptimizationMultipleSymbols(
 					for (p = 0; p < 10; p++) {
 						if (localRates[0][p] == NULL) {
 							allTimeframesValid = FALSE;
-							logError("ERROR: localRates[0][%d] is NULL\n", p);
+							fprintf(stderr, "[OPT] ERROR: localRates[0][%d] is NULL\n", p);
+							fflush(stderr);
 							break;
 						}
 					}
@@ -791,21 +866,28 @@ int __stdcall runOptimizationMultipleSymbols(
 				    localAccountInfo == NULL || localAccountInfo[0] == NULL ||
 				    localTestSettings == NULL || localRatesInfo == NULL || localRatesInfo[0] == NULL ||
 				    safeAccountCurrency == NULL || safeBrokerName == NULL || safeRefBrokerName == NULL) {
-					logError("ERROR: Critical parameter is NULL, cannot run portfolio test\n");
-					logError("  localRates=%p, localRates[0]=%p, localRates[0][0]=%p\n", 
+					fprintf(stderr, "[OPT] ERROR: Critical parameter is NULL, cannot run portfolio test\n");
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   localRates=%p, localRates[0]=%p, localRates[0][0]=%p\n", 
 					         (void*)localRates, localRates ? (void*)localRates[0] : NULL, 
 					         (localRates && localRates[0]) ? (void*)localRates[0][0] : NULL);
-					logError("  localSettings=%p, localSettings[0]=%p\n", 
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   localSettings=%p, localSettings[0]=%p\n", 
 					         (void*)localSettings, localSettings ? (void*)localSettings[0] : NULL);
-					logError("  localSymbol=%p, localSymbol[0]=%p\n", 
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   localSymbol=%p, localSymbol[0]=%p\n", 
 					         (void*)localSymbol, localSymbol ? (void*)localSymbol[0] : NULL);
-					logError("  localAccountInfo=%p, localAccountInfo[0]=%p\n", 
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   localAccountInfo=%p, localAccountInfo[0]=%p\n", 
 					         (void*)localAccountInfo, localAccountInfo ? (void*)localAccountInfo[0] : NULL);
-					logError("  localTestSettings=%p, localRatesInfo=%p, localRatesInfo[0]=%p\n", 
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   localTestSettings=%p, localRatesInfo=%p, localRatesInfo[0]=%p\n", 
 					         (void*)localTestSettings, (void*)localRatesInfo, 
 					         localRatesInfo ? (void*)localRatesInfo[0] : NULL);
-					logError("  safeAccountCurrency=%p, safeBrokerName=%p, safeRefBrokerName=%p\n",
+					fflush(stderr);
+					fprintf(stderr, "[OPT]   safeAccountCurrency=%p, safeBrokerName=%p, safeRefBrokerName=%p\n",
 					         (void*)safeAccountCurrency, (void*)safeBrokerName, (void*)safeRefBrokerName);
+					fflush(stderr);
 					// Clean up and skip this iteration
 					for (p=0;p<10;p++){
 						if (localRates != NULL && localRates[0] != NULL && localRates[0][p] != NULL) {
@@ -864,61 +946,71 @@ int __stdcall runOptimizationMultipleSymbols(
 				fflush(stderr);
 				
 				if (localSettings == NULL || localSettings[0] == NULL) {
-					logError("ERROR: localSettings is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localSettings is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localSettings is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (localSymbol == NULL || localSymbol[0] == NULL) {
-					logError("ERROR: localSymbol is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localSymbol is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localSymbol is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (safeAccountCurrency == NULL) {
-					logError("ERROR: safeAccountCurrency is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: safeAccountCurrency is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: safeAccountCurrency is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (safeBrokerName == NULL) {
-					logError("ERROR: safeBrokerName is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: safeBrokerName is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: safeBrokerName is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (safeRefBrokerName == NULL) {
-					logError("ERROR: safeRefBrokerName is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: safeRefBrokerName is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: safeRefBrokerName is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (localAccountInfo == NULL || localAccountInfo[0] == NULL) {
-					logError("ERROR: localAccountInfo is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localAccountInfo is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localAccountInfo is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (localTestSettings == NULL) {
-					logError("ERROR: localTestSettings is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localTestSettings is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localTestSettings is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (localRatesInfo == NULL || localRatesInfo[0] == NULL) {
-					logError("ERROR: localRatesInfo is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localRatesInfo is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localRatesInfo is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (localRates == NULL || localRates[0] == NULL) {
-					logError("ERROR: localRates is NULL before runPortfolioTest\n");
+					fprintf(stderr, "[OPT] ERROR: localRates is NULL before runPortfolioTest\n");
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: localRates is NULL\n");
 					fflush(stderr);
 					continue;
 				}
 				if (numCandles <= 0) {
-					logError("ERROR: numCandles is invalid (%d) before runPortfolioTest\n", numCandles);
+					fprintf(stderr, "[OPT] ERROR: numCandles is invalid (%d) before runPortfolioTest\n", numCandles);
+					fflush(stderr);
 					fprintf(stderr, "[DEBUG] ERROR: numCandles=%d is invalid\n", numCandles);
 					fflush(stderr);
 					continue;
@@ -934,24 +1026,31 @@ int __stdcall runOptimizationMultipleSymbols(
 				fprintf(stderr, "[OPT] ===== CALLING runPortfolioTest: iteration=%d, testId=%d, thread=%d/%d, numCandles=%d =====\n", 
 				        i, currentTestId, thread_id, num_threads, numCandles);
 				fflush(stderr);
-				logInfo("===== CALLING runPortfolioTest: iteration=%d, testId=%d, thread=%d/%d, numCandles=%d =====\n", 
-				        i, currentTestId, thread_id, num_threads, numCandles);
 				#else
 				fprintf(stderr, "[OPT] ===== CALLING runPortfolioTest: iteration=%d, testId=%d, numCandles=%d =====\n", 
 				        i, currentTestId, numCandles);
 				fflush(stderr);
-				logInfo("===== CALLING runPortfolioTest: iteration=%d, testId=%d, numCandles=%d =====\n", 
-				        i, currentTestId, numCandles);
 				#endif
 				
-				logInfo("Calling runPortfolioTest with testId=%d\n", currentTestId);
+				fprintf(stderr, "[OPT] Calling runPortfolioTest with testId=%d\n", currentTestId);
+				fflush(stderr);
 				fprintf(stderr, "[DEBUG] About to call runPortfolioTest with testId=%d\n", currentTestId);
 				fflush(stderr);
 				// Cast AccountInfo** to double** for runPortfolioTest (it treats AccountInfo as double array)
 				// CRITICAL: Wrap in try-catch equivalent using setjmp/longjmp or check return
 				fprintf(stderr, "[DEBUG] Calling runPortfolioTest NOW...\n");
 				fflush(stderr);
-				testResult = runPortfolioTest(currentTestId, localSettings, localSymbol, safeAccountCurrency, safeBrokerName, safeRefBrokerName, (double**)localAccountInfo, 
+				// Use thread-local copies to avoid race conditions in normalizeCurrency
+				char *accountCurrencyToUse = (localAccountCurrency != NULL) ? localAccountCurrency : safeAccountCurrency;
+				char *brokerNameToUse = (localBrokerName != NULL) ? localBrokerName : safeBrokerName;
+				char *refBrokerNameToUse = (localRefBrokerName != NULL) ? localRefBrokerName : safeRefBrokerName;
+				
+				fprintf(stderr, "[DEBUG] Using accountCurrency: '%s' (len=%zu, ptr=%p, isLocal=%d)\n", 
+				        accountCurrencyToUse, strlen(accountCurrencyToUse), (void*)accountCurrencyToUse, 
+				        (accountCurrencyToUse == localAccountCurrency));
+				fflush(stderr);
+				
+				testResult = runPortfolioTest(currentTestId, localSettings, localSymbol, accountCurrencyToUse, brokerNameToUse, refBrokerNameToUse, (double**)localAccountInfo, 
 									localTestSettings, localRatesInfo, numCandles, 1, localRates, minLotSize, NULL, NULL, NULL);
 				
 				// CRITICAL: Log after runPortfolioTest returns
@@ -960,14 +1059,10 @@ int __stdcall runOptimizationMultipleSymbols(
 				fprintf(stderr, "[OPT] ===== runPortfolioTest RETURNED: iteration=%d, testId=%d, thread=%d/%d, totalTrades=%d, finalBalance=%lf =====\n", 
 				        i, currentTestId, thread_id_after, num_threads, testResult.totalTrades, testResult.finalBalance);
 				fflush(stderr);
-				logInfo("===== runPortfolioTest RETURNED: iteration=%d, testId=%d, thread=%d/%d, totalTrades=%d, finalBalance=%lf =====\n", 
-				        i, currentTestId, thread_id_after, num_threads, testResult.totalTrades, testResult.finalBalance);
 				#else
 				fprintf(stderr, "[OPT] ===== runPortfolioTest RETURNED: iteration=%d, testId=%d, totalTrades=%d, finalBalance=%lf =====\n", 
 				        i, currentTestId, testResult.totalTrades, testResult.finalBalance);
 				fflush(stderr);
-				logInfo("===== runPortfolioTest RETURNED: iteration=%d, testId=%d, totalTrades=%d, finalBalance=%lf =====\n", 
-				        i, currentTestId, testResult.totalTrades, testResult.finalBalance);
 				#endif
 				
 				fprintf(stderr, "[DEBUG] runPortfolioTest CALL COMPLETED. About to check return value...\n");
@@ -977,28 +1072,34 @@ int __stdcall runOptimizationMultipleSymbols(
 				// thread_id_after already declared above, just reuse it
 				fprintf(stderr, "[DEBUG] runPortfolioTest RETURNED successfully. testResult.totalTrades=%d, finalBalance=%lf (thread %d)\n", testResult.totalTrades, testResult.finalBalance, thread_id_after);
 				fflush(stderr);
-				logInfo("runPortfolioTest returned. totalTrades=%d, finalBalance=%lf (thread %d)\n", testResult.totalTrades, testResult.finalBalance, thread_id_after);
+				fprintf(stderr, "[OPT] runPortfolioTest returned. totalTrades=%d, finalBalance=%lf (thread %d)\n", testResult.totalTrades, testResult.finalBalance, thread_id_after);
+				fflush(stderr);
 				#else
 				fprintf(stderr, "[DEBUG] runPortfolioTest RETURNED successfully. testResult.totalTrades=%d, finalBalance=%lf\n", testResult.totalTrades, testResult.finalBalance);
 				fflush(stderr);
-				logInfo("runPortfolioTest returned. totalTrades=%d, finalBalance=%lf\n", testResult.totalTrades, testResult.finalBalance);
+				fprintf(stderr, "[OPT] runPortfolioTest returned. totalTrades=%d, finalBalance=%lf\n", testResult.totalTrades, testResult.finalBalance);
+				fflush(stderr);
 				#endif
 				fprintf(stderr, "[DEBUG] About to call optimizationUpdate callback. optimizationUpdate=%p\n", (void*)optimizationUpdate);
 				fflush(stderr);
-				logInfo("About to call optimizationUpdate callback. optimizationUpdate=%p\n", (void*)optimizationUpdate);
+				fprintf(stderr, "[OPT] About to call optimizationUpdate callback. optimizationUpdate=%p\n", (void*)optimizationUpdate);
+				fflush(stderr);
 				if(optimizationUpdate != NULL) {
 					fprintf(stderr, "[DEBUG] Calling optimizationUpdate callback now...\n");
 					fflush(stderr);
-					logInfo("Calling optimizationUpdate callback now...\n");
+					fprintf(stderr, "[OPT] Calling optimizationUpdate callback now...\n");
+					fflush(stderr);
 					// CRITICAL: Call the callback - this writes results to CSV
 					optimizationUpdate(testResult, currentSet, numParamsInSet);
 					fprintf(stderr, "[DEBUG] optimizationUpdate callback completed successfully\n");
 					fflush(stderr);
-					logInfo("optimizationUpdate callback completed successfully\n");
+					fprintf(stderr, "[OPT] optimizationUpdate callback completed successfully\n");
+					fflush(stderr);
 				} else {
 					fprintf(stderr, "[DEBUG] ERROR: optimizationUpdate callback is NULL!\n");
 					fflush(stderr);
-					logError("ERROR: optimizationUpdate callback is NULL!\n");
+					fprintf(stderr, "[OPT] ERROR: optimizationUpdate callback is NULL!\n");
+					fflush(stderr);
 				}
 
 				for (p=0;p<10;p++){
@@ -1019,6 +1120,19 @@ int __stdcall runOptimizationMultipleSymbols(
 					free(localRates); localRates = NULL;
 					free(localAccountInfo[0]); localAccountInfo[0] = NULL;
 					free(localAccountInfo); localAccountInfo = NULL;
+					// Free thread-local string copies
+					if (localAccountCurrency != NULL) {
+						free(localAccountCurrency);
+						localAccountCurrency = NULL;
+					}
+					if (localBrokerName != NULL) {
+						free(localBrokerName);
+						localBrokerName = NULL;
+					}
+					if (localRefBrokerName != NULL) {
+						free(localRefBrokerName);
+						localRefBrokerName = NULL;
+					}
 
 				}
 				}
@@ -1046,7 +1160,8 @@ int __stdcall runOptimizationMultipleSymbols(
 		if(numThreads > 1) {
 			fprintf(stderr, "[SYNC] Implicit barrier reached - all OpenMP parallel iterations completed.\n");
 			fflush(stderr);
-			logInfo("Implicit barrier reached - all OpenMP parallel iterations completed.\n");
+			fprintf(stderr, "[OPT] Implicit barrier reached - all OpenMP parallel iterations completed.\n");
+			fflush(stderr);
 			// Note: The implicit barrier ensures all threads have finished their loop iterations
 			// Detailed logging in runPortfolioTest tracks each test's lifecycle, so no additional wait needed
 		}
@@ -1145,7 +1260,8 @@ int __stdcall runOptimizationMultipleSymbols(
 				crossoverFunction = ga_crossover_integer_allele_mixing;
 				break;
 			default:
-				logInfo("Crossover Mode %d not implemented\n", optimizationSettings.crossoverMode);
+				fprintf(stderr, "[OPT] ERROR: Crossover Mode %d not implemented\n", optimizationSettings.crossoverMode);
+				fflush(stderr);
 				return false;
 		}
 
@@ -1163,7 +1279,8 @@ int __stdcall runOptimizationMultipleSymbols(
 				mutateFunction = ga_mutate_integer_allpoint;
 				break;
 			default:
-				logInfo("Mutate Mode %d not implemented\n", optimizationSettings.mutationMode);
+				fprintf(stderr, "[OPT] ERROR: Mutate Mode %d not implemented\n", optimizationSettings.mutationMode);
+				fflush(stderr);
 				return false;
 		}
 
@@ -1188,7 +1305,8 @@ int __stdcall runOptimizationMultipleSymbols(
 			   NULL										/* void *                 userdata */
 			);
 
-			logInfo("Attaching slave with rank = %d", myId);
+			fprintf(stderr, "[OPT] Attaching slave with rank = %d\n", myId);
+			fflush(stderr);
 			ga_attach_mpi_slave( pop );
 		}
 		//Main thread for MPI and no MPI
@@ -1212,7 +1330,8 @@ int __stdcall runOptimizationMultipleSymbols(
 			   NULL										/* void *                 userdata */
 			);
 
-			logInfo("Main thread genetic process with rank = %d", myId);
+			fprintf(stderr, "[OPT] Main thread genetic process with rank = %d\n", myId);
+			fflush(stderr);
 
 			ga_population_set_allele_min_integer(pop, 1);
 			ga_population_set_allele_max_integer(pop, 100);

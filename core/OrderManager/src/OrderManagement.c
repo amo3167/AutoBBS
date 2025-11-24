@@ -37,19 +37,20 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-#include "Precompiled.h"
 #include "AsirikuyLogger.h"
 #include "OrderManagement.h"
 #include "OrderSignals.h"
 #include "SymbolAnalyzer.h"
 #include "AsirikuyTime.h"
 #include "Logging.h"
-#include "AsirikuyTechnicalAnalysis.h"
 #include "StrategyUserInterface.h"
 #include "InstanceStates.h"
 #include "TradingWeekBoundaries.h"
-#include "EasyTradeCWrapper.hpp"
+#include "Indicators.h"
 
 #define STOPS_REFERENCE_POINTS 5000 /* A high enough value that the broker SL or TP should never be hit but can be used as a benchmark for calculating the internal SL or TP. */
 #define ELLIPTICAL_SL 0
@@ -115,21 +116,23 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
 
   if (stopLoss == 0)
   {
-		for (i = 0; i < (int)pParams->settings[ATR_AVERAGING_PERIOD]; i++)
-		{
-			high = pParams->ratesBuffers->rates[0].high[shift1Index];
-			low  = pParams->ratesBuffers->rates[0].low[shift1Index];
-			previousClose = pParams->ratesBuffers->rates[0].close[shift1Index-1]; 
-			sumTrueRange += max( high-low, max(fabs(high-previousClose),fabs(low-previousClose)));
-		}
+    for (i = 0; i < (int)pParams->settings[ATR_AVERAGING_PERIOD]; i++)
+    {
+      high = pParams->ratesBuffers->rates[0].high[shift1Index];
+      low  = pParams->ratesBuffers->rates[0].low[shift1Index];
+      previousClose = pParams->ratesBuffers->rates[0].close[shift1Index-1]; 
+      sumTrueRange += max( high-low, max(fabs(high-previousClose),fabs(low-previousClose)));
+    }
 
-	  atr = (1440/(pParams->settings[TIMEFRAME]))*sumTrueRange/(int)pParams->settings[ATR_AVERAGING_PERIOD];
+    atr = (1440/(pParams->settings[TIMEFRAME]))*sumTrueRange/(int)pParams->settings[ATR_AVERAGING_PERIOD];
 
-	  lossInQuoteCurrency = atr*pParams->accountInfo.contractSize;
+    lossInQuoteCurrency = atr*pParams->accountInfo.contractSize;
   }
 
   if (pParams->settings[IS_SPREAD_BETTING] == 1)
-  lossInQuoteCurrency *= pParams->bidAsk.ask[0];
+  {
+    lossInQuoteCurrency *= pParams->bidAsk.ask[0];
+  }
 
   getBaseCurrency(pParams->tradeSymbol, baseTradeCurrency);
   getQuoteCurrency(pParams->tradeSymbol, quoteTradeCurrency);
@@ -169,18 +172,21 @@ double maxLossPerLot(const StrategyParams* pParams, OrderType orderType, double 
   /* If the quote symbol's base matches the deposit currency (like a USD account trading the USDJPY pair) then we multiply for 1/quoteSymbol.*/
   if((strcmp(pParams->accountInfo.currency, baseConversionCurrency) == 0))
   {
-	logDebug("conversionRateBid= %lf, conversionRateAsk = %lf", conversionRateBid,conversionRateAsk);
-	if (conversionRateAsk <= 0) // something wrong on MT4 feed
-		conversionRateAsk = pParams->bidAsk.ask[0];	
-	return(lossInQuoteCurrency / conversionRateAsk);
-
+    logDebug("conversionRateBid= %lf, conversionRateAsk = %lf", conversionRateBid,conversionRateAsk);
+    if (conversionRateAsk <= 0) // something wrong on MT4 feed
+    {
+      conversionRateAsk = pParams->bidAsk.ask[0];	
+    }
+    return(lossInQuoteCurrency / conversionRateAsk);
   }
   /* If we have a case where the quote of the quote symbol matches the deposit currency then we make a straight multiplication (like a CHF account trading EURUSD,
      in this case the quote symbol is USDCHF where the quote of this symbol matches the deposit currency).*/
   else if((strcmp(pParams->accountInfo.currency, quoteConversionCurrency) == 0))
   {
-	  if (conversionRateBid <= 0) // something wrong on MT4 feed
-		  conversionRateBid = pParams->bidAsk.bid[0];
+    if (conversionRateBid <= 0) // something wrong on MT4 feed
+    {
+      conversionRateBid = pParams->bidAsk.bid[0];
+    }
     return(lossInQuoteCurrency * conversionRateBid);
   }
 
@@ -222,7 +228,7 @@ double calculateOrderSize(const StrategyParams* pParams, OrderType orderType, do
 
   if((int)pParams->settings[DISABLE_COMPOUNDING] == TRUE)
   {
-	equity = pParams->settings[ORIGINAL_EQUITY];    
+    equity = pParams->settings[ORIGINAL_EQUITY];    
   } 	
 
   orderSize = 0.01 * pParams->settings[ACCOUNT_RISK_PERCENT] * equity / mLP;
@@ -542,7 +548,7 @@ AsirikuyReturnCode closeLongTrade(StrategyParams* pParams, int resultsIndex)
   }
 
   logInfo("TradeSignal(Exit criteria) : Close BUY. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
-	addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
+  addTradingSignal(SIGNAL_CLOSE_BUY, &tradingSignals);
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
 
   return SUCCESS;
@@ -565,7 +571,7 @@ AsirikuyReturnCode closeShortTrade(StrategyParams* pParams, int resultsIndex)
   }
 
   logInfo("TradeSignal(Exit criteria) : Close SELL. InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
-	addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
+  addTradingSignal(SIGNAL_CLOSE_SELL, &tradingSignals);
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
 
   return SUCCESS;
@@ -627,18 +633,6 @@ static AsirikuyReturnCode validateNewTrade(StrategyParams* pParams, BOOL* pIsNew
     return SUCCESS;
   }
 
-  /*if(pParams->accountInfo.largestDrawdownPercent >= pParams->settings[MAX_DRAWDOWN_PERCENT])
-  {
-    logError("validateNewTrade() Maximum drawdown exceeded. Drawdown = %lf%%, Maximum = %lf%%", pParams->accountInfo.largestDrawdownPercent, pParams->settings[MAX_DRAWDOWN_PERCENT]);
-    return WORST_CASE_SCENARIO;
-  }*/
-
-  /* Check if opening another order will risk a stopout by the broker. */
-  /*if(!isEnoughFreeMargin(pParams, orderType))
-  {
-    logAsirikuyError("validateNewTrade()", NOT_ENOUGH_MARGIN);
-    return NOT_ENOUGH_MARGIN;
-  }*/
 
   if((pParams->bidAsk.ask[0] - pParams->bidAsk.bid[0]) > pParams->settings[MAX_SPREAD])
   {
@@ -692,7 +686,7 @@ AsirikuyReturnCode openOrUpdateLongTrade(StrategyParams* pParams, int ratesIndex
     logInfo("TradeSignal(Entry criteria): Close SELL & Open BUY. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_OPEN_BUY, &tradingSignals);
 
-	setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
+    setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
   }
   else
   {
@@ -701,7 +695,6 @@ AsirikuyReturnCode openOrUpdateLongTrade(StrategyParams* pParams, int ratesIndex
   }
 
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
-//  setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
 
   return SUCCESS;
 }
@@ -748,9 +741,8 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
     logInfo("TradeSignal(Entry criteria): Close BUY & Open SELL. InstanceID = %d, EntryPrice = %lf, Lots = %lf, SL = %lf, TP = %lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->results[resultsIndex].entryPrice, pParams->results[resultsIndex].lots, stopLoss, takeProfit);
     addTradingSignal(SIGNAL_OPEN_SELL, &tradingSignals);
 
-	//only setLastOrderUpdateTime on open a new trade
-	setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
-
+    //only setLastOrderUpdateTime on open a new trade
+    setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
   }
   else
   {
@@ -759,7 +751,6 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
   }
   
   pParams->results[resultsIndex].tradingSignals = tradingSignals;
-//  setLastOrderUpdateTime((int)pParams->settings[STRATEGY_INSTANCE_ID], pParams->ratesBuffers->rates[ratesIndex].time[pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1], (BOOL)pParams->settings[IS_BACKTESTING]);
 
   return SUCCESS;
 }
@@ -767,11 +758,11 @@ AsirikuyReturnCode openOrUpdateShortTrade(StrategyParams* pParams, int ratesInde
 BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfit)
 {
   int i;
-	char tempFilePath[MAX_FILE_PATH_CHARS] ;
-	char instanceIDName[TOTAL_UI_VALUES];
-	char buffer[MAX_FILE_PATH_CHARS] = "";
-	char extension[] = "_orderFail.of" ;
-	FILE *fp;
+  char tempFilePath[MAX_FILE_PATH_CHARS];
+  char instanceIDName[TOTAL_UI_VALUES];
+  char buffer[MAX_FILE_PATH_CHARS] = "";
+  char extension[] = "_orderFail.of";
+  FILE *fp;
 	
   if(pParams == NULL)
   {
@@ -779,8 +770,8 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
     return NULL_POINTER;
   }
 
-	if((BOOL)pParams->settings[IS_BACKTESTING])
-	{
+  if((BOOL)pParams->settings[IS_BACKTESTING])
+  {
     /* Don't run this check when back-testing (execution is perfect) */
     return TRUE;
   }
@@ -807,10 +798,10 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
 
   requestTempFileFolderPath(tempFilePath);
 
-    sprintf(instanceIDName, "%d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
-	strcat(buffer, tempFilePath);
-	strcat(buffer, instanceIDName);
-	strcat(buffer, extension);
+  sprintf(instanceIDName, "%d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
+  strcat(buffer, tempFilePath);
+  strcat(buffer, instanceIDName);
+  strcat(buffer, extension);
    
   fp = fopen(buffer, "r");
 
@@ -819,88 +810,110 @@ BOOL areOrdersCorrect(StrategyParams* pParams, double stopLoss, double takeProfi
     logCritical("areOrdersCorrect() Order error message found, re-running system\n");	
     fclose(fp);	
 
-	// backup the failure order file	
-	if (backup(buffer) <0)
-		logError("Fail to backup file %s ", buffer);
+    // backup the failure order file	
+    if (backup(buffer) < 0)
+    {
+      logError("Fail to backup file %s ", buffer);
+    }
 
-	
     remove(buffer);
     return FALSE;
   }
 
-	return TRUE;
+  return TRUE;
 }
 
+/**
+ * @brief Backs up a file by copying it to a .bak file.
+ *
+ * @param source_file Path to the source file to backup.
+ * @return int 0 on success, -1 on failure.
+ */
 static int backup(char * source_file)
 {
-	char ch;
-	char target_file[MAX_FILE_PATH_CHARS] = "";
-	FILE *source, *target;
+  char ch;
+  char target_file[MAX_FILE_PATH_CHARS] = "";
+  FILE *source, *target;
 
-	strcat(target_file, source_file);
-	strcat(target_file, ".bak\n");
+  strcat(target_file, source_file);
+  strcat(target_file, ".bak");
 
-	source = fopen(source_file, "r\n");
+  source = fopen(source_file, "r");
 
-	if (source == NULL)
-	{
-		logError("Fail to load source file %s", source_file);
-		return -1;
-	}
+  if (source == NULL)
+  {
+    logError("Fail to load source file %s", source_file);
+    return -1;
+  }
 
-	target = fopen(target_file, "w\n");
+  target = fopen(target_file, "w");
 
-	if (target == NULL)
-	{
-		fclose(source);		
-		logError("Fail to load target file %s", target_file);
-		return -1;
-	}
+  if (target == NULL)
+  {
+    fclose(source);		
+    logError("Fail to load target file %s", target_file);
+    return -1;
+  }
 
-	while ((ch = fgetc(source)) != EOF)
-		fputc(ch, target);	
+  while ((ch = fgetc(source)) != EOF)
+  {
+    fputc(ch, target);	
+  }
 
-	fclose(source);
-	fclose(target);
+  fclose(source);
+  fclose(target);
 
-	return 0;
+  return 0;
 }
 
 
+/**
+ * @brief Logs the contents of an order failure file.
+ *
+ * @param pFile Pointer to the file to read.
+ * @return int 0 on success, -1 on failure.
+ */
 int logOrderFailFile(FILE *pFile)
 {
-	long lSize;
-	char * buffer;
-	size_t result;
+  long lSize;
+  char * buffer;
+  size_t result;
 
-	// obtain file size:
-	fseek(pFile, 0, SEEK_END);
-	lSize = ftell(pFile);
-	rewind(pFile);
+  // obtain file size:
+  fseek(pFile, 0, SEEK_END);
+  lSize = ftell(pFile);
+  rewind(pFile);
 
-	// allocate memory to contain the whole file:
-	buffer = (char*)malloc(sizeof(char)*lSize);
-	if (buffer == NULL) 
-	{ 
-		return -1;
-	}
+  // allocate memory to contain the whole file:
+  buffer = (char*)malloc(sizeof(char)*lSize);
+  if (buffer == NULL) 
+  { 
+    return -1;
+  }
 
-	// copy the file into the buffer:
-	result = fread(buffer, 1, lSize, pFile);
-	if (result != lSize)
-	{
-		return -1;
-	}
+  // copy the file into the buffer:
+  result = fread(buffer, 1, lSize, pFile);
+  if (result != lSize)
+  {
+    free(buffer);
+    return -1;
+  }
 
-	/* the whole file is now loaded in the memory buffer. */
-	logCritical("buffer error\n");
+  /* the whole file is now loaded in the memory buffer. */
+  logCritical("buffer error\n");
 
-	// terminate	
-	free(buffer);
-	return 0;
+  // terminate	
+  free(buffer);
+  return 0;
 }
 
-//Return how many previous bars...not the time exactly.
+/**
+ * @brief Returns the age of a currently open trade from the last entry signal type modification.
+ *
+ * @param pParams Strategy parameters.
+ * @param ratesIndex Rate index value.
+ * @return int Number of bars since the virtual order entry.
+ */
 int getOrderAge(StrategyParams* pParams, int ratesIndex)
 {
   AsirikuyReturnCode returnCode = SUCCESS;
@@ -910,11 +923,7 @@ int getOrderAge(StrategyParams* pParams, int ratesIndex)
 
   virtualOrderEntryTime = getInstanceState((int)pParams->settings[STRATEGY_INSTANCE_ID])->lastOrderUpdateTime;
 
-  logInfo("Testing12 : InstanceID = %d, virtualOrderEntryTime = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID],virtualOrderEntryTime);
-
   returnCode = barsToPreviousTime(pParams->ratesBuffers->rates[ratesIndex].time, virtualOrderEntryTime, shift0Index, &barsSinceVirtualOrderEntry);
-
-  logInfo("Testing22223....Kantu System InstanceID = %d", (int)pParams->settings[STRATEGY_INSTANCE_ID]);
 
   if(returnCode != SUCCESS)
   {
@@ -1003,73 +1012,69 @@ AsirikuyReturnCode updateShortTrade(StrategyParams* pParams, int ratesIndex, int
 
 AsirikuyReturnCode trailOpenTrades(StrategyParams* pParams, int ratesIndex, double trailStart, double trailDistance, BOOL useInternalSL, BOOL useInternalTP)
 {
-	AsirikuyReturnCode returnCode = SUCCESS;
-	int i, j = 0;
-	int shift0Index = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
+  AsirikuyReturnCode returnCode = SUCCESS;
+  int i, j = 0;
+  int shift0Index = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
 
-	if((trailStart == 0) || (trailDistance == 0))
-	{
-		return SUCCESS;
-	}
-
-	/* avoid trailing the stop if we are outside of threshold hours*/
-	if (!isValidTradingTime(pParams,pParams->currentBrokerTime))
-	{
-		return SUCCESS;
-	}
-
-	if (trailDistance < pParams->accountInfo.minimumStop)
-	{
-		trailDistance = pParams->accountInfo.minimumStop;
-	}
-
-	for(i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+  if((trailStart == 0) || (trailDistance == 0))
   {
-		if((!pParams->orderInfo[i].isOpen) || (pParams->orderInfo[i].instanceId != (int)pParams->settings[STRATEGY_INSTANCE_ID]))
-		{
-		  continue;
-		}
+    return SUCCESS;
+  }
 
-		pParams->results[j].ticketNumber = pParams->orderInfo[i].ticket;
+  /* avoid trailing the stop if we are outside of threshold hours*/
+  if (!isValidTradingTime(pParams, pParams->currentBrokerTime))
+  {
+    return SUCCESS;
+  }
 
-		pParams->results[j].useTrailingSL = 1;
+  if (trailDistance < pParams->accountInfo.minimumStop)
+  {
+    trailDistance = pParams->accountInfo.minimumStop;
+  }
 
-		/* make sure these values are set to zero
-	     so that we don't trail to a previous value defined by the calling system */
+  for(i = 0; i < pParams->settings[ORDERINFO_ARRAY_SIZE]; i++)
+  {
+    if((!pParams->orderInfo[i].isOpen) || (pParams->orderInfo[i].instanceId != (int)pParams->settings[STRATEGY_INSTANCE_ID]))
+    {
+      continue;
+    }
 
-		pParams->results[j].brokerSL   = 0;
-		pParams->results[j].internalSL = 0;
-		pParams->results[j].brokerTP   = 0;
-		pParams->results[j].internalTP = 0;		
+    pParams->results[j].ticketNumber = pParams->orderInfo[i].ticket;
 
-		if((fabs(pParams->bidAsk.ask[0] - pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) > trailStart ) &&
-			(pParams->bidAsk.ask[0]> pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) &&
-			(pParams->bidAsk.ask[0]-trailDistance > pParams->orderInfo[i].stopLoss) &&
-			(pParams->orderInfo[i].type == BUY))
-		{
+    pParams->results[j].useTrailingSL = 1;
 
-			logInfo("Trail BUY Stop. new SL = %lf, old SL = %lf, old TP = %lf, ask = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.ask[0]-trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.ask[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
-			pParams->results[j].brokerSL   = trailDistance;
-			pParams->results[j].internalSL = 0;
+    /* make sure these values are set to zero
+       so that we don't trail to a previous value defined by the calling system */
 
-		}
+    pParams->results[j].brokerSL   = 0;
+    pParams->results[j].internalSL = 0;
+    pParams->results[j].brokerTP   = 0;
+    pParams->results[j].internalTP = 0;		
 
-		if((fabs(pParams->bidAsk.bid[0] - pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) > trailStart ) &&
-			(pParams->bidAsk.bid[0] < pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) &&
-			(pParams->bidAsk.bid[0]+trailDistance < pParams->orderInfo[i].stopLoss) &&
-			(pParams->orderInfo[i].type == SELL))
-		{	
-			
-			logInfo("Trail SELL Stop. new SL = %lf, old SL = %lf, old TP = %lf, bid = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.bid[0]+trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.bid[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
-			pParams->results[j].brokerSL   = trailDistance;
-			pParams->results[j].internalSL = 0;
+    if((fabs(pParams->bidAsk.ask[0] - pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) > trailStart) &&
+       (pParams->bidAsk.ask[0] > pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) &&
+       (pParams->bidAsk.ask[0]-trailDistance > pParams->orderInfo[i].stopLoss) &&
+       (pParams->orderInfo[i].type == BUY))
+    {
+      logInfo("Trail BUY Stop. new SL = %lf, old SL = %lf, old TP = %lf, ask = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.ask[0]-trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.ask[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
+      pParams->results[j].brokerSL   = trailDistance;
+      pParams->results[j].internalSL = 0;
+    }
 
-		}
+    if((fabs(pParams->bidAsk.bid[0] - pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) > trailStart) &&
+       (pParams->bidAsk.bid[0] < pParams->ratesBuffers->rates[ratesIndex].open[shift0Index-getOrderAge(pParams, ratesIndex)]) &&
+       (pParams->bidAsk.bid[0]+trailDistance < pParams->orderInfo[i].stopLoss) &&
+       (pParams->orderInfo[i].type == SELL))
+    {	
+      logInfo("Trail SELL Stop. new SL = %lf, old SL = %lf, old TP = %lf, bid = %lf, TD = %lf, TS = %lf, minStop = %lf", (pParams->bidAsk.bid[0]+trailDistance), pParams->orderInfo[i].stopLoss, pParams->orderInfo[i].takeProfit, pParams->bidAsk.bid[0], trailDistance, trailStart, pParams->accountInfo.minimumStop);
+      pParams->results[j].brokerSL   = trailDistance;
+      pParams->results[j].internalSL = 0;
+    }
 
-		j++ ;
-	} 
+    j++;
+  } 
 
-	return SUCCESS;
+  return SUCCESS;
 }
 
 double roundN(double value, int to)
@@ -1171,33 +1176,28 @@ double CalculateEllipticalStopLoss(StrategyParams* pParams, double target, int m
   cumsd = SampleCumSDBBEstimate(variance, z, maxHoldingTime, orderBarsAge, ELLIPTICAL_SL);
   y = 1. * orderBarsAge / (maxHoldingTime * 1.) * target;
 
-  ellipticalStopLoss = cumsd - y ;
-
- // logInfo("SL -- cumsd = %lf y = %lf var= %10.10lf", cumsd, y, variance);
+  ellipticalStopLoss = cumsd - y;
 
   return (ellipticalStopLoss);
 }
 
 double CalculateEllipticalTakeProfit(StrategyParams* pParams, double target, int maxHoldingTime, double z, int orderBarsAge)
 {
-  // Print ("FdF.Inst.BBridge.Calc\n");
-   double variance;
-   double ellipticalTakeProfit;
-   double cumsd, y;
-   variance = roundN(CalculateVar(pParams, maxHoldingTime), 8);
+  double variance;
+  double ellipticalTakeProfit;
+  double cumsd, y;
+  
+  variance = roundN(CalculateVar(pParams, maxHoldingTime), 8);
 
-	if (orderBarsAge > maxHoldingTime)
-	{
+  if (orderBarsAge > maxHoldingTime)
+  {
     orderBarsAge = maxHoldingTime;
-	}
+  }
 
-   cumsd = SampleCumSDBBEstimate(variance, z, maxHoldingTime, orderBarsAge, ELLIPTICAL_TP);
-   y = 1. * orderBarsAge / (maxHoldingTime * 1.) * target;
+  cumsd = SampleCumSDBBEstimate(variance, z, maxHoldingTime, orderBarsAge, ELLIPTICAL_TP);
+  y = 1. * orderBarsAge / (maxHoldingTime * 1.) * target;
 
-   ellipticalTakeProfit = cumsd - y;
+  ellipticalTakeProfit = cumsd - y;
 
- // logInfo("TP -- cumsd = %lf y = %lf var = %10.10lf, maxhold = %d", cumsd, y, variance, maxHoldingTime, orderBarsAge);
-
-//   Print (target, " ", sl, " ", cumsd);
-   return (ellipticalTakeProfit);
+  return (ellipticalTakeProfit);
 }

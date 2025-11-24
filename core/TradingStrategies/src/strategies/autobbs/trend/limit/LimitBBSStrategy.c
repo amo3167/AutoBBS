@@ -4,18 +4,17 @@
  * Provides Limit BBS strategy execution functions.
  */
 
-#include "Precompiled.h"
+#include <math.h>
+#include <string.h>
+#include <stdio.h>
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
+#include "InstanceStates.h"  // Defines min/max as fmin/fmax, requires math.h to be included first
 #include "strategies/autobbs/trend/limit/LimitBBSStrategy.h"
-#include "strategies/autobbs/trend/limit/LimitOrderSplitting.h"
-#include "strategies/autobbs/trend/common/RangeOrderManagement.h"
 #include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"
 
 AsirikuyReturnCode workoutExecutionTrend_Limit_BBS(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
@@ -151,17 +150,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BBS(StrategyParams* pParams, Indi
 
 			return SUCCESS;
 		}
-		//if (iAtr(B_DAILY_RATES, 1, 1) >= pBase_Indicators->dailyATR * 2)
-		//{
-		//	pIndicators->risk = 0.6;
-		//}
-		//if (fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) >= pBase_Indicators->pWeeklyPredictATR / 3)
 	}
 
-	// Additional variable declarations needed for the rest of the function
 	struct tm timeInfo2;
-	double currentLow = iLow(B_DAILY_RATES, 0);
-	double currentHigh = iHigh(B_DAILY_RATES, 0);
 	double preHist1, preHist2;
 	double fast1, fast2;
 	double slow1, slow2;
@@ -397,7 +388,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BBS(StrategyParams* pParams, Indi
 			closeAllLongs();
 		}
 	}
-
 
 	return SUCCESS;
 }

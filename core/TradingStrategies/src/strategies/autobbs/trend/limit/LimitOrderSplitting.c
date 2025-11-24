@@ -6,10 +6,8 @@
  * support/resistance levels (pivot, S1, R1) for range trading strategies.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
+#include "OrderManagement.h"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
@@ -47,14 +45,9 @@ void splitRangeBuyOrders_Limit(StrategyParams* pParams, Indicators* pIndicators,
 {
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	time_t currentTime;
-	struct tm timeInfo1;
-	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double lots;
 	double gap = iAtr(B_HOURLY_RATES, ATR_PERIOD_HOURLY, 1);
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-
-	safe_gmtime(&timeInfo1, currentTime);
-	safe_timeString(timeString, currentTime);
 
 	lots = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, pIndicators->stopLoss) * pIndicators->risk;
 
@@ -101,19 +94,11 @@ void splitRangeSellOrders_Limit(StrategyParams* pParams, Indicators* pIndicators
 {
 	int shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	time_t currentTime;
-	struct tm timeInfo1;
-	char timeString[MAX_TIME_STRING_SIZE] = "";
-	double currentPrice;
 	double lots;
 	double gap = iAtr(B_HOURLY_RATES, ATR_PERIOD_HOURLY, 1);
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
 
-	safe_gmtime(&timeInfo1, currentTime);
-	safe_timeString(timeString, currentTime);
-
 	lots = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, pIndicators->stopLoss) * pIndicators->risk;
-
-	currentPrice = pParams->bidAsk.ask[0];
 
 	// Place sell limit order at daily pivot
 	pIndicators->entryPrice = pBase_Indicators->dailyPivot;
@@ -134,10 +119,6 @@ void splitRangeSellOrders_Limit(StrategyParams* pParams, Indicators* pIndicators
 	{
 		openSingleSellLimitEasy(pIndicators->entryPrice, pIndicators->takePrice, pIndicators->stopLoss, lots / LOT_SIZE_SPLIT_HALF, 1);
 	}
-
-
-	
-
 }
 
 // Mode constants
@@ -170,10 +151,7 @@ void splitBuyOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Base
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	double currentPrice;
 	double lots;
-	double gap = iAtr(B_HOURLY_RATES, 20, 1);
-	double pATR = pBase_Indicators->pDailyATR;
-	double pHigh = pBase_Indicators->pDailyHigh;
-	double pLow = pBase_Indicators->pDailyLow;		
+	double gap = iAtr(B_HOURLY_RATES, ATR_PERIOD_HOURLY, 1);
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];	
 	
@@ -277,9 +255,6 @@ void splitSellOrders_Limit(StrategyParams* pParams, Indicators* pIndicators, Bas
 	double currentPrice;
 	double lots;
 	double gap = iAtr(B_HOURLY_RATES, ATR_PERIOD_HOURLY, 1);
-	double pATR = pBase_Indicators->pDailyATR;
-	double pHigh = pBase_Indicators->pDailyHigh;
-	double pLow = pBase_Indicators->pDailyLow;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
 

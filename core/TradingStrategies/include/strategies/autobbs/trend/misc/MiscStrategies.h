@@ -5,9 +5,10 @@
 
 #ifndef ASIRIKUY_DEFINES_H_
 #include "AsirikuyDefines.h"
+#endif
+
 #include "strategies/autobbs/shared/ComLib.h"
 #include "strategies/autobbs/base/Base.h"
-#endif
 
 #ifdef __cplusplus
 extern "C" {

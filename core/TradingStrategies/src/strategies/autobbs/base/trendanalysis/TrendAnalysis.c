@@ -10,14 +10,9 @@
  * market direction and potential reversal points.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
-#include "AsirikuyTime.h"
-#include "InstanceStates.h"
-#include "AsirikuyLogger.h"
 #include "strategies/autobbs/base/trendanalysis/TrendAnalysis.h"
 
 #define USE_INTERNAL_SL FALSE

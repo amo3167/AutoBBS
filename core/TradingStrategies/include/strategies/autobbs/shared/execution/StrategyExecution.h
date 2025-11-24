@@ -44,16 +44,6 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams* pParams, Indicators* pI
 AsirikuyReturnCode workoutExecutionTrend_Auto(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
 /**
- * Auto Hedge strategy execution.
- * 
- * @param pParams Strategy parameters
- * @param pIndicators Strategy indicators
- * @param pBase_Indicators Base indicators
- * @return AsirikuyReturnCode
- */
-AsirikuyReturnCode workoutExecutionTrend_Auto_Hedge(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
-
-/**
  * XAUUSD Day Trading strategy execution.
  * 
  * @param pParams Strategy parameters

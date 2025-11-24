@@ -1,193 +1,146 @@
-/*
- * Day Trading Order Splitting Module
+/**
+ * @file DayTradingOrderSplitting.c
+ * @brief Day Trading Order Splitting Module
  * 
- * Provides order splitting functions for day trading strategies.
- * Used by splitTradeMode 16 and 18.
+ * Provides order splitting functions for daily swing trading strategies.
+ * These functions are used by splitTradeMode 16 to calculate lot sizes and
+ * take profit levels based on daily price gaps and trend phases.
+ * 
+ * @author AutoBBS Team
  */
 
-#include "Precompiled.h"
+#include <math.h>
 #include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "InstanceStates.h"
 #include "strategies/autobbs/swing/daytrading/DayTradingOrderSplitting.h"
-// splitBuyOrders_Daily_Swing is implemented in OrderSplitting.c - removed duplicate
-#if 0
-// Removed duplicate function body - see OrderSplitting.c for implementation
+
+/**
+ * Split buy orders for daily swing strategy.
+ * 
+ * Calculates lot sizes and take profit levels for buy orders based on:
+ * - Daily price gap (high - entry price)
+ * - Daily trend phase (range vs trending)
+ * - Loss history (loss times and total lose pips)
+ * 
+ * The function uses a base take profit of 3 pips, which is adjusted based on
+ * the gap and trend phase. Lot sizes are calculated to recover previous losses
+ * while maintaining risk management.
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators containing entry price, risk, and loss history
+ * @param pBase_Indicators Base indicators containing daily trend phase and price levels
+ * @param takePrice_primary Primary take profit price (unused, kept for API compatibility)
+ * @param stopLoss Stop loss price for the orders
+ * 
+ * @note Used by splitTradeMode 16
+ */
 void splitBuyOrders_Daily_Swing(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss)
 {
 	double takePrice;
-	double pATR = pBase_Indicators->pDailyATR;
 	double pHigh = pBase_Indicators->pDailyHigh;
-	double pLow = pBase_Indicators->pDailyLow;
-	double lots, lots_singal, lots_standard, lots_max;
+	double lots;
+	double lots_signal;
 	double gap = pHigh - pIndicators->entryPrice;
-	time_t currentTime;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int lostDays;
-	double total_pre_lost = 0;
 
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
+	// Base take profit is 3 pips
+	takePrice = 3.0;
 
-	//if (gap >= 1)
+	// Calculate signal lot size based on base take profit
+	lots_signal = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, takePrice) * pIndicators->risk;
+
+	// Calculate total lot size to recover losses
+	// If loss times < 2, add signal lot; otherwise, only recover losses
+	if (pIndicators->lossTimes < 2)
 	{
-		//if (gap * 2 / 3 < 2)
-		//	takePrice = 2;
-		//else
-		//	takePrice = min(gap * 2 / 3, 3);
+		lots = pIndicators->total_lose_pips / takePrice + lots_signal;
+	}
+	else
+	{
+		lots = pIndicators->total_lose_pips / takePrice;
+	}
 
-		takePrice = 3;
+	// Adjust take profit based on gap and trend phase
+	if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
+	{
+		// In range phase: use minimum of gap or 3 pips
+		takePrice = min(gap, 3.0);
+	}
+	else if (gap > 0.0)
+	{
+		// In trending phase: use maximum of (gap * 2/3) or 3 pips
+		takePrice = max(gap * 2.0 / 3.0, 3.0);
+	}
 
-		lots_singal = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, takePrice)* pIndicators->risk;
-
-		//lostDays = getLossTimesInPreviousDaysEasy(currentTime, &total_pre_lost);
-
-		//lots = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, takePrice) * pIndicators->risk;	
-		//if (pIndicators->total_lose_pips > takePrice * lots)
-		
-		if (pIndicators->lossTimes < 2)
-			lots = pIndicators->total_lose_pips / takePrice + lots_singal;
-		else
-			lots = pIndicators->total_lose_pips / takePrice;		
-		
-
-		//lostDays = getLossTimesInPreviousDaysEasy(currentTime, &total_pre_lost);
-		//if (lostDays >= 1)
-		//	lots *= (lostDays + 0.5);
-
-
-		//lots_standard = (pIndicators->total_lose_pips + total_pre_lost) / takePrice + lots_singal;
-
-		//lots = min(lots, lots_standard);
-
-		////�@�Yʹ�ù�Ӌֹ�p50�c��Ȼ������L�U��2%
-		////Cap the max risk
-		//lots_max = calculateOrderSizeWithSpecificRisk(pParams, BUY, pIndicators->entryPrice, 5, 2);
-
-		//lots = min(lots, lots_max);
-
-
-		if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
-			takePrice = min(gap, 3);
-		else if (gap > 0)
-			takePrice = max(gap * 2 / 3, 3);
-
-		if (takePrice >= 1)
-		{
-			//lots = 3 / takePrice * lots;
-			openSingleLongEasy(takePrice, stopLoss, lots, 0);
-		}
+	// Open order if take profit is at least 1 pip
+	if (takePrice >= 1.0)
+	{
+		openSingleLongEasy(takePrice, stopLoss, lots, 0);
 	}
 }
-#endif
 
+/**
+ * Split sell orders for daily swing strategy.
+ * 
+ * Calculates lot sizes and take profit levels for sell orders based on:
+ * - Daily price gap (entry price - low)
+ * - Daily trend phase (range vs trending)
+ * - Loss history (loss times and total lose pips)
+ * 
+ * The function uses a base take profit of 3 pips, which is adjusted based on
+ * the gap and trend phase. Lot sizes are calculated to recover previous losses
+ * while maintaining risk management.
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators containing entry price, risk, and loss history
+ * @param pBase_Indicators Base indicators containing daily trend phase and price levels
+ * @param takePrice_primary Primary take profit price (unused, kept for API compatibility)
+ * @param stopLoss Stop loss price for the orders
+ * 
+ * @note Used by splitTradeMode 16
+ */
 void splitSellOrders_Daily_Swing(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss)
 {
 	double takePrice;
-	double pATR = pBase_Indicators->pDailyATR;
-	double pHigh = pBase_Indicators->pDailyHigh;
 	double pLow = pBase_Indicators->pDailyLow;
-	double lots, lots_singal, lots_standard,lots_max;
+	double lots;
+	double lots_signal;
 	double gap = pIndicators->entryPrice - pLow;
 
-	time_t currentTime;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int lostDays;
-	double total_pre_lost = 0;
+	// Base take profit is 3 pips
+	takePrice = 3.0;
 
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
+	// Calculate signal lot size based on base take profit
+	lots_signal = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, takePrice) * pIndicators->risk;
 
-	//if (gap >= 1)
+	// Calculate total lot size to recover losses
+	// If loss times < 2, add signal lot; otherwise, only recover losses
+	if (pIndicators->lossTimes < 2)
 	{
-		
-		takePrice = 3;
-		lots_singal = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, takePrice)* pIndicators->risk;
-		//lots = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, takePrice) * pIndicators->risk;		
-
-		//lots = (pIndicators->total_lose_pips + total_pre_lost) / takePrice + lots_singal;
-		if (pIndicators->lossTimes < 2)
-			lots = pIndicators->total_lose_pips / takePrice + lots_singal;
-		else
-			lots = pIndicators->total_lose_pips / takePrice;
-					
-		//lostDays = getLossTimesInPreviousDaysEasy(currentTime, &total_pre_lost);
-		//if (lostDays >= 1)							
-		//	lots *= (lostDays + 0.5);
-
-		//lots_standard = (pIndicators->total_lose_pips + total_pre_lost) / takePrice + lots_singal;
-
-		//lots = min(lots, lots_standard);
-		//
-		////�@�Yʹ�ù�Ӌֹ�p50�c��Ȼ������L�U��2%
-		////Cap the max risk
-		//lots_max = calculateOrderSizeWithSpecificRisk(pParams, SELL, pIndicators->entryPrice, 5, 2);
-
-		//lots = min(lots, lots_max);
-
-		if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
-			takePrice = min(gap,3);
-		else if (gap > 0)
-			takePrice = max(gap*2/3, 3);
-
-		if (takePrice >= 1)
-		{
-			//lots = 3 / takePrice * lots;
-			openSingleShortEasy(takePrice, stopLoss, lots, 0);
-		}
+		lots = pIndicators->total_lose_pips / takePrice + lots_signal;
 	}
-	
+	else
+	{
+		lots = pIndicators->total_lose_pips / takePrice;
+	}
 
-}
+	// Adjust take profit based on gap and trend phase
+	if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
+	{
+		// In range phase: use minimum of gap or 3 pips
+		takePrice = min(gap, 3.0);
+	}
+	else if (gap > 0.0)
+	{
+		// In trending phase: use maximum of (gap * 2/3) or 3 pips
+		takePrice = max(gap * 2.0 / 3.0, 3.0);
+	}
 
-void splitBuyOrders_Daily_Swing_ExecutionOnly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss)
-{
-	double takePrice;
-	double pATR = pBase_Indicators->pDailyATR;
-	double pHigh = pBase_Indicators->pDailyHigh;
-	double pLow = pBase_Indicators->pDailyLow;
-	double lots, lots_singal, lots_standard;
-	double gap = pHigh - pIndicators->entryPrice;
-	time_t currentTime;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int lostDays;
-	double total_pre_lost = 0;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-		
-	//lots_singal = calculateOrderSize(pParams, BUY, pIndicators->entryPrice, pIndicators->takePrice)* pIndicators->risk;
-
-	//takePrice = max(pBase_Indicators->pDailyMaxATR - pIndicators->atr0, pIndicators->takePrice);	
-	//takePrice = 0;
-	//openSingleLongEasy(takePrice, stopLoss, lots_singal, 0);
-	takePrice = gap - pIndicators->adjust;
-	openSingleLongEasy(takePrice, stopLoss, 0, pIndicators->risk);
-
-}
-
-void splitSellOrders_Daily_Swing_ExecutionOnly(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss)
-{
-	double takePrice;
-	double pATR = pBase_Indicators->pDailyATR;
-	double pHigh = pBase_Indicators->pDailyHigh;
-	double pLow = pBase_Indicators->pDailyLow;
-	double lots, lots_singal, lots_standard;
-	double gap = pHigh - pIndicators->entryPrice;
-	time_t currentTime;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int lostDays;
-	double total_pre_lost = 0;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-		
-	//lots_singal = calculateOrderSize(pParams, SELL, pIndicators->entryPrice, pIndicators->takePrice)* pIndicators->risk;
-
-	////takePrice = max(pBase_Indicators->pDailyMaxATR - pIndicators->atr0, pIndicators->takePrice);	
-	//takePrice = 0;
-
-	//openSingleShortEasy(takePrice, stopLoss, lots_singal, 0);
-	takePrice = gap - pIndicators->adjust;
-	openSingleShortEasy(takePrice, stopLoss, 0, pIndicators->risk);
-
+	// Open order if take profit is at least 1 pip
+	if (takePrice >= 1.0)
+	{
+		openSingleShortEasy(takePrice, stopLoss, lots, 0);
+	}
 }

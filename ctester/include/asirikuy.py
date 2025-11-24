@@ -47,16 +47,28 @@ def loadLibrary(library):
         possible_paths = [
             library,
             os.path.join(project_root, "bin", "gmake", "x64", "Debug", library),
+            os.path.join(project_root, "bin", "gmake", "x64", "Debug", "lib", library),
             os.path.join(project_root, "bin", "gmake", "x64", "Release", library),
+            os.path.join(project_root, "bin", "gmake", "x64", "Release", "lib", library),
             os.path.join(ctester_dir, library),
             f"../bin/gmake/x64/Debug/{library}",
+            f"../bin/gmake/x64/Debug/lib/{library}",
             f"../bin/gmake/x64/Release/{library}",
+            f"../bin/gmake/x64/Release/lib/{library}",
             f"./bin/gmake/x64/Debug/{library}",
+            f"./bin/gmake/x64/Debug/lib/{library}",
             f"./bin/gmake/x64/Release/{library}",
+            f"./bin/gmake/x64/Release/lib/{library}",
         ]
         for path in possible_paths:
             abs_path = os.path.abspath(path)
             if os.path.exists(abs_path):
+                # Log which library path is being loaded (for verification)
+                import stat
+                import time
+                mtime = os.path.getmtime(abs_path)
+                mtime_str = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(mtime))
+                print(f"[DEBUG] Loading library from: {abs_path} (modified: {mtime_str})")
                 return cdll.LoadLibrary(abs_path)
         # Fallback to system search
         try:

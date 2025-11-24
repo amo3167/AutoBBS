@@ -6,17 +6,12 @@
  * to determine entry signals for longer-term trend-following trades.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
 #include "strategies/autobbs/trend/ichimoko/IchimokoWeeklyStrategy.h"
-#include "strategies/autobbs/trend/ichimoko/IchimokoOrderSplitting.h"
 
 // Strategy configuration constants
 #define SPLIT_TRADE_MODE_ICHIMOKO_WEEKLY 33 // Split trade mode for Ichimoko Weekly strategy
@@ -90,15 +85,12 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Weekly_Index(StrategyParams* p
 	time_t currentTime;
 	struct tm timeInfo1;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
 	double preWeeklyClose, preWeeklyClose1, preWeeklyClose2, preDailyClose;
 	double shortWeeklyHigh = 0.0, shortWeeklyLow = 0.0, weeklyHigh = 0.0, weeklyLow = 0.0;
 	double weekly_baseline = 0.0, weekly_baseline_short = 0.0;
 	int orderIndex;
-	int dailyOnly = 1;
 
 	double targetPNL = 0;
-	double strategyMarketVolRisk = 0.0;
 	double strategyVolRisk = 0.0;
 
 	double freeMargin = 0.0;
@@ -152,35 +144,30 @@ AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Weekly_Index(StrategyParams* p
 				
 		pBase_Indicators->weeklyATR = iAtr(B_WEEKLY_RATES, ATR_PERIOD_WEEKLY, 1);
 
-		if (//preWeeklyClose > weekly_baseline						
-			//&& preWeeklyClose > weekly_baseline_short
-			//&& weekly_baseline_short > weekly_baseline		
-			//&& 
-			(	(preWeeklyClose1 < preWeeklyClose2 && preWeeklyClose > preWeeklyClose1 && weekly_baseline - pIndicators->entryPrice > 0) ||
-				(pIndicators->entryPrice > weekly_baseline && pIndicators->entryPrice < weekly_baseline_short)
-			)
-			//preWeeklyClose1 < preWeeklyClose2 && preWeeklyClose > preWeeklyClose1
-			&& !isSamePricePendingOrderEasy(pIndicators->entryPrice, ATR_MULTIPLIER_FOR_PENDING_CHECK * pBase_Indicators->weeklyATR)
-			)
+		if ((preWeeklyClose1 < preWeeklyClose2 && preWeeklyClose > preWeeklyClose1 && weekly_baseline - pIndicators->entryPrice > 0) ||
+			(pIndicators->entryPrice > weekly_baseline && pIndicators->entryPrice < weekly_baseline_short))
 		{
-			pIndicators->entrySignal = 1;
-			
-			// Adjust risk based on distance from entry price to weekly baseline
-			if (weekly_baseline - pIndicators->entryPrice > 2 * pBase_Indicators->weeklyATR)
+			if (!isSamePricePendingOrderEasy(pIndicators->entryPrice, ATR_MULTIPLIER_FOR_PENDING_CHECK * pBase_Indicators->weeklyATR))
 			{
-				pIndicators->risk = RISK_LEVEL_4;
-			}
-			else if (weekly_baseline - pIndicators->entryPrice > pBase_Indicators->weeklyATR)
-			{
-				pIndicators->risk = RISK_LEVEL_3;
-			}
-			else if (weekly_baseline - pIndicators->entryPrice > 0)
-			{
-				pIndicators->risk = RISK_LEVEL_2;
-			}
-			else
-			{
-				pIndicators->risk = RISK_LEVEL_1;
+				pIndicators->entrySignal = 1;
+				
+				// Adjust risk based on distance from entry price to weekly baseline
+				if (weekly_baseline - pIndicators->entryPrice > 2 * pBase_Indicators->weeklyATR)
+				{
+					pIndicators->risk = RISK_LEVEL_4;
+				}
+				else if (weekly_baseline - pIndicators->entryPrice > pBase_Indicators->weeklyATR)
+				{
+					pIndicators->risk = RISK_LEVEL_3;
+				}
+				else if (weekly_baseline - pIndicators->entryPrice > 0)
+				{
+					pIndicators->risk = RISK_LEVEL_2;
+				}
+				else
+				{
+					pIndicators->risk = RISK_LEVEL_1;
+				}
 			}
 		}
 

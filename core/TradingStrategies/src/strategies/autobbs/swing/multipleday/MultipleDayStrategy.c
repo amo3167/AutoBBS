@@ -30,6 +30,7 @@
 #include "strategies/autobbs/swing/multipleday/MultipleDayStrategy.h"
 #include "strategies/autobbs/swing/multipleday/MultipleDayHelpers.h"
 #include "strategies/autobbs/swing/multipleday/MultipleDayOrderManagement.h"
+#include "strategies/autobbs/swing/daytrading/DayTradingHelpers.h"
 #include <math.h>
 #include <string.h>
 

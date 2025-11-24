@@ -6,17 +6,13 @@
  * for longer-term trend-following trades.
  */
 
-#include "Precompiled.h"
-#include "OrderManagement.h"
-#include "Logging.h"
+#include <string.h>
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-#include "InstanceStates.h"
 #include "strategies/autobbs/trend/macd/MACDWeeklyStrategy.h"
-#include "strategies/autobbs/trend/macd/MACDOrderSplitting.h"
 
 // Strategy configuration constants
 #define SPLIT_TRADE_MODE_MACD_WEEKLY 25    // Split trade mode for MACD Weekly strategy

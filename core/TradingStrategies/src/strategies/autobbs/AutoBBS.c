@@ -15,7 +15,8 @@
  * controlled by the AUTOBBS_TREND_MODE parameter.
  */
 
-#include "Precompiled.h"
+#include <string.h>
+#include <math.h>
 #include "OrderManagement.h"
 #include "Logging.h"
 #include "EasyTradeCWrapper.hpp"
@@ -23,13 +24,33 @@
 #include "AsirikuyTime.h"
 #include "InstanceStates.h"
 #include "strategies/autobbs/shared/ComLib.h"
-#include "strategies/autobbs/swing/SwingStrategy.h"
-#include "strategies/autobbs/trend/TrendStrategy.h"
 #include "StrategyUserInterface.h"
 #include "AsirikuyLogger.h"
-#include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"
 #include "strategies/autobbs/shared/execution/StrategyExecution.h"
 #include "strategies/autobbs/shared/ordersplitting/OrderSplitting.h"
+#include "strategies/autobbs/shared/indicators/IndicatorManagement.h"
+#if defined _WIN32 || defined _WIN64
+#include <windows.h>
+#elif defined __APPLE__ || defined __linux__
+#include <sys/time.h>
+#endif
+
+// Timing helper function for performance measurement
+static double getCurrentTimeMs(void)
+{
+#if defined _WIN32 || defined _WIN64
+	LARGE_INTEGER frequency, counter;
+	QueryPerformanceFrequency(&frequency);
+	QueryPerformanceCounter(&counter);
+	return (double)counter.QuadPart * 1000.0 / (double)frequency.QuadPart;
+#elif defined __APPLE__ || defined __linux__
+	struct timeval tv;
+	gettimeofday(&tv, NULL);
+	return (double)tv.tv_sec * 1000.0 + (double)tv.tv_usec / 1000.0;
+#else
+	return 0.0;
+#endif
+}
 
 #define USE_INTERNAL_SL FALSE
 #define USE_INTERNAL_TP FALSE
@@ -61,271 +82,7 @@
 // Risk cap constants
 #define RISK_CAP_DEFAULT 0
 
-/**
- * Sets UI values for display in the trading interface.
- * 
- * Updates the user interface with current indicator values based on
- * the AUTOBBS_TREND_MODE setting. Different modes display different
- * sets of values optimized for their specific trading approach.
- * 
- * @param pParams Strategy parameters containing rates and settings
- * @param pIndicators Strategy indicators structure
- * @param pBase_Indicators Base indicators structure
- * @return SUCCESS on success
- */
-static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
-{
-	switch ((int)parameter(AUTOBBS_TREND_MODE))
-	{
-	case 0:
-		// Standard trend mode UI values
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("dailyTP", pBase_Indicators->dailyTP);
-		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
-		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
-		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_excution);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("bbsTrend_4H", pIndicators->bbsTrend_4H);
-		addValueToUI("bbsStopPrice_4H", pIndicators->bbsStopPrice_4H);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 2:
-	case 3:
-		// MACD and Shellington trend modes
-		addValueToUI("MacdTrend", pBase_Indicators->mACDInTrend);
-		addValueToUI("ShellingtonTrend", pBase_Indicators->shellingtonInTrend);
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("flatTrend", pBase_Indicators->flatTrend);
-		addValueToUI("dailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS1", pBase_Indicators->dailyS1);
-		addValueToUI("DailyR1", pBase_Indicators->dailyR1);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("maxATR", pBase_Indicators->pDailyMaxATR);
-		addValueToUI("takeProfit", pIndicators->takePrice);
-		addValueToUI("stopLoss", pIndicators->stopLoss);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 5:
-		// Day trading mode
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("BBSTrend_primary", pIndicators->bbsTrend_primary);
-		addValueToUI("BBSStopPrice_primary", pIndicators->bbsStopPrice_primary);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 6:
-		// Alternative trend mode
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("DailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 9:
-		// MACD with ATR euro range mode
-		addValueToUI("MacdTrend", pBase_Indicators->mACDInTrend);
-		addValueToUI("ShellingtonTrend", pBase_Indicators->shellingtonInTrend);
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("dailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS1", pBase_Indicators->dailyS1);
-		addValueToUI("DailyR1", pBase_Indicators->dailyR1);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("maxATR", pBase_Indicators->pDailyMaxATR);
-		addValueToUI("takeProfit", pIndicators->takePrice);
-		addValueToUI("stopLoss", pIndicators->stopLoss);
-		addValueToUI("macdMaxLevel", (double)parameter(AUTOBBS_IS_ATREURO_RANGE));
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 10:
-		// Weekly trend mode
-		addValueToUI("weeklyTrend", pBase_Indicators->weeklyTrend);
-		addValueToUI("weeklyTrend_Phase", pBase_Indicators->weeklyTrend_Phase);
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("weeklyS", pBase_Indicators->weeklyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("weeklyPivot", pBase_Indicators->weeklyPivot);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_excution);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 15:
-		// Swing trading mode
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("DailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_secondary);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_secondary);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
-		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 16:
-	case 19:
-		// GBPJPY Daily Swing and 4H Swing modes
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("DailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("pDailyPredictATR", pBase_Indicators->pDailyPredictATR);
-		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
-		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 17:
-		// ATR prediction mode
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("DailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->pDailyPredictATR);
-		addValueToUI("dailyMaxATR", pBase_Indicators->pDailyMaxATR);
-		addValueToUI("weeklyATR", pBase_Indicators->pWeeklyPredictATR);
-		addValueToUI("weeklyMaxATR", pBase_Indicators->pWeeklyPredictMaxATR);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		break;
-	case 18:
-	case 20:
-		// 4H Swing and Weekly Auto modes
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("atr_euro_range", pIndicators->atr_euro_range);
-		addValueToUI("pWeeklyPredictATR", pBase_Indicators->pWeeklyPredictATR);
-		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_excution);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		addValueToUI(pIndicators->status, 0);
-		break;
-	case 21:
-	case 22:
-		// Multiple day trading modes
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("atr_euro_range", pIndicators->atr_euro_range);
-		addValueToUI("stopLoss", pIndicators->stopLoss);
-		addValueToUI("takePrice", pIndicators->takePrice);
-		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
-		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		addValueToUI(pIndicators->status, 0);
-		break;
-	case 23:
-		// MACD mode
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("volume1", pIndicators->volume1);
-		addValueToUI("volume2", pIndicators->volume2);
-		addValueToUI("cmfVolume", pIndicators->cmfVolume);
-		addValueToUI("CMFVolumeGap", pIndicators->CMFVolumeGap);
-		addValueToUI("fast", pIndicators->fast);
-		addValueToUI("preFast", pIndicators->preFast);
-		addValueToUI("slow", pIndicators->slow);
-		addValueToUI("preSlow", pIndicators->preSlow);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		addValueToUI(pIndicators->status, 0);
-		break;
-	case 26:
-		// MACD with Shellington mode
-		addValueToUI("MacdTrend", pBase_Indicators->mACDInTrend);
-		addValueToUI("ShellingtonTrend", pBase_Indicators->shellingtonInTrend);
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("maxATR", pBase_Indicators->pDailyMaxATR);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("ExecutionTrend", pIndicators->executionTrend);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	case 30:
-		// Shellington low risk mode
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		addValueToUI(pIndicators->status, 0);
-		break;
-	case 31:
-		// Ichimoku mode
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("daily_baseline", pIndicators->daily_baseline);
-		addValueToUI("daily_baseline_short", pIndicators->daily_baseline_short);
-		addValueToUI("cmfVolume", pIndicators->cmfVolume);
-		addValueToUI("fast", pIndicators->fast);
-		addValueToUI("slow", pIndicators->slow);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	default:
-		// Default UI values for unknown modes
-		addValueToUI("DailyTrend", pBase_Indicators->dailyTrend);
-		addValueToUI("dailyTrend_Phase", pBase_Indicators->dailyTrend_Phase);
-		addValueToUI("entrySignal", pIndicators->entrySignal);
-		addValueToUI("DailyS", pBase_Indicators->dailyS);
-		addValueToUI("stopLossPrice", pIndicators->stopLossPrice);
-		addValueToUI("DailyPivot", pBase_Indicators->dailyPivot);
-		addValueToUI("dailyATR", pBase_Indicators->dailyATR);
-		addValueToUI("weeklyATR", pBase_Indicators->weeklyATR);
-		addValueToUI("pDailyHigh", pBase_Indicators->pDailyHigh);
-		addValueToUI("pDailyLow", pBase_Indicators->pDailyLow);
-		addValueToUI("bbsTrend_excution", pIndicators->bbsTrend_excution);
-		addValueToUI("bbsStopPrice_excution", pIndicators->bbsStopPrice_excution);
-		addValueToUI("AccountRisk", pParams->accountInfo.totalOpenTradeRiskPercent);
-		addValueToUI("strategyRisk", pIndicators->strategyRisk);
-		break;
-	}
-
-	return SUCCESS;
-}
+// setUIValues is implemented in IndicatorManagement.c (declared in IndicatorManagement.h)
 
 /**
  * Loads indicators for strategy execution.
@@ -344,28 +101,21 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
  * @param pBase_Indicators Base indicators structure (not modified, kept for API consistency)
  * @return SUCCESS on success, error code on failure
  */
-static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
+
+static AsirikuyReturnCode loadIndicatorsAutoBBS(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
 	AsirikuyReturnCode returnCode = SUCCESS;
 	double originEquity = 0.0;
 	double risk = DEFAULT_RISK;
 
-	// Load primary ATR
 	pIndicators->primaryATR = iAtr(B_PRIMARY_RATES, (int)parameter(ATR_AVERAGING_PERIOD), 1);
 
-	// Load BBS indicators for all timeframes
-	iBBandStop(B_PRIMARY_RATES, BBS_PERIOD, BBS_DEVIATIONS, 
-	           &pIndicators->bbsTrend_primary, &pIndicators->bbsStopPrice_primary, &pIndicators->bbsIndex_primary);
-	iBBandStop(B_SECONDARY_RATES, BBS_PERIOD, BBS_DEVIATIONS, 
-	           &pIndicators->bbsTrend_secondary, &pIndicators->bbsStopPrice_secondary, &pIndicators->bbsIndex_secondary);
-	iBBandStop(B_HOURLY_RATES, BBS_PERIOD, BBS_DEVIATIONS, 
-	           &pIndicators->bbsTrend_1H, &pIndicators->bbsStopPrice_1H, &pIndicators->bbsIndex_1H);
-	iBBandStop(B_FOURHOURLY_RATES, BBS_PERIOD, BBS_DEVIATIONS, 
-	           &pIndicators->bbsTrend_4H, &pIndicators->bbsStopPrice_4H, &pIndicators->bbsIndex_4H);
-	iBBandStop(B_DAILY_RATES, BBS_PERIOD, BBS_DEVIATIONS, 
-	           &pIndicators->bbsTrend_Daily, &pIndicators->bbsStopPrice_Daily, &pIndicators->bbsIndex_Daily);
+	iBBandStop(B_PRIMARY_RATES, BBS_PERIOD, BBS_DEVIATIONS, &pIndicators->bbsTrend_primary, &pIndicators->bbsStopPrice_primary, &pIndicators->bbsIndex_primary);
+	iBBandStop(B_SECONDARY_RATES, BBS_PERIOD, BBS_DEVIATIONS, &pIndicators->bbsTrend_secondary, &pIndicators->bbsStopPrice_secondary, &pIndicators->bbsIndex_secondary);
+	iBBandStop(B_HOURLY_RATES, BBS_PERIOD, BBS_DEVIATIONS, &pIndicators->bbsTrend_1H, &pIndicators->bbsStopPrice_1H, &pIndicators->bbsIndex_1H);
+	iBBandStop(B_FOURHOURLY_RATES, BBS_PERIOD, BBS_DEVIATIONS, &pIndicators->bbsTrend_4H, &pIndicators->bbsStopPrice_4H, &pIndicators->bbsIndex_4H);
+	iBBandStop(B_DAILY_RATES, BBS_PERIOD, BBS_DEVIATIONS, &pIndicators->bbsTrend_Daily, &pIndicators->bbsStopPrice_Daily, &pIndicators->bbsIndex_Daily);
 
-	// Initialize strategy parameters
 	pIndicators->adjust = (double)parameter(AUTOBBS_ADJUSTPOINTS);
 	pIndicators->risk = DEFAULT_RISK;
 	pIndicators->entrySignal = 0;
@@ -382,16 +132,15 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 	pIndicators->tradeMode = DEFAULT_TRADE_MODE;
 	pIndicators->atr_euro_range = (double)parameter(AUTOBBS_IS_ATREURO_RANGE);
 
-	// Set risk limits (negative values indicate limits)
 	pIndicators->strategyMaxRisk = pParams->settings[AUTOBBS_MAX_STRATEGY_RISK] * -1.0;
 	pIndicators->limitRiskPNL = pParams->settings[ACCOUNT_RISK_PERCENT] * -1.0;
 
 	pIndicators->total_lose_pips = 0;
+
 	pIndicators->maxTradeTime = DEFAULT_MAX_TRADE_TIME;
 	pIndicators->startHour = (int)parameter(AUTOBBS_STARTHOUR);
 	pIndicators->stopMovingBackSL = TRUE;
 
-	// Initialize volume indicators
 	pIndicators->volume1 = 0.0;
 	pIndicators->volume2 = 0.0;
 	pIndicators->cmfVolume = 0.0;
@@ -401,7 +150,6 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 	pIndicators->preFast = 0.0;
 	pIndicators->preSlow = 0.0;
 
-	// Initialize Ichimoku indicators
 	pIndicators->daily_baseline = 0.0;
 	pIndicators->daily_baseline_short = 0.0;
 
@@ -613,11 +361,25 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 
 	// Load base indicators (if trend mode < 99)
 	// Modes >= 99 don't need base indicators
+	double baseStartTime = getCurrentTimeMs();
 	if ((int)parameter(AUTOBBS_TREND_MODE) < BASE_INDICATORS_THRESHOLD)
 		runBase(pParams, &base_Indicators);
+	double baseEndTime = getCurrentTimeMs();
+	double baseDuration = baseEndTime - baseStartTime;
+	if (baseDuration > 10.0) {
+		logInfo("[TIMING] runBase took %.3f ms (instanceId=%d, barTime=%s)", 
+			baseDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
 
 	// Load strategy-specific indicators
-	loadIndicators(pParams, &indicators, &base_Indicators);
+	double indicatorsStartTime = getCurrentTimeMs();
+	loadIndicatorsAutoBBS(pParams, &indicators, &base_Indicators);
+	double indicatorsEndTime = getCurrentTimeMs();
+	double indicatorsDuration = indicatorsEndTime - indicatorsStartTime;
+	if (indicatorsDuration > 10.0) {
+		logInfo("[TIMING] loadIndicators took %.3f ms (instanceId=%d, barTime=%s)", 
+			indicatorsDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
 
 	// Update UI with current values
 	setUIValues(pParams, &indicators, &base_Indicators);
@@ -633,14 +395,28 @@ AsirikuyReturnCode runAutoBBS(StrategyParams* pParams)
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, indicators.executionTrend, indicators.bbsTrend_4H, indicators.bbsStopPrice_4H, indicators.bbsIndex_4H);
 
 	// Handle trade exits first (close positions)
+	double exitsStartTime = getCurrentTimeMs();
 	returnCode = handleTradeExits(pParams, &indicators);
+	double exitsEndTime = getCurrentTimeMs();
+	double exitsDuration = exitsEndTime - exitsStartTime;
+	if (exitsDuration > 10.0) {
+		logInfo("[TIMING] handleTradeExits took %.3f ms (instanceId=%d, barTime=%s)", 
+			exitsDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
 	if (returnCode != SUCCESS)
 	{
 		return logAsirikuyError("runAutoBBS->handleTradeExits()", returnCode);
 	}
 
 	// Handle trade entries (open/modify positions)
+	double entriesStartTime = getCurrentTimeMs();
 	returnCode = handleTradeEntries(pParams, &indicators, &base_Indicators);
+	double entriesEndTime = getCurrentTimeMs();
+	double entriesDuration = entriesEndTime - entriesStartTime;
+	if (entriesDuration > 10.0) {
+		logInfo("[TIMING] handleTradeEntries took %.3f ms (instanceId=%d, barTime=%s)", 
+			entriesDuration, (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString);
+	}
 	if (returnCode != SUCCESS)
 	{
 		return logAsirikuyError("runAutoBBS->handleTradeEntries()", returnCode);
