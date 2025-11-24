@@ -28,6 +28,7 @@
 /ctester/history/
 /ctester/log/
 /ctester/tmp/
+/ctester/*.csv
 
 # Python compiled files
 *.pyc
