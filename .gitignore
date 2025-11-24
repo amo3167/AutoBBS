@@ -18,6 +18,7 @@
 
 # Temporary files
 /tmp/
+/core/tmp/
 *.tmp
 *.log
 *.swp
