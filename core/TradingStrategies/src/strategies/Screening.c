@@ -83,8 +83,8 @@ typedef struct indicators_t
 // Forward declarations
 static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pIndicators);
 static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndicators);
-static AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow);
-static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend);
+static AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Base_Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow);
+static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Base_Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend);
 static AsirikuyReturnCode iTrend_HL_Screening(int ratesArrayIndex, int *trend, int index);
 static AsirikuyReturnCode iTrend_MA_Screening(double iATR, int ratesArrayIndex, int *trend);
 
@@ -120,7 +120,7 @@ static AsirikuyReturnCode loadMonthlyIndicators(StrategyParams* pParams, Indicat
 	char timeString[MAX_TIME_STRING_SIZE] = "";
 
 	safe_timeString(timeString, pParams->ratesBuffers->rates[S_WEEKLY_RATES].time[shift0Index]);
-	iSRLevels_Screening(pParams, pIndicators, S_WEEKLY_RATES, 8, 8, &(pIndicators->monthlyHigh), &(pIndicators->monthlyLow));
+	iSRLevels_Screening(pParams, (Base_Indicators*)pIndicators, S_WEEKLY_RATES, 8, 8, &(pIndicators->monthlyHigh), &(pIndicators->monthlyLow));
 
 	logInfo("System InstanceID = %d, BarTime = %s, 8weeksHigh=%lf, 8weeksLow = %lf\n",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->monthlyHigh, pIndicators->monthlyLow);
@@ -162,11 +162,11 @@ static AsirikuyReturnCode loadDailyIndicators(StrategyParams* pParams, Indicator
 	
 	safe_timeString(timeString, pParams->ratesBuffers->rates[S_DAILY_RATES].time[shift0Index]);
 		
-	iTrend3Rules_Screening(pParams, pIndicators, S_DAILY_RATES, 2, 0, &(pIndicators->daily3RulesTrend));
+	iTrend3Rules_Screening(pParams, (Base_Indicators*)pIndicators, S_DAILY_RATES, 2, 0, &(pIndicators->daily3RulesTrend));
 	iTrend_HL_Screening(S_DAILY_RATES, &(pIndicators->dailyHLTrend), 0);
 	iTrend_MA_Screening(pIndicators->dailyATR, S_HOURLY_RATES, &(pIndicators->dailyMATrend));
 
-	iSRLevels_Screening(pParams, pIndicators, S_DAILY_RATES, 2, 2, &(pIndicators->dailyHigh), &(pIndicators->dailyLow));
+	iSRLevels_Screening(pParams, (Base_Indicators*)pIndicators, S_DAILY_RATES, 2, 2, &(pIndicators->dailyHigh), &(pIndicators->dailyLow));
 
 	logInfo("System InstanceID = %d, BarTime = %s, dailyHLTrend = %ld,dailyMATrend=%ld",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->dailyHLTrend, pIndicators->dailyMATrend);
@@ -225,7 +225,7 @@ static AsirikuyReturnCode loadIndicators(StrategyParams* pParams, Indicators* pI
 
 	loadMonthlyIndicators(pParams, pIndicators);
 
-	loadWeeklyIndicators_Screening(pParams, pIndicators);
+	loadWeeklyIndicators_Screening(pParams, (Base_Indicators*)pIndicators);
 	loadDailyIndicators(pParams, pIndicators);
 	
 
@@ -437,7 +437,7 @@ static AsirikuyReturnCode workoutWeeklyTrend_Screening(StrategyParams* pParams, 
 	return SUCCESS;
 }
 
-AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow)
+AsirikuyReturnCode iSRLevels_Screening(StrategyParams* pParams, Base_Indicators* pIndicators, int ratesArrayIndex, int shiftIndex, int shift, double *pHigh, double *pLow)
 {
 	TA_RetCode retCode;
 	int shift0Index = pParams->ratesBuffers->rates[ratesArrayIndex].info.arraySize - 1;
@@ -566,7 +566,7 @@ static AsirikuyReturnCode iTrend3Rules_LookBack_Screening(StrategyParams* pParam
 
 // iTrend3Rules is declared in base.h, but Screening.c has its own implementation with different signature
 // Renaming to avoid conflict
-static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend)
+static AsirikuyReturnCode iTrend3Rules_Screening(StrategyParams* pParams, Base_Indicators* pIndicators, int ratesArrayIndex, int shift, int index, int * pTrend)
 {
 	TA_RetCode retCode;
 	int shift0Index = pParams->ratesBuffers->rates[ratesArrayIndex].info.arraySize - 1;

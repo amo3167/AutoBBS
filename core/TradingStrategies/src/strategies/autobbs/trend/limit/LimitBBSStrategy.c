@@ -5,6 +5,7 @@
  */
 
 #include <math.h>
+#include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include "OrderManagement.h"
@@ -127,7 +128,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit_BBS(StrategyParams* pParams, Indi
 
 		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 1)
 		{
-			if (fabs(pBase_Indicators->dailyTrend) >= 6
+			if (abs(pBase_Indicators->dailyTrend) >= 6
 				&& iAtr(B_DAILY_RATES, 1, 1) < 0.7 * pBase_Indicators->pDailyATR
 				)
 				pIndicators->risk = 0.5;

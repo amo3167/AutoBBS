@@ -150,8 +150,8 @@ void traceLatestOpenStopLoss(StrategyParams* pParams, Indicators* pIndicators, B
 		openTime = pParams->orderInfo[0].openTime;
 		safe_gmtime(&timeInfo2, openTime);
 
-		minGap = (int)((timeInfo1.tm_min - timeInfo2.tm_min) / execution_tf + 0.5);
-		hourGap = (timeInfo1.tm_hour - timeInfo2.tm_hour) * (60 / execution_tf);
+		minGap = (int)((double)(timeInfo1.tm_min - timeInfo2.tm_min) / execution_tf + 0.5);
+		hourGap = (timeInfo1.tm_hour - timeInfo2.tm_hour) * (60.0 / execution_tf);
 		count = hourGap + minGap;
 
 		if (count > 1 && getHighLowEasy(B_PRIMARY_RATES, shift1Index, count, &high, &low) == SUCCESS)

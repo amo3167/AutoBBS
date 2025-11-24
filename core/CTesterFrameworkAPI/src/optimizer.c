@@ -279,7 +279,7 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 		fflush(stderr);
 	}
 	
-	if (globalOptimizationSettings.discardAssymetricSets && fabs(testResult.numShorts - testResult.numLongs) > 0.5*min(testResult.numShorts, testResult.numLongs)){
+	if (globalOptimizationSettings.discardAssymetricSets && abs(testResult.numShorts - testResult.numLongs) > 0.5*min(testResult.numShorts, testResult.numLongs)){
 		entity->fitness = 0.0;
 		fprintf(stderr, "[OPT] Iteration %d gave assymetric results (%d longs %d shorts) ... killing it\n", localCurrentIteration, testResult.numShorts, testResult.numLongs);
 		fflush(stderr);
