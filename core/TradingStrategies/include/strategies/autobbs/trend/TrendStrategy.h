@@ -27,6 +27,7 @@ extern "C" {
  * - Limit strategies: trend/limit/
  * - Weekly strategies: trend/weekly/
  * - ShortTerm strategies: trend/shortterm/
+ * - Shellington strategies: trend/shellington/
  * - Miscellaneous strategies: trend/misc/
  */
 
@@ -64,6 +65,9 @@ extern "C" {
 /* Include ShortTerm strategy modules */
 #include "strategies/autobbs/trend/shortterm/ShortTermStrategy.h"
 #include "strategies/autobbs/trend/shortterm/ShortTermOrderSplitting.h"
+
+/* Include Shellington strategy modules */
+#include "strategies/autobbs/trend/shellington/Shellington4HStrategy.h"
 
 /* Include Miscellaneous strategy modules */
 #include "strategies/autobbs/trend/misc/MiscStrategies.h"

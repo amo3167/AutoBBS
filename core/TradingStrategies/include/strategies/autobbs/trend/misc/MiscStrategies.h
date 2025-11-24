@@ -86,16 +86,6 @@ AsirikuyReturnCode workoutExecutionTrend_MIDDLE_RETREAT_PHASE(StrategyParams* pP
  */
 AsirikuyReturnCode workoutExecutionTrend_ASI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
 
-/**
- * 4H Shellington strategy execution.
- * 
- * @param pParams Strategy parameters
- * @param pIndicators Strategy indicators
- * @param pBase_Indicators Base indicators
- * @return AsirikuyReturnCode
- */
-AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
-
 #ifdef __cplusplus
 } /* extern "C" */
 #endif

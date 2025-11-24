@@ -11,6 +11,7 @@ CompileFlags:
     - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/include/strategies
     - -I/Users/andym/projects/AutoBBS/core/TradingStrategies/src
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyEasyTrade/include
+    - -I/Users/andym/projects/AutoBBS/core/AsirikuyEasyTrade/src
     - -I/Users/andym/projects/AutoBBS/core/NTPClient/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include
     - -I/Users/andym/projects/AutoBBS/core/AsirikuyFrameworkAPI/include/CTester
@@ -23,6 +24,9 @@ CompileFlags:
     - -I/Users/andym/projects/AutoBBS/vendor/MiniXML
     - -I/Users/andym/projects/AutoBBS/vendor/Gaul/src
     - -I/Users/andym/projects/AutoBBS/vendor/Gaul/util/gaul
+    # Boost includes (for Precompiled.hpp)
+    - -I/Users/andym/homebrew/opt/boost/include
+    - -I/usr/local/include
 
 ---
 If:

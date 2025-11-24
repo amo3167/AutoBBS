@@ -30,8 +30,9 @@ extern "C" {
 		AUTOBBS_IS_AUTO_MODE = ADDITIONAL_PARAM_13,  // 1: apply for the filter for daily trading, 0: ignore the filter, that is manual mode
 		AUTOBBS_IS_ATREURO_RANGE = ADDITIONAL_PARAM_14, //XAUUSD һ����8
 		AUTOBBS_STARTHOUR = ADDITIONAL_PARAM_15, //�ֹ�ѡ����Կ�ʼʱ�䡣
-		AUTOBBS_VIRTUAL_BALANCE_TOPUP = ADDITIONAL_PARAM_16  // virtual balance top up
-	} AdditionalSettings;
+		AUTOBBS_VIRTUAL_BALANCE_TOPUP = ADDITIONAL_PARAM_16,  // virtual balance top up
+		AUTOBBS_STOP_MOVEBACK_SL = ADDITIONAL_PARAM_17  // Allow stop loss to move backward (1 = TRUE, 0 = FALSE)
+} AdditionalSettings;
 
 
 	typedef struct indicators_t

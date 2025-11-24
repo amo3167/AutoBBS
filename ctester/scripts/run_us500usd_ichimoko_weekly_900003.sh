@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to run US500USD Weekly Ichimoko 90003 Strategy
+# Script to run US500USD Weekly Ichimoko 900003 Strategy
 # Cleans ctester folder and saves results to tmp folder with renamed files
 #
 # Usage: ./run_us500usd_ichimoko_weekly_90003.sh [OPTIONS]
@@ -12,9 +12,9 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Ichimoko_weekly_US500USD-1H_90003.config"
+CONFIG_FILE="config/Ichimoko_weekly_US500USD-1H_900003.config"
 SYMBOL="US500USD"
-STRATEGY_ID="90003"
+STRATEGY_ID="900003"
 OUTPUT_DIR="tmp"
 RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

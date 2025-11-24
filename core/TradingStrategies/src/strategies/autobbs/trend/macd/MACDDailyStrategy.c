@@ -619,6 +619,8 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 		pConfig->range = 10;
 		
 		*dailyBaseLine = iMA(3, B_DAILY_RATES, pConfig->baselinePeriod, 1);
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
 	{
@@ -647,6 +649,8 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 		pConfig->isEnableEntryEOD = FALSE;
 		pConfig->isEnableNextdayBar = TRUE;
 		pConfig->range = 10;
+
+		pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDNZD") != NULL)
 	{
@@ -682,6 +686,19 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 		pIndicators->minLotSize = pConfig->minLotSize;
 	if (pConfig->volumeStep > 0.0)
 		pIndicators->volumeStep = pConfig->volumeStep;
+	
+	/* Override stopMovingBackSL with parameter if set in set file
+	 * Parameter value > 0 means TRUE (allow stop loss to move backward)
+	 * Parameter value <= 0 means FALSE (prevent stop loss from moving backward)
+	 * Note: If parameter is not in set file, it may default to 0.0, which would set to FALSE.
+	 * To use symbol-specific default, omit the parameter from set file.
+	 * If parameter is present in set file (even if 0), it will override symbol default.
+	 */
+	{
+		double paramValue = parameter(AUTOBBS_STOP_MOVEBACK_SL);
+		/* Use parameter value: > 0 = TRUE, <= 0 = FALSE */
+		pConfig->stopMovingBackSL = (paramValue > 0.0) ? TRUE : FALSE;
+	}
 }
 
 /**

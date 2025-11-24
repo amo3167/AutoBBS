@@ -7,8 +7,16 @@ project "AsirikuyEasyTrade"
 	"**.cpp"
   }
   includedirs{
-    "src"
+    "src",
+    "../AsirikuyCommon/include"
   }
+  -- Add Boost include directory (for Precompiled.hpp)
+  configuration{"not windows"}
+    includedirs{
+      (os.getenv("HOMEBREW_PREFIX") or "/Users/andym/homebrew") .. "/opt/boost/include",
+      (os.getenv("BOOST_ROOT") or "") .. "/include",
+      "/usr/local/include"
+    }
   configuration{"macosx"}
     libdirs{
       "/Users/andym/homebrew/opt/curl/lib",
