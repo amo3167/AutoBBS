@@ -189,26 +189,6 @@ if [ -z "$PYTHON_EXIT_CODE" ]; then
 fi
 set -e  # Re-enable exit on error
 
-# Verify the Python process actually exited
-# Check if any Python processes matching our script are still running
-if pgrep -f "asirikuy_strategy_tester.py.*${CONFIG_FILE}" > /dev/null 2>&1; then
-    echo "⚠️  WARNING: Found Python processes still running matching our optimization!"
-    echo "  Waiting up to 60 seconds for processes to complete..."
-    
-    # Wait up to 60 seconds for the process to finish
-    for i in {1..60}; do
-        if ! pgrep -f "asirikuy_strategy_tester.py.*${CONFIG_FILE}" > /dev/null 2>&1; then
-            echo "  ✓ All Python processes completed after additional wait"
-            break
-        fi
-        sleep 1
-        if [ $i -eq 60 ]; then
-            echo "  ⚠️  Python processes still running after 60 seconds"
-            echo "  You may need to check processes manually: pgrep -f 'asirikuy_strategy_tester.py.*${CONFIG_FILE}'"
-        fi
-    done
-fi
-
 # Check exit code
 if [ $PYTHON_EXIT_CODE -ne 0 ]; then
     echo "⚠️  WARNING: Python process exited with code $PYTHON_EXIT_CODE"
@@ -296,12 +276,10 @@ fi
 
 if [ "$OPTIMIZATION_SUCCESS" = true ]; then
     echo "=== Optimization Complete ==="
-    echo "Results saved to: ${RESULTS_FOLDER}/"
     echo ""
     echo "To view top results, run:"
     echo "  sort -t, -k11 -rn ${RESULTS_FOLDER}/optimization_results_${STRATEGY_ID}.csv | head -20"
 else
-    echo "Results saved to: ${RESULTS_FOLDER}/"
     echo "Please check the log file for details: ${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
 fi
 

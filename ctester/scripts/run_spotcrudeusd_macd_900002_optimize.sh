@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to run BTCUSD MACD 860013 Strategy Optimization
+# Script to run SpotCrudeUSD MACD 900002 Strategy Optimization
 # Cleans ctester folder and saves optimization results to tmp folder
 #
-# Usage: ./run_btcusd_macd_860013_optimize.sh [OPTIONS]
+# Usage: ./run_spotcrudeusd_macd_900002_optimize.sh [OPTIONS]
 # Options:
 #   --fromdate YYYY-MM-DD    Start date (default: from config file)
 #   --todate YYYY-MM-DD      End date (default: from config file)
@@ -12,9 +12,9 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Peso_MACD_BTCUSD-1H_860013_optimize.config"
-SYMBOL="BTCUSD"
-STRATEGY_ID="860013"
+CONFIG_FILE="config/Peso_MACD_SpotCrudeUSD-1H_900002_optimize.config"
+SYMBOL="SpotCrudeUSD"
+STRATEGY_ID="900002"
 OUTPUT_DIR="tmp"
 RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -64,6 +64,17 @@ done
 
 # Change to script directory
 cd "$SCRIPT_DIR/.."
+
+# Check if optimize config exists, fallback to regular config if not
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "⚠️  WARNING: Optimize config file not found: $CONFIG_FILE"
+    echo "  Falling back to regular config: config/Peso_MACD_SpotCrudeUSD-1H_900002.config"
+    CONFIG_FILE="config/Peso_MACD_SpotCrudeUSD-1H_900002.config"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "❌ ERROR: Config file not found: $CONFIG_FILE"
+        exit 1
+    fi
+fi
 
 # Extract STRATEGY_INSTANCE_ID from set file (single source of truth)
 # First, get the set file path from config

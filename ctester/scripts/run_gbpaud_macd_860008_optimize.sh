@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to run BTCUSD MACD 860013 Strategy Optimization
+# Script to run GBPAUD MACD 860008 Strategy Optimization
 # Cleans ctester folder and saves optimization results to tmp folder
 #
-# Usage: ./run_btcusd_macd_860013_optimize.sh [OPTIONS]
+# Usage: ./run_gbpaud_macd_860008_optimize.sh [OPTIONS]
 # Options:
 #   --fromdate YYYY-MM-DD    Start date (default: from config file)
 #   --todate YYYY-MM-DD      End date (default: from config file)
@@ -12,9 +12,9 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Peso_MACD_BTCUSD-1H_860013_optimize.config"
-SYMBOL="BTCUSD"
-STRATEGY_ID="860013"
+CONFIG_FILE="config/Peso_MACD_GBPAUD-1H_860008_optimize.config"
+SYMBOL="GBPAUD"
+STRATEGY_ID="860008"
 OUTPUT_DIR="tmp"
 RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -65,6 +65,17 @@ done
 # Change to script directory
 cd "$SCRIPT_DIR/.."
 
+# Check if optimize config exists, fallback to regular config if not
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "⚠️  WARNING: Optimize config file not found: $CONFIG_FILE"
+    echo "  Falling back to regular config: config/Peso_MACD_GBPAUD-1H_860008.config"
+    CONFIG_FILE="config/Peso_MACD_GBPAUD-1H_860008.config"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "❌ ERROR: Config file not found: $CONFIG_FILE"
+        exit 1
+    fi
+fi
+
 # Extract STRATEGY_INSTANCE_ID from set file (single source of truth)
 # First, get the set file path from config
 SET_FILE=$(grep "^set = " "$CONFIG_FILE" | sed 's/^set = //' | sed 's/^\.\///')
@@ -99,10 +110,10 @@ RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 echo "=== Running ${SYMBOL} MACD Strategy ${STRATEGY_ID} Optimization ==="
 echo ""
 echo "Optimization Parameters:"
-echo "  - AUTOBBS_RISK_CAP: 1.0 to 10.0 (step 1.0)"
+echo "  - AUTOBBS_RISK_CAP: 0.0 to 1.0 (step 5.0)"
 echo "  - AUTOBBS_MAX_ACCOUNT_RISK: 10.0 to 30.0 (step 5.0)"
 echo "  - AUTOBBS_MAX_STRATEGY_RISK: 1.0 to 10.0 (step 1.0)"
-echo "  - Total combinations: 500 (10 × 5 × 10)"
+echo "  - Total combinations: varies based on parameter ranges"
 echo "  - Optimization method: Genetic Algorithm"
 echo "  - Optimization goal: CAGR/MaxDD (risk-adjusted return)"
 echo ""

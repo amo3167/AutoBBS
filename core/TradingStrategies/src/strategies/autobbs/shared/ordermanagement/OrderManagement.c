@@ -38,15 +38,15 @@ AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pIndicators
 			{
 				// stopLoss2 = fabs(pIndicators->entryPrice - pIndicators->bbsStopPrice_primary) + pIndicators->adjust;
 
-				modifyTradeEasy_DayTrading(BUY, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, FALSE);
+				modifyTradeEasy_DayTrading(BUY, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, pIndicators->stopMovingBackSL);
 			}
 	
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR/3);
-			//	modifyTradeEasy_new(BUY, -1, stopLoss, takePrice, tpMode, FALSE);
+			//	modifyTradeEasy_new(BUY, -1, stopLoss, takePrice, tpMode, pIndicators->stopMovingBackSL);
 			// }
 			else
-				modifyTradeEasy_new(BUY, -1, stopLoss, -1, tpMode, FALSE); // New day TP change as
+				modifyTradeEasy_new(BUY, -1, stopLoss, -1, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
 		}
 	}
 
@@ -57,15 +57,15 @@ AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pIndicators
 			if ((int)parameter(AUTOBBS_TREND_MODE) == 5) // Day Trading, override the stop loss to primary bbs on the new day.
 			{
 				// stopLoss2 = fabs(pIndicators->entryPrice - pIndicators->bbsStopPrice_primary) + pIndicators->adjust;
-				modifyTradeEasy_DayTrading(SELL, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, FALSE);
+				modifyTradeEasy_DayTrading(SELL, -1, stopLoss, pIndicators->bbsStopPrice_primary, -1, tpMode, currentTime, pIndicators->adjust, pIndicators->stopMovingBackSL);
 			}
 			// [Comment removed - encoding corrupted]
 			//{
 			//	takePrice = adjustTakePrice_Weekly_Swing_Easy(B_HOURLY_RATES, pBase_Indicators->pWeeklyATR / 3);
-			//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode, FALSE);
+			//	modifyTradeEasy_new(SELL, -1, stopLoss, takePrice, tpMode, pIndicators->stopMovingBackSL);
 			// }
 			else
-				modifyTradeEasy_new(SELL, -1, stopLoss, -1, tpMode, FALSE); // New day TP change as
+				modifyTradeEasy_new(SELL, -1, stopLoss, -1, tpMode, pIndicators->stopMovingBackSL); // New day TP change as
 		}
 	}
 
