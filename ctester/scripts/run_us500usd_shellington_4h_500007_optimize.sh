@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to run XAUUSD Shellington 4H Strategy 842001
-# Cleans ctester folder and saves results to tmp folder with renamed files
+# Script to run US500USD Shellington 4H Strategy 500007 Optimization
+# Cleans ctester folder and saves optimization results to tmp folder
 #
-# Usage: ./run_xauusd_shellington_4h_842001.sh [OPTIONS]
+# Usage: ./run_us500usd_shellington_4h_500007_optimize.sh [OPTIONS]
 # Options:
 #   --fromdate YYYY-MM-DD    Start date (default: from config file)
 #   --todate YYYY-MM-DD      End date (default: from config file)
@@ -12,11 +12,11 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Shellington_XAUUSD-1H_842001.config"
-SYMBOL="XAUUSD"
-STRATEGY_ID="842001"
+CONFIG_FILE="config/Shellington_US500USD-4H_500007_optimize.config"
+SYMBOL="US500USD"
+STRATEGY_ID="500007"
 OUTPUT_DIR="tmp"
-RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
+RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMP_CONFIG=""
 
@@ -44,14 +44,14 @@ while [[ $# -gt 0 ]]; do
       echo "Usage: $0 [OPTIONS]"
       echo ""
       echo "Options:"
-      echo "  --fromdate YYYY-MM-DD    Start date (e.g., 2020-01-02)"
-      echo "  --todate YYYY-MM-DD      End date (e.g., 2021-01-01)"
-      echo "  --logseverity LEVEL      Log level 0-7 (0=Emergency, 4=Warning, 7=Debug)"
-      echo "  -h, --help               Show this help message"
+      echo "  --fromdate YYYY-MM-DD    Start date (e.g., 2020-01-01)"
+      echo "  --todate YYYY-MM-DD       End date (e.g., 2023-01-01)"
+      echo "  --logseverity LEVEL       Log level 0-7 (0=Emergency, 4=Warning, 7=Debug)"
+      echo "  -h, --help                Show this help message"
       echo ""
       echo "Examples:"
-      echo "  $0 --fromdate 2020-01-02 --todate 2021-01-01 --logseverity 4"
-      echo "  $0 --fromdate 2019-01-01 --todate 2020-12-31"
+      echo "  $0 --fromdate 2020-01-01 --todate 2023-01-01 --logseverity 4"
+      echo "  $0 --fromdate 2019-01-01 --todate 2022-12-31"
       exit 0
       ;;
     *)
@@ -64,6 +64,17 @@ done
 
 # Change to script directory
 cd "$SCRIPT_DIR/.."
+
+# Check if optimize config exists, fallback to regular config if not
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "⚠️  WARNING: Optimize config file not found: $CONFIG_FILE"
+    echo "  Falling back to regular config: config/Shellington_US500USD-4H_lowrisk_500007.config"
+    CONFIG_FILE="config/Shellington_US500USD-4H_lowrisk_500007.config"
+    if [ ! -f "$CONFIG_FILE" ]; then
+        echo "❌ ERROR: Config file not found: $CONFIG_FILE"
+        exit 1
+    fi
+fi
 
 # Extract STRATEGY_INSTANCE_ID from set file (single source of truth)
 # First, get the set file path from config
@@ -94,14 +105,17 @@ else
 fi
 
 # Update RESULTS_FOLDER with the extracted/fallback ID
-# Check if this is an optimization script (has "_optimize" in script name)
-if [[ "$(basename "$0")" == *"_optimize"* ]]; then
-    RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
-else
-    RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
-fi
+RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}_optimize"
 
-echo "=== Running ${SYMBOL} Shellington 4H Strategy ${STRATEGY_ID} ==="
+echo "=== Running ${SYMBOL} Shellington 4H Strategy ${STRATEGY_ID} Optimization ==="
+echo ""
+echo "Optimization Parameters:"
+echo "  - AUTOBBS_SHELLINGTON_TP_MULTIPLIER: 2.0 to 5.0 (step 0.5)"
+echo "  - AUTOBBS_SHELLINGTON_BUY_WON_TIMES: 1 to 5 (step 1)"
+echo "  - AUTOBBS_SHELLINGTON_SELL_WON_TIMES: 1 to 3 (step 1)"
+echo "  - Total combinations: varies based on parameter ranges"
+echo "  - Optimization method: Genetic Algorithm"
+echo "  - Optimization goal: CAGR/MaxDD (risk-adjusted return)"
 echo ""
 
 # Step 1: Clean and create results folder (needed for temp config)
@@ -171,9 +185,10 @@ rm -f results.* test_results.* allStatistics.csv
 echo "✓ Cleaned old output files"
 echo ""
 
-# Step 4: Run the backtest
-echo "Step 4: Running backtest..."
-python3 asirikuy_strategy_tester.py -c "$CONFIG_FILE" -ot results 2>&1 | tee "${RESULTS_FOLDER}/backtest_${STRATEGY_ID}.log"
+# Step 4: Run the optimization
+echo "Step 4: Running optimization..."
+echo "  This may take a while depending on parameter ranges and generations..."
+python3 asirikuy_strategy_tester.py -c "$CONFIG_FILE" -ot results 2>&1 | tee "${RESULTS_FOLDER}/optimization_${STRATEGY_ID}.log"
 
 # Step 5: Rename and move files to results folder
 echo ""
@@ -218,8 +233,7 @@ if [ -n "$TEMP_CONFIG" ] && [ -f "$TEMP_CONFIG" ]; then
 fi
 
 echo ""
-echo "=== Backtest Complete ==="
+echo "=== Optimization Complete ==="
 echo "Results saved to: ${RESULTS_FOLDER}/"
 ls -lh "${RESULTS_FOLDER}/" 2>/dev/null || true
-
 

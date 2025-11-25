@@ -81,9 +81,9 @@ static double getCurrentTimeMs(void)
  * - 15: XAUUSD Day Trading
  * - 16: GBPJPY Day Trading Ver2
  * - 17: Weekly ATR Prediction
- * - 18: 4H BBS Swing BoDuan
+ * - 18: 4H BBS Swing BoDuan (unified, auto-detects symbol)
  * - 19: Day Trading Execution Only
- * - 20: 4H BBS Swing XAUUSD BoDuan
+ * - 20: 4H BBS Swing BoDuan (unified, auto-detects symbol - same as case 18)
  * - 21: Multiple Day
  * - 22: Multiple Day V2
  * - 23: MACD Daily
@@ -173,13 +173,13 @@ AsirikuyReturnCode workoutExecutionTrend(StrategyParams *pParams, Indicators *pI
 		workoutExecutionTrend_WeeklyATR_Prediction(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 18:
+	case 20:
+		// Both case 18 and 20 use the unified BoDuan function
+		// The unified function automatically detects XAUUSD and applies appropriate configuration
 		workoutExecutionTrend_4HBBS_Swing_BoDuan(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 19:
 		// Removed: workoutExecutionTrend_DayTrading_ExecutionOnly
-		break;
-	case 20:
-		workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(pParams, pIndicators, pBase_Indicators);
 		break;
 	case 21:				
 		workoutExecutionTrend_MultipleDay(pParams, pIndicators, pBase_Indicators);

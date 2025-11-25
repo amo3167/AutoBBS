@@ -39,6 +39,313 @@
 #endif
 
 /**
+ * @brief Symbol-specific configuration structure for Shellington 4H strategy.
+ * 
+ * This structure holds all symbol-specific parameters that control
+ * the behavior of the Shellington 4H strategy for different trading instruments.
+ */
+typedef struct {
+	/* Win times control */
+	int buyWonTimes;                        /* Maximum buy win times before blocking entry */
+	int sellWonTimes;                       /* Maximum sell win times before blocking entry */
+	
+	/* Take profit configuration */
+	double takePriceMultiplier;             /* Multiplier for daily ATR to calculate take price */
+	
+	/* Risk management */
+	int riskCap;                            /* Risk cap value (0 = disabled) */
+	
+	/* Filter flags */
+	BOOL isEnableWeeklyATRControl;         /* Enable weekly ATR control filter */
+	BOOL isEnableWeeklyTrend;               /* Enable weekly trend filter */
+	BOOL isEnableRange;                     /* Enable range-based entry filtering */
+	int range;                              /* Range period for SR levels calculation */
+	
+	/* Timing configuration */
+	int startHour;                          /* Start hour for trading (0 = no restriction) */
+	
+	/* Lot size configuration */
+	double minLotSize;                      /* Minimum lot size (0 = use default) */
+	BOOL isEnableSellMinLotSize;           /* Enable minimum lot size for sell orders */
+} ShellingtonSymbolConfig;
+
+/**
+ * @brief Initializes symbol-specific configuration for Shellington 4H strategy.
+ * 
+ * This function configures all symbol-specific parameters based on the trading
+ * symbol. Each symbol has unique characteristics that require different take profit
+ * levels, win times, and filtering logic.
+ * 
+ * Symbol-Specific Trading Logic:
+ * 
+ * BTCUSD/ETHUSD (Cryptocurrencies):
+ * - High take profit: 5x daily ATR (crypto volatility)
+ * - Buy win times: 5 (allow more consecutive wins)
+ * - Sell win times: 1 (stricter for shorts)
+ * - Risk cap: 2
+ * - Range filtering: Enabled with 60-bar period
+ * 
+ * XAUUSD (Gold):
+ * - Take profit: 4x daily ATR
+ * - Win times: 1 for both buy and sell (balanced)
+ * - Weekly ATR and trend filters enabled
+ * - Start hour: 1 (avoid first hour)
+ * 
+ * XAUAUD (Gold in AUD):
+ * - Take profit: 4x daily ATR
+ * - Buy win times: 3, Sell win times: 1
+ * - Weekly ATR and trend filters enabled
+ * - Start hour: 1
+ * 
+ * GBPJPY (Major Forex):
+ * - Take profit: 3x daily ATR
+ * - Win times: 2 for both buy and sell
+ * - Weekly ATR and trend filters enabled
+ * 
+ * GBPAUD (Forex):
+ * - Take profit: 3x daily ATR
+ * - Win times: 2 for both buy and sell
+ * - Weekly ATR filter enabled
+ * 
+ * AUDUSD (Forex):
+ * - Take profit: 3x daily ATR
+ * - Win times: 1 for both buy and sell
+ * - Weekly ATR filter enabled
+ * 
+ * AUDNZD (Forex):
+ * - Take profit: 3x daily ATR
+ * - Win times: 1 for both buy and sell
+ * - Weekly trend filter enabled
+ * - Range filtering: Enabled with 60-bar period
+ * 
+ * US500USD (Index):
+ * - Take profit: 3x daily ATR
+ * - Buy win times: 2, Sell win times: 1
+ * - Weekly ATR filter enabled
+ * - Minimum lot size: 0.1
+ * - Sell min lot size enabled
+ * - Start hour: 1
+ * 
+ * NAS100USD (Index):
+ * - Take profit: 4x daily ATR
+ * - Buy win times: 3, Sell win times: 1
+ * - Weekly ATR filter enabled
+ * - Minimum lot size: 0.1
+ * - Sell min lot size enabled
+ * - Start hour: 1
+ * 
+ * USTECUSD (Index):
+ * - Take profit: 4x daily ATR
+ * - Buy win times: 3, Sell win times: 1
+ * - Weekly ATR filter enabled
+ * - Minimum lot size: 1.0
+ * - Sell min lot size enabled
+ * - Start hour: 1
+ * 
+ * XPDUSD (Palladium):
+ * - Take profit: 3x daily ATR
+ * - Buy win times: 3, Sell win times: 1
+ * - Weekly ATR filter enabled
+ * - Range filtering: Enabled with 60-bar period
+ * - Start hour: 1
+ * 
+ * XAGUSD (Silver):
+ * - Take profit: 3x daily ATR
+ * - Buy win times: 2, Sell win times: 1
+ * - Weekly ATR filter enabled
+ * - Range filtering: Enabled with 60-bar period
+ * - Start hour: 1
+ * 
+ * @param pConfig Configuration structure to populate
+ * @param pParams Strategy parameters containing symbol information
+ * @param pIndicators Strategy indicators (for setting lot sizes, risk cap, take price)
+ * @param pBase_Indicators Base indicators (for ATR calculations)
+ * 
+ * @note Common Parameters:
+ * The following parameters can be set in config files to override symbol-specific defaults:
+ * - AUTOBBS_SHELLINGTON_TP_MULTIPLIER: Take profit multiplier for daily ATR (e.g., 3.0)
+ * - AUTOBBS_SHELLINGTON_BUY_WON_TIMES: Maximum buy win times before blocking entry
+ * - AUTOBBS_SHELLINGTON_SELL_WON_TIMES: Maximum sell win times before blocking entry
+ * 
+ * These parameters work like AUTOBBS_RISK_CAP: if set in config file, they override
+ * symbol-specific defaults for symbols that use common values (e.g., US500USD, XAGUSD).
+ * If not set (0 or not in config), symbol-specific defaults are used.
+ * 
+ * Note: isEnableWeeklyATRControl defaults to TRUE for all symbols and is not configurable
+ * via parameters since all symbols use the same value.
+ */
+static void initializeSymbolConfig(ShellingtonSymbolConfig* pConfig, StrategyParams* pParams, 
+	Indicators* pIndicators, Base_Indicators* pBase_Indicators)
+{
+	/* Initialize with default values */
+	memset(pConfig, 0, sizeof(ShellingtonSymbolConfig));
+	
+	/* Read common parameters (can be overridden by symbol-specific settings) */
+	/* These parameters work like AUTOBBS_RISK_CAP: if set in config file, they override symbol-specific defaults */
+	double paramTPMultiplier = parameter(AUTOBBS_SHELLINGTON_TP_MULTIPLIER);
+	double paramBuyWonTimes = parameter(AUTOBBS_SHELLINGTON_BUY_WON_TIMES);
+	double paramSellWonTimes = parameter(AUTOBBS_SHELLINGTON_SELL_WON_TIMES);
+	
+	/* Initialize with default values */
+	pConfig->buyWonTimes = 0;
+	pConfig->sellWonTimes = 0;
+	pConfig->takePriceMultiplier = 0.0;  /* 0 = use default calculation */
+	pConfig->riskCap = 0;
+	pConfig->isEnableWeeklyATRControl = TRUE;  /* Default: TRUE */
+	pConfig->isEnableWeeklyTrend = FALSE;
+	pConfig->isEnableRange = TRUE;
+	pConfig->range = 30;
+	pConfig->startHour = 0;
+	pConfig->minLotSize = 0.0;  /* 0 = use default */
+	pConfig->isEnableSellMinLotSize = FALSE;
+
+	/* Configure based on symbol */
+	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
+	{
+		/* Cryptocurrency configuration */
+		pConfig->buyWonTimes = 5;
+		pConfig->sellWonTimes = 1;
+		pConfig->takePriceMultiplier = 5.0;
+		pConfig->riskCap = 2;
+		pConfig->isEnableRange = TRUE;
+		pConfig->range = 60;
+	}
+	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
+	{
+		/* Gold configuration */
+		pConfig->takePriceMultiplier = (paramTPMultiplier > 0.0) ? paramTPMultiplier : 4.0;
+		pConfig->buyWonTimes = (paramBuyWonTimes > 0.0) ? (int)paramBuyWonTimes : 1;
+		pConfig->sellWonTimes = (paramSellWonTimes > 0.0) ? (int)paramSellWonTimes : 1;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "XAUAUD") != NULL)
+	{
+		/* Gold in AUD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->isEnableWeeklyTrend = TRUE;
+		pConfig->buyWonTimes = 3;
+		pConfig->sellWonTimes = 1;
+		pConfig->takePriceMultiplier = 4.0;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
+	{
+		/* GBPJPY configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->isEnableWeeklyTrend = TRUE;
+		pConfig->buyWonTimes = 2;
+		pConfig->sellWonTimes = 2;
+		pConfig->takePriceMultiplier = 3.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPAUD") != NULL)
+	{
+		/* GBPAUD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->buyWonTimes = 2;
+		pConfig->sellWonTimes = 2;
+		pConfig->takePriceMultiplier = 3.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
+	{
+		/* AUDUSD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->buyWonTimes = 1;
+		pConfig->sellWonTimes = 1;
+		pConfig->takePriceMultiplier = 3.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "AUDNZD") != NULL)
+	{
+		/* AUDNZD configuration */
+		pConfig->takePriceMultiplier = 3.0;
+		pConfig->isEnableWeeklyTrend = TRUE;
+		pConfig->buyWonTimes = 1;
+		pConfig->sellWonTimes = 1;
+		pConfig->isEnableRange = TRUE;
+		pConfig->range = 60;
+	}
+	else if (strstr(pParams->tradeSymbol, "US500USD") != NULL)
+	{
+		/* US500USD configuration */
+		/* Use parameters if set, otherwise use symbol-specific defaults */
+		/* These 4 parameters are common across multiple symbols and can be configured via AUTOBBS_SHELLINGTON_* parameters */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->takePriceMultiplier = (paramTPMultiplier > 0.0) ? paramTPMultiplier : 3.0;
+		pConfig->buyWonTimes = (paramBuyWonTimes > 0.0) ? (int)paramBuyWonTimes : 2;
+		pConfig->sellWonTimes = (paramSellWonTimes > 0.0) ? (int)paramSellWonTimes : 1;
+		pConfig->isEnableSellMinLotSize = TRUE;
+		pConfig->minLotSize = 0.1;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "NAS100USD") != NULL)
+	{
+		/* NAS100USD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->takePriceMultiplier = 4.0;
+		pConfig->buyWonTimes = 3;
+		pConfig->sellWonTimes = 1;
+		pConfig->isEnableSellMinLotSize = TRUE;
+		pConfig->minLotSize = 0.1;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "USTECUSD") != NULL)
+	{
+		/* USTECUSD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->takePriceMultiplier = 4.0;
+		pConfig->buyWonTimes = 3;
+		pConfig->sellWonTimes = 1;
+		pConfig->minLotSize = 1.0;
+		pConfig->isEnableSellMinLotSize = TRUE;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "XPDUSD") != NULL)
+	{
+		/* XPDUSD configuration */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->takePriceMultiplier = 3.0;
+		pConfig->buyWonTimes = 3;
+		pConfig->sellWonTimes = 1;
+		pConfig->isEnableRange = TRUE;
+		pConfig->range = 60;
+		pConfig->startHour = 1;
+	}
+	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
+	{
+		/* XAGUSD configuration */
+		/* Use parameters if set, otherwise use symbol-specific defaults */
+		/* These 4 parameters are common across multiple symbols and can be configured via AUTOBBS_SHELLINGTON_* parameters */
+		/* isEnableWeeklyATRControl uses default (TRUE) - can be overridden by parameter */
+		pConfig->takePriceMultiplier = (paramTPMultiplier > 0.0) ? paramTPMultiplier : 3.0;
+		pConfig->buyWonTimes = (paramBuyWonTimes > 0.0) ? (int)paramBuyWonTimes : 2;
+		pConfig->sellWonTimes = (paramSellWonTimes > 0.0) ? (int)paramSellWonTimes : 1;
+		pConfig->isEnableRange = TRUE;
+		pConfig->range = 60;
+		pConfig->startHour = 1;
+	}
+	
+	/* Apply configuration to indicators */
+	if (pConfig->takePriceMultiplier > 0.0)
+	{
+		pIndicators->takePrice = pBase_Indicators->dailyATR * pConfig->takePriceMultiplier;
+	}
+	
+	if (pConfig->riskCap > 0)
+	{
+		pIndicators->riskCap = pConfig->riskCap;
+	}
+	
+	if (pConfig->minLotSize > 0.0)
+	{
+		pIndicators->minLotSize = pConfig->minLotSize;
+	}
+	
+	if (pConfig->isEnableSellMinLotSize == TRUE)
+	{
+		pIndicators->isEnableSellMinLotSize = TRUE;
+	}
+}
+
+/**
  * @brief Executes 4H Shellington strategy based on 4H MA trend and BBS indicators.
  * 
  * This function implements a swing trading strategy that uses:
@@ -82,25 +389,15 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 	int orderIndex = -1;
 	int execution_tf, close_index_rate = -1, diff4Hours, diffDays, diffWeeks;
 
-	int level = 0;
-	BOOL isEnableWeeklyATRControl = TRUE;	
-	BOOL isEnableWeeklyTrend = FALSE;
-	int startHour = 0;
-	int buyWonTimes = 0, sellWonTimes = 0;
-
-	double atr5 = iAtr(B_DAILY_RATES, 5, 1);
-
-	int fastMAPeriod = 12, slowMAPeriod = 26, signalMAPeriod = 9;
-
 	int sameSideWonTradesInCurrentTrend;
 
 	double rangeHigh = 0.0, rangeLow = 0.0;
-
-	BOOL isEnableRange = TRUE;
-	int range = 30;
 	double preRangeClose;
 
 	int turingIndexMA = -1;
+
+	/* Symbol-specific configuration */
+	ShellingtonSymbolConfig config;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 	safe_gmtime(&timeInfo1, currentTime);
@@ -120,157 +417,23 @@ AsirikuyReturnCode workoutExecutionTrend_4H_Shellington(StrategyParams* pParams,
 
 	execution_tf = (int)pParams->settings[TIMEFRAME];
 
+	/* Default take price calculation */
 	pIndicators->takePrice = pBase_Indicators->pWeeklyPredictATR / 2;
 	pIndicators->takePrice = min(pIndicators->takePrice, pBase_Indicators->dailyATR);
 	
 	pIndicators->riskCap = 0;
 
-	// Symbol-specific configurations
-	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
-	{
-		//isEnableWeeklyATRControl = TRUE;
-		//isEnableWeeklyTrend = TRUE;
-		buyWonTimes = 5;
-		sellWonTimes = 1;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 5;
-
-		pIndicators->riskCap = 2;
-
-		isEnableRange = TRUE;
-		range = 60;
-	}
-	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		isEnableWeeklyTrend = TRUE;
-		buyWonTimes = 1;
-		sellWonTimes = 1;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 4;
-		startHour = 1;
-	}
-	else if (strstr(pParams->tradeSymbol, "XAUAUD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		isEnableWeeklyTrend = TRUE;
-		buyWonTimes = 3;
-		sellWonTimes = 1;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 4;
-
-		startHour = 1;
-
-		//pIndicators->riskCap = 2;
-
-		//isEnableRange = TRUE;
-		//range = 60;
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		isEnableWeeklyTrend = TRUE;
-		buyWonTimes = 2;
-		sellWonTimes = 2;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPAUD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		buyWonTimes = 2;
-		sellWonTimes = 2;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-
-		//pIndicators->riskCap = 2;
-
-		//isEnableRange = TRUE;
-		//range = 60;
-	}
-	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		buyWonTimes = 1;
-		sellWonTimes = 1;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-	}
-	else if (strstr(pParams->tradeSymbol, "AUDNZD") != NULL)
-	{
-		//isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-		//pIndicators->takePrice = 0;
-		isEnableWeeklyTrend = TRUE;
-		buyWonTimes = 1;
-		sellWonTimes = 1;
-
-		isEnableRange = TRUE;
-		range = 60;
-	}
-	else if (strstr(pParams->tradeSymbol, "US500USD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-		buyWonTimes = 2;
-		sellWonTimes = 1;
-
-		//pIndicators->minLotSize = 1;
-		pIndicators->isEnableSellMinLotSize = TRUE;
-
-		//if (strcmp(pParams->accountInfo.brokerName, "Pepperstone Group Limited") == 0)
-		pIndicators->minLotSize = 0.1;	
-
-		startHour = 1;
-	}
-	else if (strstr(pParams->tradeSymbol, "NAS100USD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 4;
-		buyWonTimes = 3;
-		sellWonTimes = 1;
-
-		//pIndicators->minLotSize = 1;
-		pIndicators->isEnableSellMinLotSize = TRUE;
-		//if (strcmp(pParams->accountInfo.brokerName, "Pepperstone Group Limited") == 0)
-		pIndicators->minLotSize = 0.1;
-
-		startHour = 1;
-	}
-	else if (strstr(pParams->tradeSymbol, "USTECUSD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 4;
-		buyWonTimes = 3;
-		sellWonTimes = 1;
-
-		pIndicators->minLotSize = 1;
-		pIndicators->isEnableSellMinLotSize = TRUE;
-		//if (strcmp(pParams->accountInfo.brokerName, "Pepperstone Group Limited") == 0)
-		//pIndicators->minLotSize = 0.1;
-
-		startHour = 1;
-	}
-	else if (strstr(pParams->tradeSymbol, "XPDUSD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-		buyWonTimes = 3;
-		sellWonTimes = 1;
-
-		isEnableRange = TRUE;
-		range = 60;
-		startHour = 1;
-		//pIndicators->minLotSize = 0.01;
-		//pIndicators->isEnableSellMinLotSize = TRUE;
-	}
-	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
-	{
-		isEnableWeeklyATRControl = TRUE;
-		pIndicators->takePrice = pBase_Indicators->dailyATR * 3;
-		buyWonTimes = 2;
-		sellWonTimes = 1;
-
-		isEnableRange = TRUE;
-		range = 60;
-		startHour = 1;
-		//pIndicators->minLotSize = 0.01;
-		//pIndicators->isEnableSellMinLotSize = TRUE;
-	}
+	/* Initialize symbol-specific configuration */
+	initializeSymbolConfig(&config, pParams, pIndicators, pBase_Indicators);
+	
+	/* Extract configuration values for use in main logic */
+	int buyWonTimes = config.buyWonTimes;
+	int sellWonTimes = config.sellWonTimes;
+	BOOL isEnableWeeklyATRControl = config.isEnableWeeklyATRControl;
+	BOOL isEnableWeeklyTrend = config.isEnableWeeklyTrend;
+	BOOL isEnableRange = config.isEnableRange;
+	int range = config.range;
+	int startHour = config.startHour;
 
 	iSRLevels(pParams, pBase_Indicators, B_FOURHOURLY_RATES, shift1Index_4H - 1, range, &rangeHigh, &rangeLow);
 	preRangeClose = iClose(B_FOURHOURLY_RATES, 1);

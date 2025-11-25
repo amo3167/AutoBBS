@@ -9,11 +9,18 @@
  * - Auto strategy: Dispatcher that routes to appropriate strategy based on trend phase
  * - MIDDLE_RETREAT_PHASE strategy: Enters on price retreats during middle phase
  * - ASI strategy: Uses Accumulation Swing Index for trend determination
- * - 4H Shellington strategy: Uses 4H MA trend and BBS for entry signals
  * 
- * NOTE: This file contains duplicate static functions (entryBuyRangeOrder, entrySellRangeOrder,
- * isRangeOrder, DailyTrade_Limit_Allow_Trade) that are already implemented in
- * RangeOrderManagement.c and TimeManagement.c. These duplicates should be removed.
+ * NOTE: The 4H Shellington strategy has been moved to its own module:
+ *       strategies/autobbs/trend/shellington/Shellington4HStrategy.c
+ * 
+ * NOTE: Range order functions (entryBuyRangeOrder, entrySellRangeOrder, isRangeOrder) are
+ * now imported from RangeOrderManagement.c. The duplicate static functions have been removed.
+ * 
+ * NOTE: Time management function (DailyTrade_Limit_Allow_Trade) is now imported from
+ * TimeManagement.c. The duplicate static function has been removed.
+ * 
+ * NOTE: Stop loss management function (move_stop_loss) is now imported from
+ * StopLossManagement.c. The duplicate static function has been removed.
  */
 
 #include <stdio.h>
@@ -31,6 +38,12 @@
 #include "strategies/autobbs/trend/bbs/BBSBreakOutStrategy.h"
 #include "strategies/autobbs/trend/limit/LimitOrderSplitting.h"
 #include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"
+#include "strategies/autobbs/trend/common/RangeOrderManagement.h"
+#include "strategies/autobbs/trend/common/TimeManagement.h"
+#include "strategies/autobbs/trend/common/StopLossManagement.h"
+#include "strategies/autobbs/trend/common/TimeManagement.h"
+#include "strategies/autobbs/trend/common/StopLossManagement.h"
+#include "strategies/autobbs/trend/common/TimeManagement.h"
 
 // Strategy configuration constants
 #define RISK_DOUBLE 2                        // Double risk (200%)
@@ -726,12 +739,6 @@ AsirikuyReturnCode workoutExecutionTrend_MIDDLE_RETREAT_PHASE(StrategyParams* pP
 			&& fabs(pIndicators->entryPrice - pBase_Indicators->dailyS) <= pBase_Indicators->dailyATR * ATR_FACTOR_FOR_RETREAT_DISTANCE
 			&& !isSameDaySamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / ATR_DIVISOR_FOR_PENDING_CHECK, currentTime)
 			)
-/* 
- * BBS strategy functions have been extracted to:
- * - workoutExecutionTrend_BBS_BreakOut, workoutExecutionTrend_Weekly_BBS_BreakOut -> strategies/bbs/BBSBreakOutStrategy.c
- * - workoutExecutionTrend_4HBBS_Swing, workoutExecutionTrend_4HBBS_Swing_BoDuan, workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan -> strategies/bbs/BBSSwingStrategy.c
- */
-
 		{
 			pIndicators->entrySignal = 1;
 			logInfo("System InstanceID = %d, BarTime = %s, enter long trade in workoutExecutionTrend_MIDDLE_RETREAT_PHASE.",
@@ -1322,226 +1329,6 @@ static BOOL move_tailing_stop_loss(StrategyParams* pParams, Indicators* pIndicat
 	return TRUE;
 }
 
-static BOOL move_stop_loss(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, double stopLossLevel)
-{
-
-	//double realTakePrice = fabs(pParams->orderInfo[orderIndex].stopLoss - pParams->orderInfo[orderIndex].openPrice) / oldStopLossLevel;
-	double realTakePrice = fabs(pParams->orderInfo[orderIndex].takeProfit - pParams->orderInfo[orderIndex].openPrice);
-
-	pIndicators->stopMovingBackSL = FALSE;
-	if (pParams->orderInfo[orderIndex].type == BUY)
-	{
-		pIndicators->entryPrice = pParams->bidAsk.ask[0];
-		pIndicators->stopLossPrice = pParams->orderInfo[orderIndex].openPrice - realTakePrice * stopLossLevel;
-
-		pIndicators->takePrice = -1;
-
-		if (fabs(pIndicators->stopLossPrice- pParams->orderInfo[orderIndex].stopLoss) > pIndicators->adjust)
-			pIndicators->executionTrend = 1;
-		
-	}
-
-	if (pParams->orderInfo[orderIndex].type == SELL)
-	{
-		pIndicators->entryPrice = pParams->bidAsk.bid[0];
-		pIndicators->stopLossPrice = pParams->orderInfo[orderIndex].openPrice + realTakePrice * stopLossLevel;
-
-		pIndicators->takePrice = -1;
-
-		if (fabs(pIndicators->stopLossPrice- pParams->orderInfo[orderIndex].stopLoss) > pIndicators->adjust)
-			pIndicators->executionTrend = -1;		
-	}
-	return TRUE;
-}
-
-static BOOL entryBuyRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, int stopHour, BOOL isOrderSignal, BOOL isEnterOrder)
-{
-	time_t currentTime;
-	struct tm timeInfo1;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	Order_Info orderInfo;
-	
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-	safe_gmtime(&timeInfo1, currentTime);
-
-	if ((int)parameter(AUTOBBS_RANGE) == 1
-		&& (orderIndex < 0 || pParams->orderInfo[orderIndex].isOpen == FALSE)
-		&& getWinTimesInDaywithSamePriceEasy(currentTime, pParams->bidAsk.ask[0], 3 * iAtr(B_HOURLY_RATES, 20, 1)) < 1
-		//&& getWinTimesInDayEasy(currentTime) < 1
-		&& iLow(B_DAILY_RATES, 0) <= iHigh(B_DAILY_RATES, 0) - pBase_Indicators->pDailyMaxATR
-		&& pParams->bidAsk.ask[0] < pBase_Indicators->dailyS2
-		&& timeInfo1.tm_hour >= 17
-		)
-
-	{
-		if (isEnterOrder == TRUE &&( pIndicators->bbsTrend_primary == 1
-			|| iClose(B_PRIMARY_RATES, 1) - iLow(B_DAILY_RATES, 0) >= 1.5 * iAtr(B_HOURLY_RATES, 20, 1))
-			)
-		{			
-			splitBuyRangeOrders(pParams, pIndicators, pBase_Indicators);
-		}
-
-		if (isOrderSignal == TRUE 
-			&& timeInfo1.tm_hour >= stopHour //&& timeInfo1.tm_min == 0
-			)
-		{
-			//Save signal in the file
-			orderInfo.orderNumber = 0;
-			orderInfo.type = BUY;
-			orderInfo.orderStatus = PENDING;
-			orderInfo.openPrice = 0;
-			orderInfo.stopLossPrice = 0;
-			orderInfo.takeProfitPrice = 0;
-			orderInfo.timeStamp = currentTime;
-
-			saveTradingInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo);
-		}
-	}
-	return TRUE;
-}
-
-static BOOL entrySellRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex, int stopHour, BOOL isOrderSignal, BOOL isEnterOrder)
-{
-	time_t currentTime;
-	struct tm timeInfo1;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	Order_Info orderInfo;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-	safe_gmtime(&timeInfo1, currentTime);
-
-	if ((int)parameter(AUTOBBS_RANGE) == 1
-		&& (orderIndex < 0 || pParams->orderInfo[orderIndex].isOpen == FALSE)
-		&& getWinTimesInDaywithSamePriceEasy(currentTime, pParams->bidAsk.bid[0], 3 * iAtr(B_HOURLY_RATES, 20, 1)) < 1
-		//&& getWinTimesInDayEasy(currentTime) < 1
-		&& iHigh(B_DAILY_RATES, 0) >= iLow(B_DAILY_RATES, 0) + pBase_Indicators->pDailyMaxATR
-		&& pParams->bidAsk.bid[0] > pBase_Indicators->dailyR2
-		&& timeInfo1.tm_hour >= 17
-		)
-
-	{
-		if (isEnterOrder == TRUE && (pIndicators->bbsTrend_primary == -1
-			|| iHigh(B_DAILY_RATES, 0) - iClose(B_PRIMARY_RATES, 1) >= 1.5*iAtr(B_HOURLY_RATES, 20, 1))
-			)
-		{			
-			splitSellRangeOrders(pParams, pIndicators, pBase_Indicators);
-		}
-
-		if (isOrderSignal == TRUE 
-			&& timeInfo1.tm_hour >= stopHour //&& timeInfo1.tm_min == 0
-			)
-		{
-			//Save signal in the file
-			orderInfo.orderNumber = 0;
-			orderInfo.type = SELL;
-			orderInfo.orderStatus = PENDING;
-			orderInfo.openPrice = 0;
-			orderInfo.stopLossPrice = 0;
-			orderInfo.takeProfitPrice = 0;
-			orderInfo.timeStamp = currentTime;
-
-			saveTradingInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo);
-		}
-	}
-	return TRUE;
-}
-
-static int isRangeOrder(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int orderIndex)
-{
-	time_t currentTime;
-	struct tm timeInfo1, timeInfo2;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	double pivot, s1, s2, s3, r1, r2, r3;
-	double diffDays;
-	Order_Info orderInfo;
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-	safe_gmtime(&timeInfo1, currentTime);
-	
-	iPivot(B_DAILY_RATES, 2, &pivot, &s1, &r1, &s2, &r2, &s3, &r3);
-		
-	if ((int)parameter(AUTOBBS_RANGE) == 1
-		&& pParams->orderInfo[orderIndex].isOpen == FALSE
-		&& pParams->orderInfo[orderIndex].profit < 0
-		)
-	{
-		safe_gmtime(&timeInfo2, pParams->orderInfo[orderIndex].openTime);
-		diffDays = difftime(currentTime, pParams->orderInfo[orderIndex].openTime) / (60 * 60 * 24);
-
-		iPivot(B_DAILY_RATES, 2, &pivot, &s1, &r1, &s2, &r2, &s3, &r3);
-
-
-		if (diffDays < 1 && timeInfo1.tm_yday != timeInfo2.tm_yday && timeInfo2.tm_hour >= 17)
-		{
-			if (pParams->orderInfo[orderIndex].type == BUY && pParams->orderInfo[orderIndex].openPrice < r2)
-			{				
-				return 1;
-			}
-				 
-			if (pParams->orderInfo[orderIndex].type == SELL && pParams->orderInfo[orderIndex].openPrice > r2)
-			{				
-				return -1;
-			}	
-				
-		}
-	}
-
-	readTradingInfo((int)pParams->settings[STRATEGY_INSTANCE_ID], &orderInfo);
-
-	if (orderInfo.orderStatus == PENDING)
-	{
-		diffDays = difftime(currentTime, orderInfo.timeStamp) / (60 * 60 * 24);
-		if (diffDays < 1)
-		{
-			if (orderInfo.type == BUY)
-				return 2;
-			if (orderInfo.type == SELL)
-				return -2;
-		}
-	}
-			
-	return 0;
-
-}
-static BOOL DailyTrade_Limit_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
-{
-	time_t currentTime;
-	struct tm timeInfo1;
-	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	char   timeString[MAX_TIME_STRING_SIZE] = "";
-
-	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
-	safe_gmtime(&timeInfo1, currentTime);
-	safe_timeString(timeString, currentTime);
-
-	//Ignore any trade on time range:
-	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
-	{
-		if (timeInfo1.tm_hour >= 10)
-		{
-			sprintf(pIndicators->status, "Ignore trading after 10\n");
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-			closeAllLimitAndStopOrdersEasy(currentTime);
-			return FALSE;
-		}
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
-	{
-		if (timeInfo1.tm_hour >= 8 && timeInfo1.tm_hour <= 14)
-		{
-			sprintf(pIndicators->status, "Ignore trading between 8-14\n");
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-			closeAllLimitAndStopOrdersEasy(currentTime);
-			return FALSE;
-		}
-	}
-	return TRUE;
-}
-
-
 
 
 AsirikuyReturnCode workoutExecutionTrend_ASI(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
@@ -1633,5 +1420,4 @@ AsirikuyReturnCode workoutExecutionTrend_ASI(StrategyParams* pParams, Indicators
 
 	return SUCCESS;
 }
-
 

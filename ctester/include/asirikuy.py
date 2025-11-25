@@ -645,11 +645,17 @@ paramIndexes = dict(
     ADDITIONAL_PARAM_16  = 15,
     AUTOBBS_STOP_MOVEBACK_SL = 16,
     ADDITIONAL_PARAM_17  = 16,
+    AUTOBBS_SHELLINGTON_TP_MULTIPLIER = 17,  # Shellington 4H: Take profit multiplier (daily ATR multiplier, e.g., 3.0)
     ADDITIONAL_PARAM_18  = 17,
+    AUTOBBS_SHELLINGTON_BUY_WON_TIMES = 18,  # Shellington 4H: Maximum buy win times before blocking entry
     ADDITIONAL_PARAM_19  = 18,
+    AUTOBBS_SHELLINGTON_SELL_WON_TIMES = 19,  # Shellington 4H: Maximum sell win times before blocking entry
     ADDITIONAL_PARAM_20  = 19,
+    AUTOBBS_BBS_WEEKLY_ATR_FACTOR = 20,  # BBS Swing: Weekly ATR factor for range detection (e.g., 0.4 = 40%)
     ADDITIONAL_PARAM_21  = 20,
+    AUTOBBS_BBS_4H_START_HOUR_OFFSET = 21,  # BBS Swing: 4H bar start hour offset (0 = standard, 1 = XAUUSD style)
     ADDITIONAL_PARAM_22  = 21,
+    AUTOBBS_BBS_ENABLE_WEEKLY_ATR_VALIDATION = 22,  # BBS Swing: Enable weekly ATR validation (1 = TRUE, 0 = FALSE)
     ADDITIONAL_PARAM_23  = 22,
     ADDITIONAL_PARAM_24  = 23,
     ADDITIONAL_PARAM_25  = 24,
@@ -774,6 +780,12 @@ global paramNames
 paramNames = {
     7:  "ADDITIONAL_PARAM_8",
     16: "AUTOBBS_STOP_MOVEBACK_SL",
+    17: "AUTOBBS_SHELLINGTON_TP_MULTIPLIER",
+    18: "AUTOBBS_SHELLINGTON_BUY_WON_TIMES",
+    19: "AUTOBBS_SHELLINGTON_SELL_WON_TIMES",
+    20: "AUTOBBS_BBS_WEEKLY_ATR_FACTOR",
+    21: "AUTOBBS_BBS_4H_START_HOUR_OFFSET",
+    22: "AUTOBBS_BBS_ENABLE_WEEKLY_ATR_VALIDATION",
     43: "RUN_EVERY_TICK",
     44: "INSTANCE_MANAGEMENT",
     45: "MAX_OPEN_ORDERS",

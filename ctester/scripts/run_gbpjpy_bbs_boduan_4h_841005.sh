@@ -1,8 +1,8 @@
 #!/bin/bash
-# Script to run GBPJPY Shellington 4H Strategy 841005
+# Script to run GBPJPY BBS BoDuan 4H Strategy 841005
 # Cleans ctester folder and saves results to tmp folder with renamed files
 #
-# Usage: ./run_gbpjpy_shellington_4h_841005.sh [OPTIONS]
+# Usage: ./run_gbpjpy_bbs_boduan_4h_841005.sh [OPTIONS]
 # Options:
 #   --fromdate YYYY-MM-DD    Start date (default: from config file)
 #   --todate YYYY-MM-DD      End date (default: from config file)
@@ -12,7 +12,7 @@
 set -e
 
 # Configuration
-CONFIG_FILE="config/Shellington_GBPJPY-1H_841005.config"
+CONFIG_FILE="config/Bbs_GBPJPY-4H_Boduan_841005.config"
 SYMBOL="GBPJPY"
 STRATEGY_ID="841005"
 OUTPUT_DIR="tmp"
@@ -101,7 +101,7 @@ else
     RESULTS_FOLDER="${OUTPUT_DIR}/${SYMBOL}_${STRATEGY_ID}"
 fi
 
-echo "=== Running ${SYMBOL} Shellington 4H Strategy ${STRATEGY_ID} ==="
+echo "=== Running ${SYMBOL} BBS BoDuan 4H Strategy ${STRATEGY_ID} ==="
 echo ""
 
 # Step 1: Clean and create results folder (needed for temp config)

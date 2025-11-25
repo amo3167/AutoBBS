@@ -31,7 +31,13 @@ extern "C" {
 		AUTOBBS_IS_ATREURO_RANGE = ADDITIONAL_PARAM_14, //XAUUSD һ����8
 		AUTOBBS_STARTHOUR = ADDITIONAL_PARAM_15, //�ֹ�ѡ����Կ�ʼʱ�䡣
 		AUTOBBS_VIRTUAL_BALANCE_TOPUP = ADDITIONAL_PARAM_16,  // virtual balance top up
-		AUTOBBS_STOP_MOVEBACK_SL = ADDITIONAL_PARAM_17  // Allow stop loss to move backward (1 = TRUE, 0 = FALSE)
+		AUTOBBS_STOP_MOVEBACK_SL = ADDITIONAL_PARAM_17,  // Allow stop loss to move backward (1 = TRUE, 0 = FALSE)
+		AUTOBBS_SHELLINGTON_TP_MULTIPLIER = ADDITIONAL_PARAM_18,  // Shellington 4H: Take profit multiplier (daily ATR multiplier, e.g., 3.0)
+		AUTOBBS_SHELLINGTON_BUY_WON_TIMES = ADDITIONAL_PARAM_19,  // Shellington 4H: Maximum buy win times before blocking entry
+		AUTOBBS_SHELLINGTON_SELL_WON_TIMES = ADDITIONAL_PARAM_20,  // Shellington 4H: Maximum sell win times before blocking entry
+		AUTOBBS_BBS_WEEKLY_ATR_FACTOR = ADDITIONAL_PARAM_21,  // BBS Swing: Weekly ATR factor for range detection (e.g., 0.4 = 40%)
+		AUTOBBS_BBS_4H_START_HOUR_OFFSET = ADDITIONAL_PARAM_22,  // BBS Swing: 4H bar start hour offset (0 = standard, 1 = XAUUSD style)
+		AUTOBBS_BBS_ENABLE_WEEKLY_ATR_VALIDATION = ADDITIONAL_PARAM_23  // BBS Swing: Enable weekly ATR validation (1 = TRUE, 0 = FALSE)
 } AdditionalSettings;
 
 

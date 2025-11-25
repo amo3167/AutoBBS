@@ -14,17 +14,10 @@ extern "C" {
 #endif
 
 /**
- * 4H BBS Swing strategy execution (XAUUSD BoDuan version).
+ * Unified 4H BBS Swing BoDuan strategy execution with symbol-specific configuration.
  * 
- * @param pParams Strategy parameters
- * @param pIndicators Strategy indicators
- * @param pBase_Indicators Base indicators
- * @return AsirikuyReturnCode
- */
-AsirikuyReturnCode workoutExecutionTrend_4HBBS_Swing_XAUUSD_BoDuan(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators);
-
-/**
- * 4H BBS Swing strategy execution (BoDuan version).
+ * This unified function handles all BoDuan variants (XAUUSD, GBPJPY, GBPAUD, etc.)
+ * with configurable parameters for timing, stop loss, and validation.
  * 
  * @param pParams Strategy parameters
  * @param pIndicators Strategy indicators
