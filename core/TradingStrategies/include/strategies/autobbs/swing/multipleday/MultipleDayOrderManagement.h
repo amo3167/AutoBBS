@@ -75,7 +75,6 @@ void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndic
  * Handles GBPJPY-specific entry signal logic:
  * - Calculates stopLoss and takePrice based on atr_euro_range
  * - Handles order modification during 1:00-1:15 time window
- * - Sets risk caps for buy/sell orders
  * - Handles add position logic for long-term trends
  * - Applies GBPJPY trading filter
  * 
@@ -92,12 +91,11 @@ void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndic
  * @param preClose Previous bar close price
  * @param timeInfo1 Current time information structure
  * @param timeString Current time string for logging
- * @param riskCapBuy Risk cap for buy orders (input parameter)
- * @param riskCapSell Risk cap for sell orders (input parameter)
  * @param floatingTP Output parameter: floating take profit level (set by function)
- * @return SUCCESS on success, or early return if trading is not allowed
+ * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
+ * @return SUCCESS on success
  */
-AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double riskCapBuy, double riskCapSell, double* floatingTP);
+AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip);
 
 /**
  * Setup XAUUSD entry signal for multiple day trading strategies.
@@ -123,13 +121,12 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param preClose Previous bar close price
  * @param timeInfo1 Current time information structure
  * @param timeString Current time string for logging
- * @param riskCapBuy Risk cap for buy orders (input parameter)
- * @param riskCapSell Risk cap for sell orders (input parameter)
  * @param floatingTP Output parameter: floating take profit level (set by function)
  * @param takeProfitMode Output parameter: take profit mode (set by function)
- * @return SUCCESS on success, or early return if trading is not allowed
+ * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
+ * @return SUCCESS on success
  */
-AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double riskCapBuy, double riskCapSell, double* floatingTP, int* takeProfitMode);
+AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip);
 
 #ifdef __cplusplus
 } /* extern "C" */

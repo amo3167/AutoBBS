@@ -461,3 +461,266 @@ void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndic
 	}
 }
 
+/**
+ * Setup GBPJPY entry signal for multiple day trading strategies.
+ * 
+ * Handles GBPJPY-specific entry signal logic:
+ * - Calculates stopLoss and takePrice based on atr_euro_range
+ * - Handles order modification during 1:00-1:15 time window
+ * - Handles add position logic for long-term trends
+ * - Applies GBPJPY trading filter
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators structure to modify
+ * @param pBase_Indicators Base indicators structure containing ATR predictions
+ * @param executionTrend Current execution trend (-1, 0, or 1)
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param side Order side (BUY, SELL, or NONE)
+ * @param isAddPosition TRUE if adding position, FALSE otherwise
+ * @param isSameDayOrder TRUE if order was opened same day, FALSE otherwise
+ * @param preLow Previous bar low price
+ * @param preHigh Previous bar high price
+ * @param preClose Previous bar close price
+ * @param timeInfo1 Current time information structure
+ * @param timeString Current time string for logging
+ * @param floatingTP Output parameter: floating take profit level (set by function)
+ * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
+ * @return SUCCESS on success
+ */
+AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+{
+	double addPositionBaseLine;
+	
+	/* Initialize shouldSkip to FALSE (continue processing by default) */
+	*shouldSkip = FALSE;
+
+	/* Adjust range: increase range for better filtering */
+	if ((int)parameter(AUTOBBS_RANGE) == 1 && executionTrend != 0)
+		pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 2 * 0.8);
+
+	pIndicators->stopLoss = pIndicators->atr_euro_range * 1.1;
+	pIndicators->takePrice = max(0.3, pIndicators->atr_euro_range * 0.35);
+
+	*floatingTP = pIndicators->takePrice;
+
+	logWarning("System InstanceID = %d, BarTime = %s, pDailyPredictATR=%lf, pDailyMaxATR= %lf, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
+		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->pDailyPredictATR, pBase_Indicators->pDailyMaxATR, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
+
+	/* Handle order modification during 1:00-1:15 time window */
+	if (timeInfo1->tm_hour == 1 && timeInfo1->tm_min >= 0 && timeInfo1->tm_min <= 15 && oldestOpenOrderIndex >= 0)
+	{
+		if (side == BUY)
+		{
+			if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice > pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = 1;
+				pIndicators->entryPrice = pParams->bidAsk.ask[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
+			}
+		}
+
+		if (side == SELL)
+		{
+			if (pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->bidAsk.bid[0] > pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = -1;
+				pIndicators->entryPrice = pParams->bidAsk.bid[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
+			}
+		}
+	}
+
+	/* Handle add position logic */
+	if (isAddPosition == TRUE)
+	{
+		pIndicators->tradeMode = 2;
+		pIndicators->risk = 0.5;
+
+		if (pParams->orderInfo[oldestOpenOrderIndex].type == BUY)
+		{
+			pIndicators->entryPrice = pParams->bidAsk.ask[0];
+			addPositionBaseLine = pBase_Indicators->dailyS1;
+			if ((preLow < addPositionBaseLine && preClose > addPositionBaseLine) &&
+				pIndicators->entryPrice - pIndicators->stopLoss > pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
+				pIndicators->entryPrice <= pBase_Indicators->weeklyR2 &&
+				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
+			{
+				pIndicators->executionTrend = 1;
+				pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
+				pIndicators->entrySignal = 1;
+				*shouldSkip = TRUE;  /* Entry signal set, caller should exit early */
+				return SUCCESS;
+			}
+		}
+
+		if (pParams->orderInfo[oldestOpenOrderIndex].type == SELL)
+		{
+			pIndicators->entryPrice = pParams->bidAsk.bid[0];
+			addPositionBaseLine = pBase_Indicators->dailyR1;
+			if ((preHigh > addPositionBaseLine && preClose < addPositionBaseLine) &&
+				pIndicators->entryPrice + pIndicators->stopLoss < pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
+				pIndicators->entryPrice >= pBase_Indicators->weeklyS2 &&
+				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
+			{
+				pIndicators->executionTrend = -1;
+				pIndicators->stopLossPrice = pIndicators->entryPrice + pIndicators->stopLoss;
+				pIndicators->entrySignal = -1;
+				*shouldSkip = TRUE;  /* Entry signal set, caller should exit early */
+				return SUCCESS;
+			}
+		}
+	}
+
+	/* Apply GBPJPY trading filter */
+	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
+		isSameDayOrder == FALSE &&
+		GBPJPY_MultipleDays_Allow_Trade(pParams, pIndicators, pBase_Indicators) == FALSE)
+	{
+		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+		return SUCCESS;
+	}
+
+	return SUCCESS;
+}
+
+/**
+ * Setup XAUUSD entry signal for multiple day trading strategies.
+ * 
+ * Handles XAUUSD-specific entry signal logic:
+ * - Calculates stopLoss and takePrice based on atr_euro_range
+ * - Handles order modification during 1:00-1:15 time window
+ * - Handles add position logic for long-term trends
+ * - Sets endHour for trading window
+ * - Applies commodity trading filter
+ * - Sets take profit mode
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators structure to modify
+ * @param pBase_Indicators Base indicators structure containing ATR predictions
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param side Order side (BUY, SELL, or NONE)
+ * @param isAddPosition TRUE if adding position, FALSE otherwise
+ * @param isSameDayOrder TRUE if order was opened same day, FALSE otherwise
+ * @param shouldFilter Whether to apply ATR-based filtering
+ * @param preLow Previous bar low price
+ * @param preHigh Previous bar high price
+ * @param preClose Previous bar close price
+ * @param timeInfo1 Current time information structure
+ * @param timeString Current time string for logging
+ * @param floatingTP Output parameter: floating take profit level (set by function)
+ * @param takeProfitMode Output parameter: take profit mode (set by function)
+ * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
+ * @return SUCCESS on success
+ */
+AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+{
+	double addPositionBaseLine;
+	
+	/* Initialize shouldSkip to FALSE (continue processing by default) */
+	*shouldSkip = FALSE;
+
+	pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 3);
+	pIndicators->stopLoss = pIndicators->atr_euro_range * 0.93;
+	pIndicators->takePrice = max(3, pIndicators->stopLoss * 0.4);
+
+	*floatingTP = pIndicators->takePrice;
+	logInfo("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
+		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
+
+	/* Handle order modification during 1:00-1:15 time window */
+	if (timeInfo1->tm_hour == 1 && timeInfo1->tm_min >= 0 && timeInfo1->tm_min <= 15 && oldestOpenOrderIndex >= 0)
+	{
+		if (side == BUY)
+		{
+			if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice > pIndicators->stopLoss &&
+				pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice < 2 * pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = 1;
+				pIndicators->entryPrice = pParams->bidAsk.ask[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
+			}
+			else if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice >= 2 * pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = 1;
+				pIndicators->entryPrice = pParams->bidAsk.ask[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice + pIndicators->stopLoss;
+			}
+		}
+
+		if (side == SELL)
+		{
+			if (pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->bidAsk.bid[0] > pIndicators->stopLoss &&
+				pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->bidAsk.bid[0] < 2 * pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = -1;
+				pIndicators->entryPrice = pParams->bidAsk.bid[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
+			}
+
+			if (pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->bidAsk.bid[0] >= 2 * pIndicators->stopLoss)
+			{
+				pIndicators->executionTrend = -1;
+				pIndicators->entryPrice = pParams->bidAsk.bid[0];
+				pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice - pIndicators->stopLoss;
+			}
+		}
+	}
+
+	/* Handle add position logic */
+	if (isAddPosition == TRUE)
+	{
+		pIndicators->tradeMode = 2;
+		pIndicators->risk = 0.5;
+
+		if (pParams->orderInfo[oldestOpenOrderIndex].type == BUY)
+		{
+			pIndicators->entryPrice = pParams->bidAsk.ask[0];
+			addPositionBaseLine = pBase_Indicators->dailyPivot;
+			pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
+			if ((preLow < addPositionBaseLine && preClose > addPositionBaseLine
+				|| (timeInfo1->tm_hour == 1 && timeInfo1->tm_min < 5)) &&
+				pIndicators->entryPrice - pIndicators->stopLoss > pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
+				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
+			{
+				pIndicators->executionTrend = 1;
+				pIndicators->entrySignal = 1;
+				*shouldSkip = TRUE;  /* Entry signal set, caller should exit early */
+				return SUCCESS;
+			}
+		}
+
+		if (pParams->orderInfo[oldestOpenOrderIndex].type == SELL)
+		{
+			pIndicators->entryPrice = pParams->bidAsk.bid[0];
+			addPositionBaseLine = pBase_Indicators->dailyPivot;
+			pIndicators->stopLossPrice = pIndicators->entryPrice + pIndicators->stopLoss;
+			if ((preHigh > addPositionBaseLine && preClose < addPositionBaseLine
+				|| (timeInfo1->tm_hour == 1 && timeInfo1->tm_min < 5)) &&
+				pIndicators->entryPrice + pIndicators->stopLoss < pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
+				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
+			{
+				pIndicators->executionTrend = -1;
+				pIndicators->entrySignal = -1;
+				*shouldSkip = TRUE;  /* Entry signal set, caller should exit early */
+				return SUCCESS;
+			}
+		}
+	}
+
+	pIndicators->endHour = 23;
+
+	/* Apply commodity trading filter (XAUUSD, XAGUSD, etc.) */
+	/* If it's a manual takeover order, after entry, no need to filter */
+	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
+		isSameDayOrder == FALSE &&
+		Commodity_DayTrading_Allow_Trade(pParams, pIndicators, pBase_Indicators, shouldFilter) == FALSE)
+	{
+		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+		return SUCCESS;
+	}
+
+	*takeProfitMode = 1;
+
+	return SUCCESS;
+}
+
