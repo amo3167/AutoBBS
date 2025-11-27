@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "OrderManagement.h"
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"
@@ -38,6 +39,326 @@
 
 /* Take profit mode constants */
 #define TP_MODE_CLOSE_ON_PROFIT 0         /* Close order when profit target reached */
+
+/**
+ * @brief Initializes symbol-specific configuration for Multiple Day strategy.
+ * 
+ * This function configures all symbol-specific parameters based on the trading
+ * symbol. Each symbol has unique characteristics that require different ATR
+ * calculations, risk management settings, and filtering logic.
+ * 
+ * Symbol-Specific Trading Logic:
+ * 
+ * XAUUSD (Gold):
+ * - ATR range: max(parameter, (pDailyPredictATR + pDailyMaxATR) / 3)
+ * - Stop loss: 0.93 * atr_euro_range
+ * - Take price: max(3, stopLoss * 0.4)
+ * - Uses oldestOpenOrderIndex
+ * - Supports add position with dailyPivot baseline
+ * - End hour: 23
+ * - Take profit mode: 1
+ * - Filter: Commodity_DayTrading_Allow_Trade
+ * 
+ * XAGUSD (Silver):
+ * - ATR range: (pDailyPredictATR + pDailyMaxATR) / 3
+ * - Stop loss: 0.93 * atr_euro_range
+ * - Take price: stopLoss * 0.4
+ * - Uses latestOrderIndex
+ * - End hour: not set
+ * - Take profit mode: 1
+ * - Filter: Commodity_DayTrading_Allow_Trade
+ * 
+ * BTCUSD/ETHUSD (Cryptocurrencies):
+ * - ATR range: (pDailyPredictATR + pDailyMaxATR) / 3
+ * - Stop loss: 0.93 * atr_euro_range
+ * - Take price: stopLoss * 0.4
+ * - Uses latestOrderIndex
+ * - End hour: not set
+ * - Take profit mode: 1
+ * - Filter: BTCUSD_DayTrading_Allow_Trade
+ * 
+ * GBPJPY (Forex):
+ * - ATR range: max(parameter, (pDailyPredictATR + pDailyMaxATR) / 2 * 0.8) if RANGE=1 and executionTrend != 0
+ * - Stop loss: 1.1 * atr_euro_range
+ * - Take price: max(0.3, atr_euro_range * 0.35)
+ * - Uses oldestOpenOrderIndex
+ * - Supports add position with dailyS1/dailyR1 baseline and weekly levels
+ * - End hour: not set
+ * - Take profit mode: not set
+ * - Filter: GBPJPY_MultipleDays_Allow_Trade
+ * 
+ * GBPUSD (Forex):
+ * - ATR range: max(parameter, (pDailyPredictATR + pDailyMaxATR) / 2 * 0.8) if RANGE=1 and executionTrend != 0
+ * - Stop loss: 1.1 * atr_euro_range
+ * - Take price: max(0.003, atr_euro_range * 0.35)
+ * - Uses latestOrderIndex
+ * - 3-tier stop loss modification
+ * - End hour: not set
+ * - Take profit mode: not set
+ * - Filter: GBPUSD_MultipleDays_Allow_Trade
+ * 
+ * AUDUSD (Forex):
+ * - ATR range: max(parameter, (pDailyPredictATR + pDailyMaxATR) / 2 * 0.8)
+ * - Stop loss: 1.1 * atr_euro_range
+ * - Take price: max(0.0015, atr_euro_range * 0.35)
+ * - Uses latestOrderIndex
+ * - 3-tier stop loss modification
+ * - End hour: not set
+ * - Take profit mode: not set
+ * - Filter: GBPUSD_MultipleDays_Allow_Trade (shared with GBPUSD)
+ * 
+ * @param pConfig Configuration structure to populate
+ * @param pParams Strategy parameters containing symbol information
+ * @param pBase_Indicators Base indicators (for reference)
+ * @param executionTrend Current execution trend (-1, 0, or 1)
+ */
+void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Base_Indicators* pBase_Indicators, int executionTrend)
+{
+	/* Initialize with default values */
+	memset(pConfig, 0, sizeof(MultipleDaySymbolConfig));
+	
+	/* Default values */
+	pConfig->atrRangeDivisor = 3.0;
+	pConfig->atrRangeMultiplier = 1.0;
+	pConfig->useMaxWithParameter = FALSE;
+	pConfig->adjustRangeWithTrend = FALSE;
+	pConfig->stopLossMultiplier = 0.93;
+	pConfig->takePriceMultiplier = 0.4;
+	pConfig->takePriceMinValue = 0.0;
+	pConfig->useTakePriceFromStopLoss = TRUE;
+	pConfig->useOldestOrderIndex = FALSE;
+	pConfig->useTwoTierStopLoss = TRUE;
+	pConfig->supportsAddPosition = FALSE;
+	pConfig->addPositionBuyBaseline = 0.0;
+	pConfig->addPositionSellBaseline = 0.0;
+	pConfig->addPositionCheckWeeklyLevels = FALSE;
+	pConfig->endHour = -1;  /* -1 = not set */
+	pConfig->takeProfitMode = -1;  /* -1 = not set */
+	pConfig->floatingTPValue = 0.0;  /* 0 = use takePrice */
+	pConfig->filterFunction = NULL;
+	pConfig->riskCapBuyOffset = 0.0;
+	pConfig->riskCapSellValue = 0.0;
+	
+	/* Configure based on symbol */
+	if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
+	{
+		pConfig->atrRangeDivisor = 3.0;
+		pConfig->atrRangeMultiplier = 1.0;
+		pConfig->useMaxWithParameter = TRUE;
+		pConfig->stopLossMultiplier = 0.93;
+		pConfig->takePriceMultiplier = 0.4;
+		pConfig->takePriceMinValue = 3.0;
+		pConfig->useTakePriceFromStopLoss = TRUE;
+		pConfig->useOldestOrderIndex = TRUE;
+		pConfig->useTwoTierStopLoss = TRUE;
+		pConfig->supportsAddPosition = TRUE;
+		pConfig->addPositionBuyBaseline = pBase_Indicators->dailyPivot;
+		pConfig->addPositionSellBaseline = pBase_Indicators->dailyPivot;
+		pConfig->endHour = 23;
+		pConfig->takeProfitMode = 1;
+		pConfig->floatingTPValue = 0.0;  /* Use takePrice */
+		/* Cast to unified signature - Commodity_DayTrading_Allow_Trade already has shouldFilter parameter */
+		pConfig->filterFunction = Commodity_DayTrading_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = -2.0;  /* riskCapBuy - 2 */
+	}
+	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
+	{
+		pConfig->atrRangeDivisor = 3.0;
+		pConfig->atrRangeMultiplier = 1.0;
+		pConfig->useMaxWithParameter = FALSE;
+		pConfig->stopLossMultiplier = 0.93;
+		pConfig->takePriceMultiplier = 0.4;
+		pConfig->takePriceMinValue = 0.0;
+		pConfig->useTakePriceFromStopLoss = TRUE;
+		pConfig->useOldestOrderIndex = FALSE;
+		pConfig->useTwoTierStopLoss = TRUE;
+		pConfig->supportsAddPosition = FALSE;
+		pConfig->endHour = -1;
+		pConfig->takeProfitMode = 1;
+		pConfig->floatingTPValue = 0.0;  /* Use takePrice */
+		/* Cast to unified signature - Commodity_DayTrading_Allow_Trade already has shouldFilter parameter */
+		pConfig->filterFunction = Commodity_DayTrading_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = 0.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
+	{
+		pConfig->atrRangeDivisor = 3.0;
+		pConfig->atrRangeMultiplier = 1.0;
+		pConfig->useMaxWithParameter = FALSE;
+		pConfig->stopLossMultiplier = 0.93;
+		pConfig->takePriceMultiplier = 0.4;
+		pConfig->takePriceMinValue = 0.0;
+		pConfig->useTakePriceFromStopLoss = TRUE;
+		pConfig->useOldestOrderIndex = FALSE;
+		pConfig->useTwoTierStopLoss = TRUE;
+		pConfig->supportsAddPosition = FALSE;
+		pConfig->endHour = -1;
+		pConfig->takeProfitMode = 1;
+		pConfig->floatingTPValue = 0.0;  /* Use takePrice */
+		/* Cast to unified signature - BTCUSD_DayTrading_Allow_Trade already has shouldFilter parameter */
+		pConfig->filterFunction = BTCUSD_DayTrading_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = 0.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
+	{
+		pConfig->atrRangeDivisor = 2.0;
+		pConfig->atrRangeMultiplier = 0.8;
+		pConfig->useMaxWithParameter = TRUE;
+		pConfig->adjustRangeWithTrend = TRUE;
+		pConfig->stopLossMultiplier = 1.1;
+		pConfig->takePriceMultiplier = 0.35;
+		pConfig->takePriceMinValue = 0.3;
+		pConfig->useTakePriceFromStopLoss = FALSE;  /* Use atr_euro_range */
+		pConfig->useOldestOrderIndex = TRUE;
+		pConfig->useTwoTierStopLoss = TRUE;
+		pConfig->supportsAddPosition = TRUE;
+		pConfig->addPositionBuyBaseline = pBase_Indicators->dailyS1;
+		pConfig->addPositionSellBaseline = pBase_Indicators->dailyR1;
+		pConfig->addPositionCheckWeeklyLevels = TRUE;
+		pConfig->endHour = -1;
+		pConfig->takeProfitMode = -1;
+		pConfig->floatingTPValue = 0.0;  /* Use takePrice */
+		/* Create wrapper to match unified signature - GBPJPY_MultipleDays_Allow_Trade doesn't use shouldFilter */
+		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPJPY_MultipleDays_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = 0.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
+	{
+		pConfig->atrRangeDivisor = 2.0;
+		pConfig->atrRangeMultiplier = 0.8;
+		pConfig->useMaxWithParameter = TRUE;
+		pConfig->adjustRangeWithTrend = TRUE;
+		pConfig->stopLossMultiplier = 1.1;
+		pConfig->takePriceMultiplier = 0.35;
+		pConfig->takePriceMinValue = 0.003;
+		pConfig->useTakePriceFromStopLoss = FALSE;  /* Use atr_euro_range */
+		pConfig->useOldestOrderIndex = FALSE;
+		pConfig->useTwoTierStopLoss = FALSE;  /* 3-tier */
+		pConfig->supportsAddPosition = FALSE;
+		pConfig->endHour = -1;
+		pConfig->takeProfitMode = -1;
+		pConfig->floatingTPValue = 0.0;  /* 0 = floatingTP = 0 */
+		/* Create wrapper to match unified signature - GBPUSD_MultipleDays_Allow_Trade doesn't use shouldFilter */
+		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPUSD_MultipleDays_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = 0.0;
+	}
+	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
+	{
+		pConfig->atrRangeDivisor = 2.0;
+		pConfig->atrRangeMultiplier = 0.8;
+		pConfig->useMaxWithParameter = TRUE;
+		pConfig->adjustRangeWithTrend = FALSE;  /* Always adjust, not conditional */
+		pConfig->stopLossMultiplier = 1.1;
+		pConfig->takePriceMultiplier = 0.35;
+		pConfig->takePriceMinValue = 0.0015;
+		pConfig->useTakePriceFromStopLoss = FALSE;  /* Use atr_euro_range */
+		pConfig->useOldestOrderIndex = FALSE;
+		pConfig->useTwoTierStopLoss = FALSE;  /* 3-tier */
+		pConfig->supportsAddPosition = FALSE;
+		pConfig->endHour = -1;
+		pConfig->takeProfitMode = -1;
+		pConfig->floatingTPValue = 0.0;  /* 0 = floatingTP = 0 */
+		/* Create wrapper to match unified signature - GBPUSD_MultipleDays_Allow_Trade doesn't use shouldFilter (shared with GBPUSD) */
+		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPUSD_MultipleDays_Allow_Trade;
+		pConfig->riskCapBuyOffset = 0.0;
+		pConfig->riskCapSellValue = 0.0;
+	}
+}
+
+/**
+ * @brief Calculates ATR euro range based on symbol configuration.
+ * 
+ * @param pConfig Symbol configuration
+ * @param pBase_Indicators Base indicators containing ATR predictions
+ * @param executionTrend Current execution trend (-1, 0, or 1)
+ * @return Calculated ATR euro range
+ */
+static double calculateATREuroRange(const MultipleDaySymbolConfig* pConfig, Base_Indicators* pBase_Indicators, int executionTrend, double currentATREuroRange)
+{
+	/* For symbols with adjustRangeWithTrend (GBPJPY, GBPUSD):
+	 * Only calculate new range if AUTOBBS_RANGE == 1 && executionTrend != 0
+	 * Otherwise, return the current value (don't change it)
+	 */
+	if (pConfig->adjustRangeWithTrend)
+	{
+		if ((int)parameter(AUTOBBS_RANGE) == 1 && executionTrend != 0)
+		{
+			/* Condition met: calculate adjusted range */
+			double calculatedRange = (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / pConfig->atrRangeDivisor * pConfig->atrRangeMultiplier;
+			
+			/* Use max with parameter if configured */
+			if (pConfig->useMaxWithParameter)
+			{
+				return max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), calculatedRange);
+			}
+			
+			return calculatedRange;
+		}
+		else
+		{
+			/* Condition not met: keep existing value */
+			return currentATREuroRange;
+		}
+	}
+	
+	/* For symbols without adjustRangeWithTrend: always calculate */
+	double calculatedRange = (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / pConfig->atrRangeDivisor * pConfig->atrRangeMultiplier;
+	
+	/* Use max with parameter if configured */
+	if (pConfig->useMaxWithParameter)
+	{
+		return max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), calculatedRange);
+	}
+	
+	return calculatedRange;
+}
+
+/**
+ * @brief Calculates stop loss based on symbol configuration.
+ * 
+ * @param pConfig Symbol configuration
+ * @param atrEuroRange Calculated ATR euro range
+ * @return Calculated stop loss
+ */
+static double calculateStopLoss(const MultipleDaySymbolConfig* pConfig, double atrEuroRange)
+{
+	return atrEuroRange * pConfig->stopLossMultiplier;
+}
+
+/**
+ * @brief Calculates take price based on symbol configuration.
+ * 
+ * @param pConfig Symbol configuration
+ * @param stopLoss Calculated stop loss
+ * @param atrEuroRange Calculated ATR euro range
+ * @return Calculated take price
+ */
+static double calculateTakePrice(const MultipleDaySymbolConfig* pConfig, double stopLoss, double atrEuroRange)
+{
+	double takePrice;
+	
+	if (pConfig->useTakePriceFromStopLoss)
+	{
+		takePrice = stopLoss * pConfig->takePriceMultiplier;
+	}
+	else
+	{
+		takePrice = atrEuroRange * pConfig->takePriceMultiplier;
+	}
+	
+	/* Apply minimum value if configured */
+	if (pConfig->takePriceMinValue > 0.0)
+	{
+		return max(pConfig->takePriceMinValue, takePrice);
+	}
+	
+	return takePrice;
+}
 
 /**
  * Modifies orders for multiple day trading strategies.
@@ -488,21 +809,37 @@ void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndic
  * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
 {
 	double addPositionBaseLine;
+	int executionTrend;
 	
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	/* Adjust range: increase range for better filtering */
-	if ((int)parameter(AUTOBBS_RANGE) == 1 && executionTrend != 0)
-		pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 2 * 0.8);
+	/* Determine executionTrend for ATR range calculation */
+	/* This matches the logic in workoutExecutionTrend_MultipleDay */
+	if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
+		executionTrend = 0;
+	else if (pBase_Indicators->dailyTrend > 0)
+		executionTrend = 1;
+	else if (pBase_Indicators->dailyTrend < 0)
+		executionTrend = -1;
+	else
+		executionTrend = 0;
 
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 1.1;
-	pIndicators->takePrice = max(0.3, pIndicators->atr_euro_range * 0.35);
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* For GBPJPY: only adjust atr_euro_range if AUTOBBS_RANGE == 1 && executionTrend != 0 */
+	/* Otherwise, keep existing atr_euro_range value */
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, executionTrend, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	*floatingTP = pIndicators->takePrice;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = pIndicators->takePrice;
+	else
+		*floatingTP = pConfig->floatingTPValue;
 
 	logWarning("System InstanceID = %d, BarTime = %s, pDailyPredictATR=%lf, pDailyMaxATR= %lf, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->pDailyPredictATR, pBase_Indicators->pDailyMaxATR, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
@@ -540,10 +877,10 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, I
 		if (pParams->orderInfo[oldestOpenOrderIndex].type == BUY)
 		{
 			pIndicators->entryPrice = pParams->bidAsk.ask[0];
-			addPositionBaseLine = pBase_Indicators->dailyS1;
+			addPositionBaseLine = pConfig->addPositionBuyBaseline;
 			if ((preLow < addPositionBaseLine && preClose > addPositionBaseLine) &&
 				pIndicators->entryPrice - pIndicators->stopLoss > pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
-				pIndicators->entryPrice <= pBase_Indicators->weeklyR2 &&
+				(!pConfig->addPositionCheckWeeklyLevels || pIndicators->entryPrice <= pBase_Indicators->weeklyR2) &&
 				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
 			{
 				pIndicators->executionTrend = 1;
@@ -557,10 +894,10 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, I
 		if (pParams->orderInfo[oldestOpenOrderIndex].type == SELL)
 		{
 			pIndicators->entryPrice = pParams->bidAsk.bid[0];
-			addPositionBaseLine = pBase_Indicators->dailyR1;
+			addPositionBaseLine = pConfig->addPositionSellBaseline;
 			if ((preHigh > addPositionBaseLine && preClose < addPositionBaseLine) &&
 				pIndicators->entryPrice + pIndicators->stopLoss < pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
-				pIndicators->entryPrice >= pBase_Indicators->weeklyS2 &&
+				(!pConfig->addPositionCheckWeeklyLevels || pIndicators->entryPrice >= pBase_Indicators->weeklyS2) &&
 				!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
 			{
 				pIndicators->executionTrend = -1;
@@ -572,13 +909,21 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	/* Apply GBPJPY trading filter */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		isSameDayOrder == FALSE &&
-		GBPJPY_MultipleDays_Allow_Trade(pParams, pIndicators, pBase_Indicators) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, TRUE);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
 	return SUCCESS;
@@ -613,18 +958,25 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	double addPositionBaseLine;
 	
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 3);
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 0.93;
-	pIndicators->takePrice = max(3, pIndicators->stopLoss * 0.4);
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* For symbols without adjustRangeWithTrend: always calculate */
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, 0, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	*floatingTP = pIndicators->takePrice;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = pIndicators->takePrice;
+	else
+		*floatingTP = pConfig->floatingTPValue;
+	
 	logInfo("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
 
@@ -668,7 +1020,7 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 	}
 
 	/* Handle add position logic */
-	if (isAddPosition == TRUE)
+	if (isAddPosition == TRUE && pConfig->supportsAddPosition)
 	{
 		pIndicators->tradeMode = 2;
 		pIndicators->risk = 0.5;
@@ -676,7 +1028,7 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		if (pParams->orderInfo[oldestOpenOrderIndex].type == BUY)
 		{
 			pIndicators->entryPrice = pParams->bidAsk.ask[0];
-			addPositionBaseLine = pBase_Indicators->dailyPivot;
+			addPositionBaseLine = pConfig->addPositionBuyBaseline;
 			pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
 			if ((preLow < addPositionBaseLine && preClose > addPositionBaseLine
 				|| (timeInfo1->tm_hour == 1 && timeInfo1->tm_min < 5)) &&
@@ -693,7 +1045,7 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		if (pParams->orderInfo[oldestOpenOrderIndex].type == SELL)
 		{
 			pIndicators->entryPrice = pParams->bidAsk.bid[0];
-			addPositionBaseLine = pBase_Indicators->dailyPivot;
+			addPositionBaseLine = pConfig->addPositionSellBaseline;
 			pIndicators->stopLossPrice = pIndicators->entryPrice + pIndicators->stopLoss;
 			if ((preHigh > addPositionBaseLine && preClose < addPositionBaseLine
 				|| (timeInfo1->tm_hour == 1 && timeInfo1->tm_min < 5)) &&
@@ -708,19 +1060,30 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	pIndicators->endHour = 23;
+	/* Set end hour if configured */
+	if (pConfig->endHour >= 0)
+		pIndicators->endHour = pConfig->endHour;
 
-	/* Apply commodity trading filter (XAUUSD, XAGUSD, etc.) */
-	/* If it's a manual takeover order, after entry, no need to filter */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		isSameDayOrder == FALSE &&
-		Commodity_DayTrading_Allow_Trade(pParams, pIndicators, pBase_Indicators, shouldFilter) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, shouldFilter);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
-	*takeProfitMode = 1;
+	/* Set take profit mode if configured */
+	if (pConfig->takeProfitMode >= 0)
+		*takeProfitMode = pConfig->takeProfitMode;
 
 	return SUCCESS;
 }
@@ -748,16 +1111,22 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	pIndicators->atr_euro_range = (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 3;
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 0.93;
-	pIndicators->takePrice = pIndicators->stopLoss * 0.4;
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* For symbols without adjustRangeWithTrend: always calculate */
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, 0, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	*floatingTP = pIndicators->takePrice;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = pIndicators->takePrice;
+	else
+		*floatingTP = pConfig->floatingTPValue;
 	logInfo("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
 
@@ -800,17 +1169,26 @@ AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	/* Apply commodity trading filter (XAUUSD, XAGUSD, etc.) */
-	/* If it's a manual takeover order, after entry, no need to filter */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		isSameDayOrder == FALSE &&
-		Commodity_DayTrading_Allow_Trade(pParams, pIndicators, pBase_Indicators, shouldFilter) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, shouldFilter);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
-	*takeProfitMode = 1;
+	/* Set take profit mode if configured */
+	if (pConfig->takeProfitMode >= 0)
+		*takeProfitMode = pConfig->takeProfitMode;
 
 	return SUCCESS;
 }
@@ -838,16 +1216,22 @@ AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	pIndicators->atr_euro_range = (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 3;
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 0.93;
-	pIndicators->takePrice = pIndicators->stopLoss * 0.4;
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* For symbols without adjustRangeWithTrend: always calculate */
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, 0, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	*floatingTP = pIndicators->takePrice;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = pIndicators->takePrice;
+	else
+		*floatingTP = pConfig->floatingTPValue;
 	logWarning("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
 
@@ -890,17 +1274,26 @@ AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	/* Apply BTCUSD/ETHUSD trading filter */
-	/* If it's a manual takeover order, after entry, no need to filter */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		isSameDayOrder == FALSE &&
-		BTCUSD_DayTrading_Allow_Trade(pParams, pIndicators, pBase_Indicators, shouldFilter) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, shouldFilter);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
-	*takeProfitMode = 1;
+	/* Set take profit mode if configured */
+	if (pConfig->takeProfitMode >= 0)
+		*takeProfitMode = pConfig->takeProfitMode;
 
 	return SUCCESS;
 }
@@ -926,19 +1319,34 @@ AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	/* Adjust range: increase range for better filtering */
-	if ((int)parameter(AUTOBBS_RANGE) == 1 && executionTrend != 0)
-		pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 2 * 0.8);
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* For GBPUSD: only adjust atr_euro_range if AUTOBBS_RANGE == 1 && executionTrend != 0 */
+	/* Otherwise, keep existing atr_euro_range value */
+	/* Note: We need executionTrend here, but it's not passed. Let's determine it from dailyTrend */
+	int executionTrend;
+	if (pBase_Indicators->dailyTrend_Phase == RANGE_PHASE)
+		executionTrend = 0;
+	else if (pBase_Indicators->dailyTrend > 0)
+		executionTrend = 1;
+	else if (pBase_Indicators->dailyTrend < 0)
+		executionTrend = -1;
+	else
+		executionTrend = 0;
+	
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, executionTrend, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 1.1;
-	pIndicators->takePrice = max(0.003, pIndicators->atr_euro_range * 0.35);
-
-	*floatingTP = 0;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = 0;  /* GBPUSD uses 0 for floatingTP */
+	else
+		*floatingTP = pConfig->floatingTPValue;
 
 	logWarning("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
@@ -995,12 +1403,21 @@ AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	/* Apply GBPUSD trading filter */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		GBPUSD_MultipleDays_Allow_Trade(pParams, pIndicators, pBase_Indicators) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, TRUE);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
 	return SUCCESS;
@@ -1026,19 +1443,22 @@ AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupAUDUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupAUDUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
 
-	/* Adjust range: increase range for better filtering */
-	/* Note: executionTrend check is commented out in original code */
-	pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 2 * 0.8);
+	/* Calculate ATR range, stop loss, and take price using config */
+	/* AUDUSD always adjusts range (adjustRangeWithTrend = FALSE), so always calculate */
+	pIndicators->atr_euro_range = calculateATREuroRange(pConfig, pBase_Indicators, 0, pIndicators->atr_euro_range);
+	pIndicators->stopLoss = calculateStopLoss(pConfig, pIndicators->atr_euro_range);
+	pIndicators->takePrice = calculateTakePrice(pConfig, pIndicators->stopLoss, pIndicators->atr_euro_range);
 
-	pIndicators->stopLoss = pIndicators->atr_euro_range * 1.1;
-	pIndicators->takePrice = max(0.0015, pIndicators->atr_euro_range * 0.35);
-
-	*floatingTP = 0;
+	/* Set floating TP based on config */
+	if (pConfig->floatingTPValue == 0.0)
+		*floatingTP = 0;  /* AUDUSD uses 0 for floatingTP */
+	else
+		*floatingTP = pConfig->floatingTPValue;
 
 	logWarning("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf",
 		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
@@ -1095,12 +1515,21 @@ AsirikuyReturnCode setupAUDUSDEntrySignal_MultipleDay(StrategyParams* pParams, I
 		}
 	}
 
-	/* Apply GBPUSD trading filter (shared with AUDUSD) */
-	if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-		GBPUSD_MultipleDays_Allow_Trade(pParams, pIndicators, pBase_Indicators) == FALSE)
+	/* Apply trading filter if configured */
+	if (pConfig->filterFunction != NULL)
 	{
-		*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
-		return SUCCESS;
+		/* If it's a manual takeover order, after entry, no need to filter */
+		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 && isSameDayOrder == FALSE)
+		{
+			/* All filter functions now use the same signature with shouldFilter parameter */
+			BOOL filterResult = pConfig->filterFunction(pParams, pIndicators, pBase_Indicators, TRUE);
+			
+			if (filterResult == FALSE)
+			{
+				*shouldSkip = TRUE;  /* Filter blocked trading, caller should exit early */
+				return SUCCESS;
+			}
+		}
 	}
 
 	return SUCCESS;

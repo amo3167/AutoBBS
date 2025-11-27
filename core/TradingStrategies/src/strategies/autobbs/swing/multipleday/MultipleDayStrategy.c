@@ -131,6 +131,10 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 
 	pIndicators->riskCap = parameter(AUTOBBS_RISK_CAP);
 
+	/* Initialize symbol-specific configuration */
+	MultipleDaySymbolConfig symbolConfig;
+	initializeMultipleDaySymbolConfig(&symbolConfig, pParams, pBase_Indicators, executionTrend);
+
 	//Load MACD
 	iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift, &fast1, &slow1, &preHist1);
 	iMACDAll(B_DAILY_RATES, fastMAPeriod, slowMAPeriod, signalMAPeriod, startShift + 1, &fast2, &slow2, &preHist2);
@@ -278,7 +282,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupXAGUSDEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
 			latestOrderIndex, side,
 			isSameDayOrder, shouldFilter,
 			&timeInfo1, timeString,
@@ -300,7 +304,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupXAUUSDEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
 			oldestOpenOrderIndex, side,
 			isAddPosition, isSameDayOrder, shouldFilter,
 			preLow, preHigh, preClose,
@@ -322,7 +326,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupCryptoEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
 			latestOrderIndex, side,
 			isSameDayOrder, shouldFilter,
 			&timeInfo1, timeString,
@@ -343,8 +347,8 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupGBPJPYEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
-			executionTrend, oldestOpenOrderIndex, side,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
+			oldestOpenOrderIndex, side,
 			isAddPosition, isSameDayOrder,
 			preLow, preHigh, preClose,
 			&timeInfo1, timeString,
@@ -362,8 +366,8 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupGBPUSDEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
-			executionTrend, latestOrderIndex, side,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
+			latestOrderIndex, side,
 			isSameDayOrder,
 			&timeInfo1, timeString,
 			&floatingTP, &shouldSkip);
@@ -380,7 +384,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		BOOL shouldSkip = FALSE;
 
 		AsirikuyReturnCode result = setupAUDUSDEntrySignal_MultipleDay(
-			pParams, pIndicators, pBase_Indicators,
+			&symbolConfig, pParams, pIndicators, pBase_Indicators,
 			latestOrderIndex, side,
 			isSameDayOrder,
 			&timeInfo1, timeString,
