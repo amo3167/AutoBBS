@@ -340,7 +340,7 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		pIndicators->takePrice = max(3, pIndicators->stopLoss * 0.4);
 
 		floatingTP = pIndicators->takePrice;
-	logInfo("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
+		logInfo("System InstanceID = %d, BarTime = %s, atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
 
 		if (timeInfo1.tm_hour == 1 && timeInfo1.tm_min >= 0 && timeInfo1.tm_min <= 15 && oldestOpenOrderIndex>= 0)
 		{
@@ -352,20 +352,12 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 					pIndicators->entryPrice = pParams->bidAsk.ask[0];
 					pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
 				}
-				else if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice >= 2 * pIndicators->stopLoss
-					//&& pParams->bidAsk.ask[0] - pParams->orderInfo[latestOrderIndex].openPrice < 3 * pIndicators->stopLoss
-					)
+				else if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice >= 2 * pIndicators->stopLoss)
 				{
 					pIndicators->executionTrend = 1;
 					pIndicators->entryPrice = pParams->bidAsk.ask[0];
 					pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice + pIndicators->stopLoss;
 				}
-				//else if (pParams->bidAsk.ask[0] - pParams->orderInfo[latestOrderIndex].openPrice >= 3 * pIndicators->stopLoss )
-				//{
-				//	pIndicators->executionTrend = 1;
-				//	pIndicators->entryPrice = pParams->bidAsk.ask[0];
-				//	pIndicators->stopLossPrice = pParams->orderInfo[latestOrderIndex].openPrice + 2* pIndicators->stopLoss;
-				//}
 			}
 
 			if (side == SELL)
@@ -384,29 +376,11 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 					pIndicators->entryPrice = pParams->bidAsk.bid[0];
 					pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice - pIndicators->stopLoss;
 				}
-				//if (pParams->orderInfo[latestOrderIndex].openPrice - pParams->bidAsk.bid[0] >= 3 * pIndicators->stopLoss && pParams->orderInfo[latestOrderIndex].openPrice - pParams->bidAsk.bid[0] < 4 * pIndicators->stopLoss)
-				//{
-				//	pIndicators->executionTrend = -1;
-				//	pIndicators->entryPrice = pParams->bidAsk.bid[0];
-				//	pIndicators->stopLossPrice = pParams->orderInfo[latestOrderIndex].openPrice - 2* pIndicators->stopLoss;
-				//}
 
 			}
 		}
 
-		//if (isPreviousDayOrder == TRUE && pParams->orderInfo[latestOrderIndex].profit > 0)
-		//{
-		//	if (pParams->orderInfo[latestOrderIndex].type == BUY && executionTrend > 0 && close_prev1 > pParams->orderInfo[latestOrderIndex].closePrice)
-		//		shouldFilter = FALSE;
-		//	if (pParams->orderInfo[latestOrderIndex].type == SELL && executionTrend < 0 && close_prev1 < pParams->orderInfo[latestOrderIndex].closePrice)
-		//		shouldFilter = FALSE;
-		//}
-		//winningOrdersToday = getWinTimesInDayEasy(currentTime);
-
-		if (isAddPosition == TRUE 					
-			//winningOrdersToday == 0 &&
-			//(hasSameDayOrderEasy(currentTime, &isOpen) == FALSE || isOpen == FALSE)
-			){
+		if (isAddPosition == TRUE){
 			pIndicators->tradeMode = 2;
 			pIndicators->risk = 0.5;
 			
@@ -545,109 +519,19 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
-
-		//pIndicators->stopLoss = pIndicators->atr_euro_range*0.88;
-
-		// Adjust range: increase range for better filtering
-		if ((int)parameter(AUTOBBS_RANGE) == 1 && executionTrend != 0)
-			pIndicators->atr_euro_range = max((double)parameter(AUTOBBS_IS_ATREURO_RANGE), (pBase_Indicators->pDailyPredictATR + pBase_Indicators->pDailyMaxATR) / 2 * 0.8);
-
-		pIndicators->stopLoss = pIndicators->atr_euro_range* 1.1;
-		pIndicators->takePrice = max(0.3, pIndicators->atr_euro_range * 0.35);
-
-		floatingTP = pIndicators->takePrice;
-
-	logWarning("System InstanceID = %d, BarTime = %s,pDailyPredictATR=%lf, pDailyMaxATR= %lf,atr_euro_range = %lf, stopLoss = %lf, takePrice =%lf", (int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pBase_Indicators->pDailyPredictATR, pBase_Indicators->pDailyMaxATR, pIndicators->atr_euro_range, pIndicators->stopLoss, pIndicators->takePrice);
-
-		if (timeInfo1.tm_hour == 1 && timeInfo1.tm_min >= 0 && timeInfo1.tm_min <= 15 && oldestOpenOrderIndex>=0)
-		{
-			if (side == BUY)
-			{
-				if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice > pIndicators->stopLoss
-					//pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->orderInfo[oldestOpenOrderIndex].stopLoss
-					//&& pParams->bidAsk.ask[0] - pParams->orderInfo[latestOrderIndex].openPrice < 2 * pIndicators->stopLoss
-					)
-				{
-					pIndicators->executionTrend = 1;
-					pIndicators->entryPrice = pParams->bidAsk.ask[0];
-					pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
-				}
-				//else if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice >= 2 * pIndicators->stopLoss && pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice < 3 * pIndicators->stopLoss)
-				//{
-				//	pIndicators->executionTrend = 1;
-				//	pIndicators->entryPrice = pParams->bidAsk.ask[0];
-				//	pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice + pIndicators->stopLoss;
-				//}
-				//else if (pParams->bidAsk.ask[0] - pParams->orderInfo[oldestOpenOrderIndex].openPrice >= 3 * pIndicators->stopLoss
-				//	//&& pParams->bidAsk.ask[0] - pParams->orderInfo[latestOrderIndex].openPrice < 4 * pIndicators->stopLoss
-				//	)
-				//{
-				//	pIndicators->executionTrend = 1;
-				//	pIndicators->entryPrice = pParams->bidAsk.ask[0];
-				//	pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice + 2 * pIndicators->stopLoss;
-				//}
-			}
-
-			if (side == SELL)
-			{
-				if (pParams->orderInfo[oldestOpenOrderIndex].openPrice - pParams->bidAsk.bid[0] > pIndicators->stopLoss
-					//pParams->orderInfo[oldestOpenOrderIndex].stopLoss - pParams->orderInfo[oldestOpenOrderIndex].openPrice
-					//&& pParams->orderInfo[latestOrderIndex].openPrice - pParams->bidAsk.bid[0] < 2 * pIndicators->stopLoss
-					)
-				{
-					pIndicators->executionTrend = -1;
-					pIndicators->entryPrice = pParams->bidAsk.bid[0];
-					pIndicators->stopLossPrice = pParams->orderInfo[oldestOpenOrderIndex].openPrice;
-				}
-
-			}
-		}
-
 		riskCapBuy = parameter(AUTOBBS_RISK_CAP);
 		riskCapSell = 0;
 
-		if (isAddPosition == TRUE){
-			pIndicators->tradeMode = 2;
-			pIndicators->risk = 0.5;
-
-			if (pParams->orderInfo[oldestOpenOrderIndex].type == BUY){
-
-				pIndicators->entryPrice = pParams->bidAsk.ask[0];		
-				addPositionBaseLine = pBase_Indicators->dailyS1;
-				if ((preLow < addPositionBaseLine && preClose > addPositionBaseLine) &&
-					pIndicators->entryPrice - pIndicators->stopLoss > pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
-					pIndicators->entryPrice <= pBase_Indicators->weeklyR2 &&
-					!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3))
-				{
-					pIndicators->executionTrend = 1;
-					pIndicators->stopLossPrice = pIndicators->entryPrice - pIndicators->stopLoss;
-					pIndicators->entrySignal = 1;
-					return SUCCESS;
-				}
-			}
-
-			if (pParams->orderInfo[oldestOpenOrderIndex].type == SELL
-				){
-
-				pIndicators->entryPrice = pParams->bidAsk.bid[0];
-				addPositionBaseLine = pBase_Indicators->dailyR1;
-				if ((preHigh > addPositionBaseLine && preClose < addPositionBaseLine) &&
-					pIndicators->entryPrice + pIndicators->stopLoss < pParams->orderInfo[oldestOpenOrderIndex].stopLoss &&
-					pIndicators->entryPrice >= pBase_Indicators->weeklyS2 &&
-					!isSamePricePendingOrderEasy(pIndicators->entryPrice, pBase_Indicators->dailyATR / 3)){
-					pIndicators->executionTrend = -1;
-					pIndicators->stopLossPrice = pIndicators->entryPrice + pIndicators->stopLoss;
-					pIndicators->entrySignal = -1;
-					return SUCCESS;
-				}
-			}
-
-		}
-
-		if ((int)parameter(AUTOBBS_IS_AUTO_MODE) == 1 &&
-			isSameDayOrder == FALSE &&
-			GBPJPY_MultipleDays_Allow_Trade(pParams, pIndicators, pBase_Indicators) == FALSE)
-			return SUCCESS;
+		AsirikuyReturnCode result = setupGBPJPYEntrySignal_MultipleDay(
+			pParams, pIndicators, pBase_Indicators,
+			executionTrend, oldestOpenOrderIndex, side,
+			isAddPosition, isSameDayOrder,
+			preLow, preHigh, preClose,
+			&timeInfo1, timeString,
+			riskCapBuy, riskCapSell, &floatingTP);
+		
+		if (result != SUCCESS)
+			return result;
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
 	{

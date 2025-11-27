@@ -69,6 +69,68 @@ void splitBuyOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndica
  */
 void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, double takePrice_primary, double stopLoss);
 
+/**
+ * Setup GBPJPY entry signal for multiple day trading strategies.
+ * 
+ * Handles GBPJPY-specific entry signal logic:
+ * - Calculates stopLoss and takePrice based on atr_euro_range
+ * - Handles order modification during 1:00-1:15 time window
+ * - Sets risk caps for buy/sell orders
+ * - Handles add position logic for long-term trends
+ * - Applies GBPJPY trading filter
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators structure to modify
+ * @param pBase_Indicators Base indicators structure containing ATR predictions
+ * @param executionTrend Current execution trend (-1, 0, or 1)
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param side Order side (BUY, SELL, or NONE)
+ * @param isAddPosition TRUE if adding position, FALSE otherwise
+ * @param isSameDayOrder TRUE if order was opened same day, FALSE otherwise
+ * @param preLow Previous bar low price
+ * @param preHigh Previous bar high price
+ * @param preClose Previous bar close price
+ * @param timeInfo1 Current time information structure
+ * @param timeString Current time string for logging
+ * @param riskCapBuy Risk cap for buy orders (input parameter)
+ * @param riskCapSell Risk cap for sell orders (input parameter)
+ * @param floatingTP Output parameter: floating take profit level (set by function)
+ * @return SUCCESS on success, or early return if trading is not allowed
+ */
+AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double riskCapBuy, double riskCapSell, double* floatingTP);
+
+/**
+ * Setup XAUUSD entry signal for multiple day trading strategies.
+ * 
+ * Handles XAUUSD-specific entry signal logic:
+ * - Calculates stopLoss and takePrice based on atr_euro_range
+ * - Handles order modification during 1:00-1:15 time window
+ * - Handles add position logic for long-term trends
+ * - Sets endHour for trading window
+ * - Applies commodity trading filter
+ * - Sets take profit mode
+ * 
+ * @param pParams Strategy parameters containing rates and settings
+ * @param pIndicators Strategy indicators structure to modify
+ * @param pBase_Indicators Base indicators structure containing ATR predictions
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param side Order side (BUY, SELL, or NONE)
+ * @param isAddPosition TRUE if adding position, FALSE otherwise
+ * @param isSameDayOrder TRUE if order was opened same day, FALSE otherwise
+ * @param shouldFilter Whether to apply ATR-based filtering
+ * @param preLow Previous bar low price
+ * @param preHigh Previous bar high price
+ * @param preClose Previous bar close price
+ * @param timeInfo1 Current time information structure
+ * @param timeString Current time string for logging
+ * @param riskCapBuy Risk cap for buy orders (input parameter)
+ * @param riskCapSell Risk cap for sell orders (input parameter)
+ * @param floatingTP Output parameter: floating take profit level (set by function)
+ * @param takeProfitMode Output parameter: take profit mode (set by function)
+ * @return SUCCESS on success, or early return if trading is not allowed
+ */
+AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double riskCapBuy, double riskCapSell, double* floatingTP, int* takeProfitMode);
+
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
