@@ -80,6 +80,39 @@ typedef struct {
 void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Base_Indicators* pBase_Indicators, int executionTrend);
 
 /**
+ * @brief Unified function to setup entry signal for any symbol.
+ * 
+ * This function handles the common pattern for all symbols:
+ * - Sets risk caps from config
+ * - Calls the appropriate symbol-specific setup function
+ * - Handles error checking and early exit
+ * 
+ * @param pConfig Symbol configuration
+ * @param pParams Strategy parameters
+ * @param pIndicators Strategy indicators
+ * @param pBase_Indicators Base indicators
+ * @param executionTrend Current execution trend
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param latestOrderIndex Index of latest order
+ * @param side Order side
+ * @param isAddPosition TRUE if adding position
+ * @param isSameDayOrder TRUE if order opened same day
+ * @param shouldFilter Whether to apply filtering
+ * @param preLow Previous bar low
+ * @param preHigh Previous bar high
+ * @param preClose Previous bar close
+ * @param timeInfo1 Current time info
+ * @param timeString Current time string
+ * @param floatingTP Output: floating take profit
+ * @param takeProfitMode Output: take profit mode
+ * @param riskCapBuy Output: risk cap for buy orders
+ * @param riskCapSell Output: risk cap for sell orders
+ * @param shouldSkip Output: TRUE if caller should exit early
+ * @return SUCCESS on success
+ */
+AsirikuyReturnCode setupEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, double* riskCapBuy, double* riskCapSell, BOOL* shouldSkip);
+
+/**
  * Enter order for multiple day trading strategies.
  * Used by workoutExecutionTrend_MultipleDay strategy.
  * 

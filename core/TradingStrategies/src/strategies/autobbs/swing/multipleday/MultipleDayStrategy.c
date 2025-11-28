@@ -277,126 +277,23 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 		isAddPosition = TRUE;
 	}
 
-	if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
-	{
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupXAGUSDEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder, shouldFilter,
-			&timeInfo1, timeString,
-			&floatingTP, &takeProfitMode, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
-
-	if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
-	{
-		riskCapBuy = parameter(AUTOBBS_RISK_CAP);
-		riskCapSell = riskCapBuy - 2;
-
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupXAUUSDEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			oldestOpenOrderIndex, side,
-			isAddPosition, isSameDayOrder, shouldFilter,
-			preLow, preHigh, preClose,
-			&timeInfo1, timeString,
-			&floatingTP, &takeProfitMode, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (entry signal set or filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
-	if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
-	{
-		riskCapBuy = parameter(AUTOBBS_RISK_CAP);
-		riskCapSell = 0;
-
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupCryptoEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder, shouldFilter,
-			&timeInfo1, timeString,
-			&floatingTP, &takeProfitMode, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
-	{
-		riskCapBuy = parameter(AUTOBBS_RISK_CAP);
-		riskCapSell = 0;
-
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupGBPJPYEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			oldestOpenOrderIndex, side,
-			isAddPosition, isSameDayOrder,
-			preLow, preHigh, preClose,
-			&timeInfo1, timeString,
-			&floatingTP, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (entry signal set or filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
-	{
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupGBPUSDEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder,
-			&timeInfo1, timeString,
-			&floatingTP, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
-	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
-	{
-		BOOL shouldSkip = FALSE;
-
-		AsirikuyReturnCode result = setupAUDUSDEntrySignal_MultipleDay(
-			&symbolConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder,
-			&timeInfo1, timeString,
-			&floatingTP, &shouldSkip);
-		
-		if (result != SUCCESS)
-			return result;
-		
-		/* If function indicates we should skip (filter blocked), exit early */
-		if (shouldSkip == TRUE)
-			return SUCCESS;
-	}
+	/* Setup entry signal for current symbol using unified function */
+	BOOL shouldSkip = FALSE;
+	AsirikuyReturnCode result = setupEntrySignal_MultipleDay(
+		&symbolConfig, pParams, pIndicators, pBase_Indicators,
+		executionTrend, oldestOpenOrderIndex, latestOrderIndex, side,
+		isAddPosition, isSameDayOrder, shouldFilter,
+		preLow, preHigh, preClose,
+		&timeInfo1, timeString,
+		&floatingTP, &takeProfitMode,
+		&riskCapBuy, &riskCapSell, &shouldSkip);
+	
+	if (result != SUCCESS)
+		return result;
+	
+	/* If function indicates we should skip (entry signal set or filter blocked), exit early */
+	if (shouldSkip == TRUE)
+		return SUCCESS;
 
 	if (side == NONE)
 	{

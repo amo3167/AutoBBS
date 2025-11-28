@@ -271,6 +271,141 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 }
 
 /**
+ * @brief Unified function to setup entry signal for any symbol.
+ * 
+ * This function handles the common pattern for all symbols:
+ * - Sets risk caps from config
+ * - Calls the appropriate symbol-specific setup function
+ * - Handles error checking and early exit
+ * 
+ * @param pConfig Symbol configuration
+ * @param pParams Strategy parameters
+ * @param pIndicators Strategy indicators
+ * @param pBase_Indicators Base indicators
+ * @param executionTrend Current execution trend
+ * @param oldestOpenOrderIndex Index of oldest open order
+ * @param latestOrderIndex Index of latest order
+ * @param side Order side
+ * @param isAddPosition TRUE if adding position
+ * @param isSameDayOrder TRUE if order opened same day
+ * @param shouldFilter Whether to apply filtering
+ * @param preLow Previous bar low
+ * @param preHigh Previous bar high
+ * @param preClose Previous bar close
+ * @param timeInfo1 Current time info
+ * @param timeString Current time string
+ * @param floatingTP Output: floating take profit
+ * @param takeProfitMode Output: take profit mode
+ * @param riskCapBuy Output: risk cap for buy orders
+ * @param riskCapSell Output: risk cap for sell orders
+ * @param shouldSkip Output: TRUE if caller should exit early
+ * @return SUCCESS on success
+ */
+AsirikuyReturnCode setupEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators, int executionTrend, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, double* riskCapBuy, double* riskCapSell, BOOL* shouldSkip)
+{
+	AsirikuyReturnCode result;
+	
+	/* Initialize shouldSkip */
+	*shouldSkip = FALSE;
+	
+	/* Set risk caps from config */
+	if (pConfig->riskCapBuyOffset == 0.0 && pConfig->riskCapSellValue == 0.0)
+	{
+		/* Default: no risk caps set (keep at 0) */
+		/* Some symbols (GBPUSD, AUDUSD) don't set risk caps */
+	}
+	else
+	{
+		/* Calculate riskCapBuy */
+		*riskCapBuy = parameter(AUTOBBS_RISK_CAP) + pConfig->riskCapBuyOffset;
+		
+		/* Calculate riskCapSell */
+		if (pConfig->riskCapSellValue < 0.0)
+		{
+			/* Negative value means: riskCapBuy + riskCapSellValue (e.g., -2.0 means riskCapBuy - 2) */
+			*riskCapSell = *riskCapBuy + pConfig->riskCapSellValue;
+		}
+		else
+		{
+			/* Positive or zero value means: use the value directly */
+			*riskCapSell = pConfig->riskCapSellValue;
+		}
+	}
+	
+	/* Call appropriate symbol-specific setup function based on symbol */
+	if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
+	{
+		result = setupXAUUSDEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			oldestOpenOrderIndex, side,
+			isAddPosition, isSameDayOrder, shouldFilter,
+			preLow, preHigh, preClose,
+			timeInfo1, timeString,
+			floatingTP, takeProfitMode, shouldSkip);
+	}
+	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
+	{
+		result = setupXAGUSDEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			latestOrderIndex, side,
+			isSameDayOrder, shouldFilter,
+			timeInfo1, timeString,
+			floatingTP, takeProfitMode, shouldSkip);
+	}
+	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
+	{
+		result = setupCryptoEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			latestOrderIndex, side,
+			isSameDayOrder, shouldFilter,
+			timeInfo1, timeString,
+			floatingTP, takeProfitMode, shouldSkip);
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
+	{
+		result = setupGBPJPYEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			oldestOpenOrderIndex, side,
+			isAddPosition, isSameDayOrder,
+			preLow, preHigh, preClose,
+			timeInfo1, timeString,
+			floatingTP, shouldSkip);
+	}
+	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
+	{
+		result = setupGBPUSDEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			latestOrderIndex, side,
+			isSameDayOrder,
+			timeInfo1, timeString,
+			floatingTP, shouldSkip);
+	}
+	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
+	{
+		result = setupAUDUSDEntrySignal_MultipleDay(
+			pConfig, pParams, pIndicators, pBase_Indicators,
+			latestOrderIndex, side,
+			isSameDayOrder,
+			timeInfo1, timeString,
+			floatingTP, shouldSkip);
+	}
+	else
+	{
+		/* Unknown symbol - return success without doing anything */
+		return SUCCESS;
+	}
+	
+	/* Check result */
+	if (result != SUCCESS)
+		return result;
+	
+	/* If shouldSkip is TRUE, caller should exit early */
+	/* (This is already set by the setup function, no need to check again) */
+	
+	return SUCCESS;
+}
+
+/**
  * @brief Calculates ATR euro range based on symbol configuration.
  * 
  * @param pConfig Symbol configuration
