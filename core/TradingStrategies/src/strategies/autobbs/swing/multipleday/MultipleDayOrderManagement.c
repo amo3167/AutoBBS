@@ -320,27 +320,21 @@ AsirikuyReturnCode setupEntrySignal_MultipleDay(const MultipleDaySymbolConfig* p
 	*shouldSkip = FALSE;
 	
 	/* Set risk caps from config */
-	if (pConfig->riskCapBuyOffset == 0.0 && pConfig->riskCapSellValue == 0.0)
+	/* Always calculate riskCapBuy if riskCapBuyOffset is defined (even if 0.0, meaning use parameter directly) */
+	/* For GBPJPY: riskCapBuyOffset = 0.0 means use parameter(AUTOBBS_RISK_CAP) directly for buy order splitting */
+	*riskCapBuy = parameter(AUTOBBS_RISK_CAP) + pConfig->riskCapBuyOffset;
+	
+	/* Calculate riskCapSell */
+	if (pConfig->riskCapSellValue < 0.0)
 	{
-		/* Default: no risk caps set (keep at 0) */
-		/* Some symbols (GBPUSD, AUDUSD) don't set risk caps */
+		/* Negative value means: riskCapBuy + riskCapSellValue (e.g., -2.0 means riskCapBuy - 2) */
+		*riskCapSell = *riskCapBuy + pConfig->riskCapSellValue;
 	}
 	else
 	{
-		/* Calculate riskCapBuy */
-		*riskCapBuy = parameter(AUTOBBS_RISK_CAP) + pConfig->riskCapBuyOffset;
-		
-		/* Calculate riskCapSell */
-		if (pConfig->riskCapSellValue < 0.0)
-		{
-			/* Negative value means: riskCapBuy + riskCapSellValue (e.g., -2.0 means riskCapBuy - 2) */
-			*riskCapSell = *riskCapBuy + pConfig->riskCapSellValue;
-		}
-		else
-		{
-			/* Positive or zero value means: use the value directly */
-			*riskCapSell = pConfig->riskCapSellValue;
-		}
+		/* Positive or zero value means: use the value directly */
+		/* For GBPJPY: riskCapSellValue = 0.0 means no splitting for sell orders */
+		*riskCapSell = pConfig->riskCapSellValue;
 	}
 	
 	/* Call symbol-specific setup function via function pointer from config */

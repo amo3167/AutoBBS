@@ -1,1 +1,4 @@
 About to call runOptimizationMultipleSymbols
+Function returned: 1
+Error: None
+AFTER function call - checking result
