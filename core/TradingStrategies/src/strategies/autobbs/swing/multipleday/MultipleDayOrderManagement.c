@@ -161,6 +161,7 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = Commodity_DayTrading_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = -2.0;  /* riskCapBuy - 2 */
+		pConfig->setupEntrySignalFunction = setupXAUUSDEntrySignal_MultipleDay;
 	}
 	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
 	{
@@ -181,6 +182,7 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = Commodity_DayTrading_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = 0.0;
+		pConfig->setupEntrySignalFunction = setupXAGUSDEntrySignal_MultipleDay;
 	}
 	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
 	{
@@ -201,6 +203,7 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = BTCUSD_DayTrading_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = 0.0;
+		pConfig->setupEntrySignalFunction = setupCryptoEntrySignal_MultipleDay;
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
@@ -225,6 +228,7 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPJPY_MultipleDays_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = 0.0;
+		pConfig->setupEntrySignalFunction = setupGBPJPYEntrySignal_MultipleDay;
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
 	{
@@ -246,6 +250,7 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPUSD_MultipleDays_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = 0.0;
+		pConfig->setupEntrySignalFunction = setupGBPUSDEntrySignal_MultipleDay;
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
 	{
@@ -267,6 +272,12 @@ void initializeMultipleDaySymbolConfig(MultipleDaySymbolConfig* pConfig, Strateg
 		pConfig->filterFunction = (BOOL (*)(StrategyParams*, Indicators*, Base_Indicators*, BOOL))GBPUSD_MultipleDays_Allow_Trade;
 		pConfig->riskCapBuyOffset = 0.0;
 		pConfig->riskCapSellValue = 0.0;
+		pConfig->setupEntrySignalFunction = setupAUDUSDEntrySignal_MultipleDay;
+	}
+	else
+	{
+		/* Unknown symbol - no function configured */
+		pConfig->setupEntrySignalFunction = NULL;
 	}
 }
 
@@ -332,68 +343,20 @@ AsirikuyReturnCode setupEntrySignal_MultipleDay(const MultipleDaySymbolConfig* p
 		}
 	}
 	
-	/* Call appropriate symbol-specific setup function based on symbol */
-	if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
+	/* Call symbol-specific setup function via function pointer from config */
+	if (pConfig->setupEntrySignalFunction == NULL)
 	{
-		result = setupXAUUSDEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			oldestOpenOrderIndex, side,
-			isAddPosition, isSameDayOrder, shouldFilter,
-			preLow, preHigh, preClose,
-			timeInfo1, timeString,
-			floatingTP, takeProfitMode, shouldSkip);
-	}
-	else if (strstr(pParams->tradeSymbol, "XAGUSD") != NULL)
-	{
-		result = setupXAGUSDEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder, shouldFilter,
-			timeInfo1, timeString,
-			floatingTP, takeProfitMode, shouldSkip);
-	}
-	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL || strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
-	{
-		result = setupCryptoEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder, shouldFilter,
-			timeInfo1, timeString,
-			floatingTP, takeProfitMode, shouldSkip);
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
-	{
-		result = setupGBPJPYEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			oldestOpenOrderIndex, side,
-			isAddPosition, isSameDayOrder,
-			preLow, preHigh, preClose,
-			timeInfo1, timeString,
-			floatingTP, shouldSkip);
-	}
-	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
-	{
-		result = setupGBPUSDEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder,
-			timeInfo1, timeString,
-			floatingTP, shouldSkip);
-	}
-	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
-	{
-		result = setupAUDUSDEntrySignal_MultipleDay(
-			pConfig, pParams, pIndicators, pBase_Indicators,
-			latestOrderIndex, side,
-			isSameDayOrder,
-			timeInfo1, timeString,
-			floatingTP, shouldSkip);
-	}
-	else
-	{
-		/* Unknown symbol - return success without doing anything */
+		/* Unknown symbol - no function configured */
 		return SUCCESS;
 	}
+	
+	result = pConfig->setupEntrySignalFunction(
+		pConfig, pParams, pIndicators, pBase_Indicators,
+		oldestOpenOrderIndex, latestOrderIndex, side,
+		isAddPosition, isSameDayOrder, shouldFilter,
+		preLow, preHigh, preClose,
+		timeInfo1, timeString,
+		floatingTP, takeProfitMode, shouldSkip);
 	
 	/* Check result */
 	if (result != SUCCESS)
@@ -944,7 +907,7 @@ void splitSellOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndic
  * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	double addPositionBaseLine;
 	int executionTrend;
@@ -1093,7 +1056,7 @@ AsirikuyReturnCode setupGBPJPYEntrySignal_MultipleDay(const MultipleDaySymbolCon
  * @param shouldSkip Output parameter: TRUE if caller should exit early (entry signal set or filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	double addPositionBaseLine;
 	
@@ -1246,7 +1209,7 @@ AsirikuyReturnCode setupXAUUSDEntrySignal_MultipleDay(const MultipleDaySymbolCon
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
@@ -1351,7 +1314,7 @@ AsirikuyReturnCode setupXAGUSDEntrySignal_MultipleDay(const MultipleDaySymbolCon
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, BOOL shouldFilter, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
+AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
@@ -1454,7 +1417,7 @@ AsirikuyReturnCode setupCryptoEntrySignal_MultipleDay(const MultipleDaySymbolCon
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
@@ -1578,7 +1541,7 @@ AsirikuyReturnCode setupGBPUSDEntrySignal_MultipleDay(const MultipleDaySymbolCon
  * @param shouldSkip Output parameter: TRUE if caller should exit early (filter blocked), FALSE to continue
  * @return SUCCESS on success
  */
-AsirikuyReturnCode setupAUDUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int latestOrderIndex, OrderType side, BOOL isSameDayOrder, struct tm* timeInfo1, const char* timeString, double* floatingTP, BOOL* shouldSkip)
+AsirikuyReturnCode setupAUDUSDEntrySignal_MultipleDay(const MultipleDaySymbolConfig* pConfig, StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators, int oldestOpenOrderIndex, int latestOrderIndex, OrderType side, BOOL isAddPosition, BOOL isSameDayOrder, BOOL shouldFilter, double preLow, double preHigh, double preClose, struct tm* timeInfo1, const char* timeString, double* floatingTP, int* takeProfitMode, BOOL* shouldSkip)
 {
 	/* Initialize shouldSkip to FALSE (continue processing by default) */
 	*shouldSkip = FALSE;
