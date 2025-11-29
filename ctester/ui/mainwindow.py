@@ -811,6 +811,14 @@ class MainWindow(QMainWindow, Ui_MainWindow):
         self.buttonStopOptimization.setEnabled(False)
             
     def testUpdate(self, id, percentageOfTestCompleted, lastTrade, currentBalance, symbol):
+        # Skip pending order types (BUYLIMIT, SELLLIMIT, BUYSTOP, SELLSTOP)
+        try:
+            _type = int(lastTrade.type)
+        except Exception:
+            _type = None
+        if _type in (2, 3, 4, 5):
+            return
+
         self.tableTest.insertRow(self.tableTest.rowCount())
         
         item = QTableWidgetItem()
@@ -966,6 +974,14 @@ class TestThread(QThread):
         super(TestThread, self).__init__(parent)
     
     def testUpdate(self, id, percentageOfTestCompleted, lastTrade, currentBalance, symbol):
+        # Skip pending order types (BUYLIMIT, SELLLIMIT, BUYSTOP, SELLSTOP)
+        try:
+            _type = int(lastTrade.type)
+        except Exception:
+            _type = None
+        if _type in (2, 3, 4, 5):
+            return
+
         self.testFilePath.write("%d,%s,%s,%s,%.5lf,%.5lf,%lf,%.2lf,%.5lf,%.5lf,%.2lf,%d,%s,%.2lf\n" % (
                 int(lastTrade.ticket), opType[int(lastTrade.type)], strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.openTime)), 
                 strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.closeTime)), 

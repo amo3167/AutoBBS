@@ -83,12 +83,12 @@ AsirikuyReturnCode saveUserInterfaceValues(char* userInterfaceVariableNames[TOTA
 	strcat(buffer, instanceIDName);
 	strcat(buffer, extension);
 
-	logDebug("saveUserInterfaceValues() Saving UI variable file to : %s\n", buffer);
+	logDebug("saveUserInterfaceValues() Saving UI variable file to : %s", buffer);
    
-	fp = fopen(buffer,"w\n");
+	fp = fopen(buffer,"w");
   if(fp == NULL)
   {
-    logCritical("saveUserInterfaceValues() Failed to open UI variable file.\n\n");
+    logCritical("saveUserInterfaceValues() Failed to open UI variable file.");
     return NULL_POINTER;
   }
 
@@ -130,12 +130,12 @@ AsirikuyReturnCode saveUserHeartBeat(int instanceID, BOOL isBackTesting)
 	strcat(buffer, instanceIDName);
 	strcat(buffer, extension);
 
-	logDebug("saveUserInterfaceValues() Saving tick heartbeat to : %s\n", buffer);
+	logDebug("saveUserInterfaceValues() Saving tick heartbeat to : %s", buffer);
    
-  fp = fopen(buffer,"w\n");
+  fp = fopen(buffer,"w");
   if(fp == NULL)
   {
-    logCritical("saveUserInterfaceValues() Failed to open heartbeat file.\n\n");
+    logCritical("saveUserInterfaceValues() Failed to open heartbeat file.");
     return NULL_POINTER;
   }
 
@@ -172,10 +172,10 @@ AsirikuyReturnCode savePredicatedWeeklyATR(char * pName, double predicatedWeekly
 
 	logDebug("saveUserInterfaceValues() Saving weekly ATR to : %s", buffer);
 
-	fp = fopen(buffer, "w\n");
+	fp = fopen(buffer, "w");
 	if (fp == NULL)
 	{
-		logCritical("saveUserInterfaceValues() Failed to open weekly ATR file.\n\n");
+		logCritical("saveUserInterfaceValues() Failed to open weekly ATR file.");
 		return NULL_POINTER;
 	}
 
@@ -213,7 +213,7 @@ AsirikuyReturnCode saveRateFile(int instanceID, int rate,BOOL isBackTesting)
 
 	logDebug("saveRateFile() %s", buffer);
 
-	fp = fopen(buffer, "w\n");
+	fp = fopen(buffer, "w");
 	if (fp == NULL)
 	{
 		return SUCCESS;
@@ -250,7 +250,7 @@ int readWeeklyATRFile(char * pName,double *pPredictWeeklyATR,double *pPredictWee
 
 	logDebug("readWeeklyATRFile() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		return rateErrorTimes;
@@ -295,7 +295,7 @@ int readRateFile(int instanceID, BOOL isBackTesting)
 
 	logDebug("readRateFile() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{		
 		return rateErrorTimes;
@@ -332,9 +332,9 @@ double readRiskFile(BOOL isBackTesting)
 	strcat(buffer, tempFilePath);
 	strcat(buffer, extension);
 
-	logInfo("readRiskFile() %s\n", buffer);
+	logInfo("readRiskFile() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		return risk;
@@ -371,7 +371,7 @@ int readXAUUSDKeyNewsDateFile(time_t *pKeyDates)
 
 	logDebug("readXAUUSDKeyNewsDateFile() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		return -1;
@@ -423,10 +423,10 @@ AsirikuyReturnCode saveTradingInfo(int instanceID, Order_Info * pOrderInfo)
 
 	logDebug("saveTradingInfo() Saving trading order info to : %s", buffer);
 
-	fp = fopen(buffer, "w\n");
+	fp = fopen(buffer, "w");
 	if (fp == NULL)
 	{
-		logCritical("saveTradingInfo() Failed to open trading order info file.\n\n");
+		logCritical("saveTradingInfo() Failed to open trading order info file.");
 		return NULL_POINTER;
 	}
 
@@ -464,7 +464,7 @@ int readTradingInfo(int instanceID, Order_Info *pOrderInfo)
 	strcat(buffer, extension);
 	logDebug("readTradingInfo() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		return -1;
@@ -506,7 +506,7 @@ AsirikuyReturnCode saveTurningPoint(int instanceID, Order_Turning_Info *pOrderTu
 
 	logDebug("saveTurningPoint() %s", buffer);
 
-	fp = fopen(buffer, "w\n");
+	fp = fopen(buffer, "w");
 	if (fp == NULL)
 	{
 		return SUCCESS;
@@ -535,7 +535,7 @@ int readTurningPoint(int instanceID, Order_Turning_Info *pOrderTurning)
 	strcat(buffer, extension);
 	logDebug("readTurningPoint() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		//pOrderTurning->isTurning = TRUE;
@@ -567,10 +567,10 @@ AsirikuyReturnCode saveVirutalOrdergInfo(int instanceID, OrderInfo orderInfo)
 
 	logDebug("saveTradingInfo() Saving virual order info to : %s", buffer);
 
-	fp = fopen(buffer, "w\n");
+	fp = fopen(buffer, "w");
 	if (fp == NULL)
 	{
-		logCritical("saveTradingInfo() Failed to open virual order info file.\n\n");
+		logCritical("saveTradingInfo() Failed to open virual order info file.");
 		return NULL_POINTER;
 	}
 
@@ -605,7 +605,7 @@ int readVirtualOrderInfo(int instanceID, OrderInfo *pOrderInfo)
 	strcat(buffer, extension);
 	logDebug("readTradingInfo() %s", buffer);
 
-	fp = fopen(buffer, "r\n");
+	fp = fopen(buffer, "r");
 	if (fp == NULL)
 	{
 		return -1;

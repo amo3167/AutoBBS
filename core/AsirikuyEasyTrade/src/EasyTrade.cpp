@@ -979,8 +979,12 @@ AsirikuyReturnCode EasyTrade::openSingleSellLimitEasy(double entryPrice, double 
   }
 
   if (entryPrice < pParams->bidAsk.bid[0]){
-	  logError("Cannot set a sell limit below current price");
-      return SUCCESS; 
+	  double point = pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.point;
+	  double eps = point * 0.5;
+	  if (entryPrice + eps < pParams->bidAsk.bid[0]){
+		  logError("SellLimit rejected: entry=%lf bid=%lf eps=%lf", entryPrice, pParams->bidAsk.bid[0], eps);
+		  return SUCCESS; 
+	  }
   }
 
   if (resultIndex == -1)
@@ -1035,8 +1039,12 @@ AsirikuyReturnCode EasyTrade::openSingleSellStopEasy(double entryPrice, double t
   }
 
   if (entryPrice > pParams->bidAsk.bid[0]){
-	  logError("Cannot set a sell stop above current price");
-      return SUCCESS; 
+	  double point = pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.point;
+	  double eps = point * 0.5;
+	  if (entryPrice - eps > pParams->bidAsk.bid[0]){
+		  logError("SellStop rejected: entry=%lf bid=%lf eps=%lf", entryPrice, pParams->bidAsk.bid[0], eps);
+		  return SUCCESS; 
+	  }
   }
 
   if (resultIndex == -1)
@@ -1091,8 +1099,12 @@ AsirikuyReturnCode EasyTrade::openSingleBuyStopEasy(double entryPrice, double ta
   }
 
   if (entryPrice < pParams->bidAsk.ask[0]){
-	  logError("Cannot set a buy stop below current price");
-      return SUCCESS; 
+	  double point = pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.point;
+	  double eps = point * 0.5;
+	  if (entryPrice + eps < pParams->bidAsk.ask[0]){
+		  logError("BuyStop rejected: entry=%lf ask=%lf eps=%lf", entryPrice, pParams->bidAsk.ask[0], eps);
+		  return SUCCESS; 
+	  }
   }
 
   if (resultIndex == -1)
@@ -1147,8 +1159,12 @@ AsirikuyReturnCode EasyTrade::openSingleBuyLimitEasy(double entryPrice, double t
   }
 
   if (entryPrice > pParams->bidAsk.ask[0]){
-	  logError("Cannot set a buy limit above current price");
-      return SUCCESS; 
+	  double point = pParams->ratesBuffers->rates[PRIMARY_RATES_INDEX].info.point;
+	  double eps = point * 0.5;
+	  if (entryPrice - eps > pParams->bidAsk.ask[0]){
+		  logError("BuyLimit rejected: entry=%lf ask=%lf eps=%lf", entryPrice, pParams->bidAsk.ask[0], eps);
+		  return SUCCESS; 
+	  }
   }
 
   if (resultIndex == -1)

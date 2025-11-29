@@ -1070,8 +1070,23 @@ def testUpdate(testId, percentageOfTestCompleted, lastTrade, currentBalance, sym
     #print "Last closed trade date is {0}".format(strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.closeTime)))
     global f
 
+    # Ignore pending orders (LIMIT / STOP). Only record executed trades (BUY/SELL).
+    try:
+        t = int(lastTrade.type)
+    except Exception:
+        t = None
+
+    # pending types: 2=BUYLIMIT, 3=SELLLIMIT, 4=BUYSTOP, 5=SELLSTOP
+    if t in (2, 3, 4, 5):
+        return
+
+    try:
+        type_label = opType[t]
+    except Exception:
+        type_label = str(t) if t is not None else 'UNKNOWN'
+
     f.write("%d,%s,%s,%s,%.5lf,%.5lf,%lf,%.2lf,%.5lf,%.5lf,%.2lf,%d,%s,%.2lf\n" % (
-        int(lastTrade.ticket), opType[int(lastTrade.type)], strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.openTime)), strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.closeTime)),
+        int(lastTrade.ticket), type_label, strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.openTime)), strftime("%d/%m/%Y %H:%M", gmtime(lastTrade.closeTime)),
         lastTrade.openPrice, lastTrade.closePrice, lastTrade.lots, lastTrade.profit, lastTrade.stopLoss, lastTrade.takeProfit, currentBalance,testId,symbol, lastTrade.swap)
             )
 

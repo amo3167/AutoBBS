@@ -139,6 +139,8 @@ static AsirikuyReturnCode loadIndicatorsAutoBBS(StrategyParams* pParams, Indicat
 
 	pIndicators->maxTradeTime = DEFAULT_MAX_TRADE_TIME;
 	pIndicators->startHour = (int)parameter(AUTOBBS_STARTHOUR);
+	/* New stopHour parameter (optimizer/extra param) */
+	pIndicators->stopHour = (int)parameter(AUTOBBS_STOPHOUR);
 	pIndicators->stopMovingBackSL = TRUE;
 
 	pIndicators->volume1 = 0.0;

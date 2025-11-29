@@ -421,20 +421,25 @@ AsirikuyReturnCode logAsirikuyError(const char* pFunctionName, AsirikuyReturnCod
 
 AsirikuyReturnCode logTALibError(const char* pFunctionName, TA_RetCode code)
 {
-  char errorCodeBuf[MAX_ERROR_STRING_SIZE] = "";
-  char errorBuf[MAX_ERROR_STRING_SIZE] = "";
+	char errorCodeBuf[MAX_ERROR_STRING_SIZE] = "";
+	char errorBuf[MAX_ERROR_STRING_SIZE] = "";
+	const char* codeString = NULL;
 
-  if(pFunctionName == NULL)
-  {
-    logCritical("logTALibError() failed. pFunctionName = NULL\n");
-    return NULL_POINTER;
-  }
+	if (pFunctionName == NULL)
+	{
+		logCritical("logTALibError() failed. pFunctionName = NULL\n");
+		return NULL_POINTER;
+	}
 
-  strcpy(errorCodeBuf, taRetCodeToString(code, errorCodeBuf, MAX_ERROR_STRING_SIZE));
-  strcpy(errorBuf, pFunctionName);
-  strcat(errorBuf, errorCodeBuf);
-  strcat(errorBuf, " ");
-  logError("%s\n", errorBuf);
+	codeString = taRetCodeToString(code, errorCodeBuf, MAX_ERROR_STRING_SIZE);
+	if (codeString == NULL)
+	{
+		logCritical("logTALibError() failed. taRetCodeToString() returned NULL\n");
+		return NULL_POINTER;
+	}
 
-  return TA_LIB_ERROR;
+	snprintf(errorBuf, sizeof(errorBuf), "%s%s ", pFunctionName, codeString);
+	logError("%s\n", errorBuf);
+
+	return TA_LIB_ERROR;
 }

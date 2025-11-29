@@ -134,6 +134,30 @@
 #define ENTRY_MODE_ATR_RANGE 3               // Entry mode: ATR range
 
 /**
+ * @brief AUDUSD-specific configuration helper for Limit strategy.
+ *
+ * Extracted from the inline AUDUSD branch to make the main function cleaner.
+ */
+static void configureLimitForAUDUSD(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators,
+	int orderIndex, int *stopHour, BOOL *isEnableMACDSlow, BOOL *isEnableFlatTrend, BOOL *isEnableTooFar, BOOL *isCloseOrdersEOD)
+{
+	if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
+		&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
+			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
+		)
+		*isCloseOrdersEOD = TRUE;
+
+	/* Use configured stopHour if provided; otherwise fall back to symbol default */
+	*stopHour = (pIndicators->stopHour != 0) ? pIndicators->stopHour : STOP_HOUR_AUDUSD;
+
+	*isEnableMACDSlow = FALSE;
+	*isEnableFlatTrend = TRUE;
+	*isEnableTooFar = TRUE;
+	/* isEnableRangeTrade intentionally unchanged here */
+	pIndicators->startHourOnLimt = pIndicators->startHour;
+}
+
+/**
  * @brief Executes Limit strategy.
  * 
  * This function implements a comprehensive limit order strategy with extensive
@@ -275,9 +299,11 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
 			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
 			)
-			isCloseOrdersEOD = TRUE;
+				isCloseOrdersEOD = TRUE; // Close orders at end of day if conditions are met
+
 
 		isEnableMACDSlow = FALSE;
+
 
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
@@ -286,10 +312,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 		if (timeInfo1.tm_wday == WEDNESDAY_WDAY)
 			pIndicators->risk = RISK_REDUCED_GBPUSD_WEDNESDAY;
 
-		startHour = START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-
-		//isEnableFlatTrend = TRUE;
-		//isEnableShellingtonTrend = TRUE;
+		/* Use configured stopHour if provided; otherwise fall back to symbol default */
+		startHour = (pIndicators->startHour != 0) ? pIndicators->startHour : START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
 
 		pIndicators->startHourOnLimt = startHour;
 		isCloseOrdersEOD = TRUE;
@@ -550,7 +574,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			)
 			isCloseOrdersEOD = TRUE;
 
-		stopHour = STOP_HOUR_AUDUSD;
+		/* Use configured stopHour if provided; otherwise fall back to symbol default */
+		stopHour = (pIndicators->stopHour != 0) ? pIndicators->stopHour : STOP_HOUR_AUDUSD;
 
 		isEnableMACDSlow = FALSE;
 		isEnableFlatTrend = TRUE;
@@ -596,25 +621,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	pBase_Indicators->mACDInTrend = 0;
 	pBase_Indicators->shellingtonInTrend = 0;
 
-	//if (preDailyClose - preDailyOpen > (preDailyHigh - preDailyLow) / 3)
-	//	barState = BULL;
-	//else if (preDailyOpen - preDailyClose > (preDailyHigh - preDailyLow) / 3)
-	//	barState = BEAR;
-	//else if (preDailyClose > preDailyOpen && preDailyOpen - preDailyLow > (preDailyHigh - preDailyLow) * 0.66)
-	//	barState = BULL;
-	//else if (preDailyClose < preDailyOpen && preDailyHigh - preDailyOpen >(preDailyHigh - preDailyLow) * 0.66)
-	//	barState = BEAR;
-	//else if (fabs((preDailyHigh - preDailyLow) / 2 - (preDailyClose - preDailyOpen) / 2) < (preDailyHigh - preDailyLow) / 10)
-	//	barState = STAR;
-
-	//if (barState == STAR)
-	//{
-	//	if (daily_baseline_short - preDailyClose >=  2 * pBase_Indicators->dailyATR)
-	//		barState = BULL;
-	//	if (preDailyClose - daily_baseline_short >=  2 * pBase_Indicators->dailyATR)
-	//		barState = BEAR;
-	//}
-
 	if (pIndicators->fast > 0
 		&& (isEnableMACDSlow || pIndicators->fast > pIndicators->slow)
 		&& preDailyClose > dailyBaseLine
@@ -640,12 +646,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 	pBase_Indicators->shellingtonInTrend = trend_4H;
 
-	//if (trend_4H == 1 && pIndicators->bbsTrend_4H == 1)
-	//	pBase_Indicators->shellingtonInTrend = 1;
-
-	//if (trend_4H == -1 && pIndicators->bbsTrend_4H == -1)
-	//	pBase_Indicators->shellingtonInTrend = -1;
-
 	// Check for flat trend: if 20-period MA hasn't moved much relative to ATR
 	if (fabs(iMA(3, B_DAILY_RATES, MA_PERIOD_FLAT_TREND_CHECK, 1) - iMA(3, B_DAILY_RATES, MA_PERIOD_FLAT_TREND_CHECK, 5)) / pBase_Indicators->dailyATR <= 0.05)
 		pBase_Indicators->flatTrend = 1;
@@ -670,31 +670,8 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	{
 		trend = DOWN;
 	}
-	//else if (pBase_Indicators->dailyTrend == 0 && pBase_Indicators->mACDInTrend == 0 && pBase_Indicators->shellingtonInTrend == 0)
-	//	trend = RANGE;
 	else
 		trend = RANGE;
-
-	//Override pBase_Indicators->maTrend if too close	
-	//pBase_Indicators->maTrend = getMATrend(pIndicators->adjust, B_PRIMARY_RATES, 1);
-	//if (pBase_Indicators->maTrend == 1)
-	//{
-	//	if (pIndicators->bbsTrend_secondary <= 0)
-	//		pBase_Indicators->maTrend = 0;
-	//}
-	//if (pBase_Indicators->maTrend == -1)
-	//{
-	//	if (pIndicators->bbsTrend_secondary >= 0)
-	//		pBase_Indicators->maTrend = 0;
-	//}
-		
-	// Need to set stop loss
-
-	// AUTOBBS_RANGE=1 ATR Range order
-	// AUTOBBS_STARTHOUR = 8 start hour
-	// AUTOBBS_IS_AUTO_MODE = 1, use R1, S1 Stop order Stop order
-	//AUTOBBS_IS_AUTO_MODE = 3, cancel all orders
-	//AUTOBBS_RISK_CAP=2 : stopLossLevel, by default is 2
 
 	pIndicators->takePrice = iAtr(B_HOURLY_RATES, atrTimes, ATR_PERIOD_DAILY_TAKE_PRICE);
 	pIndicators->stopLoss = stopLossLevel * pIndicators->takePrice;
@@ -763,14 +740,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 		return SUCCESS;
 	}
-
-	//if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen
-	//	&& ((pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0) 
-	//	|| (pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)))
-	//{		
-	//	closeAllCurrentDayShortTermOrdersEasy(1, currentTime);
-	//	return SUCCESS;
-	//}
 
 
 	logInfo("System InstanceID = %d, BarTime = %s,startHour=%d,AUTOBBS_IS_AUTO_MODE=%d,isEnableRangeTrade=%d,pBase_dailyHigh=%lf,dailyLow=%lf,pDailyMaxATR=%lf,hourATR=%lf",
