@@ -41,67 +41,49 @@
 #include "strategies/autobbs/trend/common/RangeOrderManagement.h"
 #include "strategies/autobbs/trend/common/TimeManagement.h"
 #include "strategies/autobbs/trend/common/OrderSplittingUtilities.h"  // For splitBuyRangeOrders, splitSellRangeOrders
+#include "strategies/autobbs/trend/limit/LimitHelper.h"
 
 // Strategy configuration constants
 #define SPLIT_TRADE_MODE_LIMIT 4             // Split trade mode for Limit strategy
 #define TP_MODE_RATIO_1_TO_1 0              // Take profit mode: 1:1 ratio
 #define DEFAULT_RISK_LEVEL 1                 // Default risk level
 
-// MACD parameters
+// MACD parameters (for standard forex pairs)
 #define MACD_FAST_PERIOD_SHORT 5             // Short-term fast MA period for MACD
 #define MACD_SLOW_PERIOD_SHORT 10            // Short-term slow MA period for MACD
 #define MACD_SIGNAL_SHORT 5                  // Short-term signal MA period for MACD
-#define MACD_FAST_PERIOD_BTC_ETH 7          // Fast MA period for BTC/ETH
-#define MACD_SLOW_PERIOD_BTC_ETH 14         // Slow MA period for BTC/ETH
-#define MACD_SIGNAL_BTC_ETH 7               // Signal MA period for BTC/ETH
 
-// Time constants
-#define DEFAULT_CLOSE_HOUR 23                // Default close hour
-#define DEFAULT_STOP_HOUR 23                  // Default stop hour
-#define START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD 3 // Start hour for GBPJPY, GBPUSD, EURGBP, EURUSD
-#define START_HOUR_BTC_ETH 0                 // Start hour for BTCUSD and ETHUSD
-#define START_HOUR_AUDUSD 3                  // Start hour for AUDUSD
-#define STOP_HOUR_XAUUSD 22                  // Stop hour for XAUUSD
-#define STOP_HOUR_AUDUSD 17                  // Stop hour for AUDUSD
-#define START_HOUR_ON_LIMIT_XAUUSD 8         // Start hour on limit for XAUUSD
+// Time constants (general strategy timing)
+#define DEFAULT_CLOSE_HOUR 23                // Default close hour for EOD operations
+#define DEFAULT_STOP_HOUR 23                 // Default stop hour when not symbol-specific
 #define LATE_HOUR_THRESHOLD 23               // Late hour threshold for start shift adjustment
-#define LATE_MINUTE_THRESHOLD 30              // Late minute threshold for start shift adjustment
+#define LATE_MINUTE_THRESHOLD 30             // Late minute threshold for start shift adjustment
 
 // ATR and calculation constants
 #define ATR_PERIOD_4H_MA_TREND 20           // ATR period for 4H MA trend calculation
 #define ATR_PERIOD_HOURLY_DEFAULT 20        // Default ATR period for hourly calculation
-#define ATR_PERIOD_SUNDAY 50                // ATR period for Sunday
+#define ATR_PERIOD_SUNDAY 50                // ATR period for Sunday (lower liquidity)
 #define ATR_PERIOD_DAILY_TAKE_PRICE 1       // ATR period for daily take price calculation
 #define DAILY_ATR_DIVISOR_FOR_PENDING_CHECK 3 // ATR divisor for pending order check
-#define DAILY_ATR_MULTIPLIER_FOR_ADJUST 0.01 // ATR multiplier for adjust calculation (1%)
 
-// Risk adjustment constants
-#define RISK_REDUCED_GBPUSD_WEDNESDAY 0.6    // Reduced risk for GBPUSD on Wednesday
-#define RISK_REDUCED_XAUUSD_WEDNESDAY 0.6    // Reduced risk for XAUUSD on Wednesday
-#define RISK_REDUCED_XAUUSD_THURSDAY 0.5     // Reduced risk for XAUUSD on Thursday
-#define RISK_REDUCED_BTC_ETH_WEEKDAYS 0.5    // Reduced risk for BTC/ETH on weekdays
+// Risk adjustment constants (strategy-level)
 #define RISK_REDUCED_RANGE_TRADE 0.5         // Reduced risk for range trades
 
 // RSI constants
-#define RSI_LOW_THRESHOLD 20.0              // RSI low threshold
-#define RSI_HIGH_THRESHOLD 80.0             // RSI high threshold
+#define RSI_LOW_THRESHOLD 20.0              // RSI low threshold (oversold)
+#define RSI_HIGH_THRESHOLD 80.0             // RSI high threshold (overbought)
 #define RSI_TRADING_DAYS_DEFAULT 10         // Default trading days for RSI calculation
-#define RSI_TRADING_DAYS_BTC_ETH 14         // Trading days for RSI calculation (BTC/ETH)
 
-// Date filtering constants
+// Day of week constants (used in main strategy logic)
 #define SUNDAY_WDAY 0                       // Sunday (tm_wday == 0)
-#define WEDNESDAY_WDAY 3                    // Wednesday (tm_wday == 3)
-#define THURSDAY_WDAY 4                     // Thursday (tm_wday == 4)
-#define FRIDAY_WDAY 5                       // Friday (tm_wday == 5)
-#define NON_FARM_PAYROLL_DAY_RANGE 7          // Day range for non-farm payroll (first Friday)
-#define CHRISTMAS_MONTH 11                   // December (tm_mon == 11)
-#define CHRISTMAS_EVE_DAY 24                 // December 24
-#define NEW_YEAR_EVE_DAY 31                  // December 31
+
+// Day of week constants (used in main strategy logic)
+#define SUNDAY_WDAY 0                       // Sunday (tm_wday == 0)
 
 // Stop loss and take profit constants
 #define STOP_LOSS_LEVEL_1X 1.0              // Stop loss level multiplier (1x take profit)
 #define STOP_LOSS_LEVEL_2X 2.0              // Stop loss level multiplier (2x take profit)
-#define MINUTES_FOR_HIGH_LOW_LOOKBACK 5      // Minutes for high/low price lookback (5 * 60)
+#define MINUTES_FOR_HIGH_LOW_LOOKBACK 5     // Minutes for high/low price lookback (5 * 60)
 #define MINUTES_FOR_TP_MOVE_CHECK 4         // Minutes for TP move check (4 * 60)
 #define MINUTES_FOR_TP_MOVE_CHECK_MAX 6     // Maximum minutes for TP move check (6 * 60)
 #define MINUTES_FOR_STOP_LOSS_MOVE_XAUUSD 9 // Minutes for stop loss move (XAUUSD) (9 * 60)
@@ -115,12 +97,11 @@
 // MA calculation constants
 #define MA_PERIOD_DAILY_BASELINE 50         // MA period for daily baseline calculation
 #define MA_PERIOD_FLAT_TREND_CHECK 20       // MA period for flat trend check
-#define MA_PERIOD_960M 960                   // MA period for 960-minute calculation
+#define MA_PERIOD_960M 960                  // MA period for 960-minute calculation
 
 // Loss management constants
 #define MAX_LOSS_TIMES_THRESHOLD 2          // Maximum loss times threshold
 #define TOO_FAR_LIMIT_DEFAULT 1             // Default too far limit
-#define TOO_FAR_LIMIT_BTC_ETH 2             // Too far limit for BTC/ETH
 
 // Spread constants
 #define SPREAD_MULTIPLIER_THRESHOLD 1.5     // Spread multiplier threshold
@@ -131,31 +112,7 @@
 
 // Entry mode constants
 #define ENTRY_MODE_1_TO_1 1                 // Entry mode: 1:1 risk/reward ratio
-#define ENTRY_MODE_ATR_RANGE 3               // Entry mode: ATR range
-
-/**
- * @brief AUDUSD-specific configuration helper for Limit strategy.
- *
- * Extracted from the inline AUDUSD branch to make the main function cleaner.
- */
-static void configureLimitForAUDUSD(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators,
-	int orderIndex, int *stopHour, BOOL *isEnableMACDSlow, BOOL *isEnableFlatTrend, BOOL *isEnableTooFar, BOOL *isCloseOrdersEOD)
-{
-	if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-		&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-		)
-		*isCloseOrdersEOD = TRUE;
-
-	/* Use configured stopHour if provided; otherwise fall back to symbol default */
-	*stopHour = (pIndicators->stopHour != 0) ? pIndicators->stopHour : STOP_HOUR_AUDUSD;
-
-	*isEnableMACDSlow = FALSE;
-	*isEnableFlatTrend = TRUE;
-	*isEnableTooFar = TRUE;
-	/* isEnableRangeTrade intentionally unchanged here */
-	pIndicators->startHourOnLimt = pIndicators->startHour;
-}
+#define ENTRY_MODE_ATR_RANGE 3              // Entry mode: ATR range
 
 /**
  * @brief Executes Limit strategy.
@@ -210,7 +167,6 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	int startShift = 1;
 	double preDailyClose, preDailyHigh, preDailyLow, preDailyOpen;
 	int trend_4H = 0, trend_KeyK = 0, trend_MA = 0;
-	int entryMode = ENTRY_MODE_1_TO_1; // 1:1 risk/reward ratio
 	double stopLossLevel = (double)parameter(AUTOBBS_RISK_CAP);
 	double moveTPLimit = (double)parameter(AUTOBBS_KEYK);
 	int autoMode = (int)parameter(AUTOBBS_IS_AUTO_MODE);	
@@ -280,308 +236,56 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 
 	if (strstr(pParams->tradeSymbol, "GBPJPY") != NULL)
 	{
-		startHour = START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		
-		isEnableFlatTrend = TRUE;
-		//isEnableShellingtonTrend = TRUE;
-
-		pIndicators->startHourOnLimt = startHour;
+		configureLimitForGBPJPY(pParams, pIndicators, pBase_Indicators, orderIndex, &startHour, &isCloseOrdersEOD, &isEnableFlatTrend);
 	}
 	else if (strstr(pParams->tradeSymbol, "USDJPY") != NULL)
 	{
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-				isCloseOrdersEOD = TRUE; // Close orders at end of day if conditions are met
-
-
-		isEnableMACDSlow = FALSE;
-
-
+		configureLimitForUSDJPY(pParams, pIndicators, pBase_Indicators, orderIndex, &isCloseOrdersEOD, &isEnableMACDSlow);
 	}
 	else if (strstr(pParams->tradeSymbol, "GBPUSD") != NULL)
 	{
-		// Reduce risk on Wednesday for GBPUSD
-		if (timeInfo1.tm_wday == WEDNESDAY_WDAY)
-			pIndicators->risk = RISK_REDUCED_GBPUSD_WEDNESDAY;
-
-		/* Use configured stopHour if provided; otherwise fall back to symbol default */
-		startHour = (pIndicators->startHour != 0) ? pIndicators->startHour : START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-
-		pIndicators->startHourOnLimt = startHour;
-		isCloseOrdersEOD = TRUE;
-		isEnableRSI = TRUE; // Not confirm it will be much better. Need manully control the risk if RSI or too much??
+		configureLimitForGBPUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, &startHour, &isCloseOrdersEOD, &isEnableRSI);
 	}
 	else if (strstr(pParams->tradeSymbol, "XAUUSD") != NULL)
-	{		
-		// Reduce risk on Wednesday for XAUUSD
-		if (timeInfo1.tm_wday == WEDNESDAY_WDAY)
-			pIndicators->risk = RISK_REDUCED_XAUUSD_WEDNESDAY;
-
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-		
-		startHour = START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-		pIndicators->startHourOnLimt = START_HOUR_ON_LIMIT_XAUUSD;
-		stopHour = STOP_HOUR_XAUUSD;
-
-		// Filter non-farm payroll day (first Friday of the month)
-		if (timeInfo1.tm_wday == FRIDAY_WDAY && timeInfo1.tm_mday - NON_FARM_PAYROLL_DAY_RANGE < 1)
-		{
-
-			strcpy(pIndicators->status, "Filter Non-farm day\n");
-
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
+	{
+		BOOL shouldReturn = FALSE;
+		configureLimitForXAUUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, timeString,
+			&startHour, &stopHour, &isCloseOrdersEOD, &isEnableShellingtonTrend, &isEnableTooFar,
+			&isEnableDoubleEntry, &isEnableDoubleEntry2, &shouldReturn);
+		if (shouldReturn)
 			return SUCCESS;
-		}
-
-
-		//filter christmas eve and new year eve
-		if (timeInfo1.tm_mon == CHRISTMAS_MONTH && (timeInfo1.tm_mday == CHRISTMAS_EVE_DAY || timeInfo1.tm_mday == NEW_YEAR_EVE_DAY))
-		{
-			strcpy(pIndicators->status, "Filter Christmas and New Year Eve.\n");
-
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-			return SUCCESS;
-		}
-
-		// Reduce risk on Thursday for XAUUSD
-		if (timeInfo1.tm_wday == THURSDAY_WDAY)
-			pIndicators->risk = RISK_REDUCED_XAUUSD_THURSDAY;
-
-		isEnableShellingtonTrend = TRUE;
-		pIndicators->isEnableLimitSR1 = TRUE;
-		isEnableTooFar = FALSE; 
-	
-		isEnableDoubleEntry = TRUE;
-
-		isEnableDoubleEntry2 = TRUE;
 	}
 	else if (strstr(pParams->tradeSymbol, "EURGBP") != NULL)
 	{
-		startHour = START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		isEnableMACDSlow = FALSE;
+		configureLimitForEURGBP(pParams, pIndicators, pBase_Indicators, orderIndex, &startHour, &isCloseOrdersEOD, &isEnableMACDSlow);
 	}
 	else if (strstr(pParams->tradeSymbol, "EURUSD") != NULL)
 	{
-		startHour = START_HOUR_GBPJPY_GBPUSD_EURGBP_EURUSD;
-
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		isEnableMACDSlow = FALSE;
-
-		isEnableFlatTrend = TRUE;
-		//isEnableShellingtonTrend = TRUE;
-
-		pIndicators->startHourOnLimt = startHour;
+		configureLimitForEURUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &startHour, &isCloseOrdersEOD, &isEnableMACDSlow, &isEnableFlatTrend);
 	}
 	else if (strstr(pParams->tradeSymbol, "BTCUSD") != NULL)
 	{
-		pIndicators->adjust = pBase_Indicators->dailyATR * DAILY_ATR_MULTIPLIER_FOR_ADJUST;
-		startHour = START_HOUR_BTC_ETH;
-		pIndicators->startHourOnLimt = startHour;
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		//if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
-		//	pIndicators->risk = 0.6;
-
-		// Reduce risk on weekdays (Tuesday-Thursday) for BTCUSD
-		if (timeInfo1.tm_wday == 2 || timeInfo1.tm_wday == 3 || timeInfo1.tm_wday == 4)
-			pIndicators->risk = RISK_REDUCED_BTC_ETH_WEEKDAYS;
-
-		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 1)
-		{
-			if (abs(pBase_Indicators->dailyTrend) >= 6
-				&& iAtr(B_DAILY_RATES, 1, 1) < 0.7 * pBase_Indicators->pDailyATR
-				)
-				pIndicators->risk = 0.5;
-		}
-
-		//if (timeInfo1.tm_wday == 6 && timeInfo1.tm_hour == 16 && timeInfo1.tm_min >= 50)
-		//{
-		//	closeAllLimitAndStopOrdersEasy(currentTime);			
-		//	closeAllCurrentDayShortTermOrdersEasy(1, currentTime);
-		//	return SUCCESS;
-		//}
-
-		//filter christmas eve and new year eve
-		if (timeInfo1.tm_mon == CHRISTMAS_MONTH && (timeInfo1.tm_mday == CHRISTMAS_EVE_DAY || timeInfo1.tm_mday == NEW_YEAR_EVE_DAY))
-		{
-			strcpy(pIndicators->status, "Filter Christmas and New Year Eve.\n");
-
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
+		BOOL shouldReturn = FALSE;
+		configureLimitForBTCUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, timeString,
+			&startHour, &tooFarLimit, &isCloseOrdersEOD, &isEnableWeeklyATR, &isEnableRangeTrade,
+			&isEnableDoubleEntry, &isEnableTooFar, &fastMAPeriod, &slowMAPeriod, &signalMAPeriod,
+			&tradingDays, &shouldReturn);
+		if (shouldReturn)
 			return SUCCESS;
-		}
-		//if (iAtr(B_DAILY_RATES, 1, 1) >= pBase_Indicators->dailyATR * 2)
-		//{
-		//	pIndicators->risk = 0.6;
-		//}
-		//if (fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) >= pBase_Indicators->pWeeklyPredictATR / 3)
-		//{
-		//	strcpy(pIndicators->status, "Previous day Close is more than pWeeklyPredictATR / 3.\n");
-
-		//	logWarning("System InstanceID = %d, BarTime = %s, %s",
-		//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		//	return SUCCESS;
-		//}
-
-		isEnableWeeklyATR = FALSE;
-
-		pIndicators->isEnableLimitSR1 = TRUE;
-
-		//if (timeInfo1.tm_wday == 6)
-		//	stopHour = 16;
-
-		tooFarLimit = TOO_FAR_LIMIT_BTC_ETH;
-
-		isEnableRangeTrade = FALSE;
-
-		isEnableDoubleEntry = TRUE;
-
-		isEnableTooFar = TRUE;
-
-		fastMAPeriod = MACD_FAST_PERIOD_BTC_ETH;
-		slowMAPeriod = MACD_SLOW_PERIOD_BTC_ETH;
-		signalMAPeriod = MACD_SIGNAL_BTC_ETH;
-
-		tradingDays = RSI_TRADING_DAYS_BTC_ETH;
 	}
 	else if (strstr(pParams->tradeSymbol, "ETHUSD") != NULL)
 	{
-		// Enable too big spread filter if spread exceeds threshold
-		if (fabs(pParams->bidAsk.ask[0] - pParams->bidAsk.bid[0]) > pIndicators->adjust * SPREAD_MULTIPLIER_THRESHOLD)
-		{
-			isEnableTooBigSpread = TRUE;
-		}
-		
-		pIndicators->adjust = pBase_Indicators->dailyATR * DAILY_ATR_MULTIPLIER_FOR_ADJUST;
-		startHour = START_HOUR_BTC_ETH;
-		pIndicators->startHourOnLimt = startHour;
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		//if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 6)
-		//	pIndicators->risk = 0.6;
-
-		// Reduce risk on Tuesday and Thursday for ETHUSD
-		if (timeInfo1.tm_wday == 2 || timeInfo1.tm_wday == 4)
-			pIndicators->risk = RISK_REDUCED_BTC_ETH_WEEKDAYS;
-
-		if (timeInfo1.tm_wday == 0 || timeInfo1.tm_wday == 1)
-		{
-			if (abs(pBase_Indicators->dailyTrend) >= 6
-				&& iAtr(B_DAILY_RATES, 1, 1) < 0.7 * pBase_Indicators->pDailyATR
-				)
-				pIndicators->risk = 0.5;
-		}
-
-		//if (timeInfo1.tm_wday == 6 && timeInfo1.tm_hour == 16 && timeInfo1.tm_min >= 50)
-		//{
-		//	closeAllLimitAndStopOrdersEasy(currentTime);			
-		//	closeAllCurrentDayShortTermOrdersEasy(1, currentTime);
-		//	return SUCCESS;
-		//}
-
-		//filter christmas eve and new year eve
-		if (timeInfo1.tm_mon == CHRISTMAS_MONTH && (timeInfo1.tm_mday == CHRISTMAS_EVE_DAY || timeInfo1.tm_mday == NEW_YEAR_EVE_DAY))
-		{
-			strcpy(pIndicators->status, "Filter Christmas and New Year Eve.\n");
-
-			logWarning("System InstanceID = %d, BarTime = %s, %s",
-				(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
+		BOOL shouldReturn = FALSE;
+		configureLimitForETHUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, timeString,
+			&startHour, &tooFarLimit, &isCloseOrdersEOD, &isEnableWeeklyATR, &isEnableRangeTrade,
+			&isEnableTooBigSpread, &isEnableDoubleEntry, &isEnableTooFar, &fastMAPeriod, &slowMAPeriod,
+			&signalMAPeriod, &tradingDays, &shouldReturn);
+		if (shouldReturn)
 			return SUCCESS;
-		}
-		//if (iAtr(B_DAILY_RATES, 1, 1) >= pBase_Indicators->dailyATR * 2)
-		//{
-		//	pIndicators->risk = 0.6;
-		//}
-		//if (fabs(iClose(B_DAILY_RATES, 1) - iClose(B_DAILY_RATES, 2)) >= pBase_Indicators->pWeeklyPredictATR / 3)
-		//{
-		//	strcpy(pIndicators->status, "Previous day Close is more than pWeeklyPredictATR / 3.\n");
-
-		//	logWarning("System InstanceID = %d, BarTime = %s, %s",
-		//		(int)pParams->settings[STRATEGY_INSTANCE_ID], timeString, pIndicators->status);
-
-		//	return SUCCESS;
-		//}
-
-		isEnableWeeklyATR = FALSE;
-
-		pIndicators->isEnableLimitSR1 = TRUE;
-
-		//if (timeInfo1.tm_wday == 6)
-		//	stopHour = 16;
-
-		tooFarLimit = TOO_FAR_LIMIT_BTC_ETH;
-
-		isEnableRangeTrade = FALSE;
-
-		isEnableDoubleEntry = TRUE;
-
-		isEnableTooFar = TRUE;
-
-		fastMAPeriod = MACD_FAST_PERIOD_BTC_ETH;
-		slowMAPeriod = MACD_SLOW_PERIOD_BTC_ETH;
-		signalMAPeriod = MACD_SIGNAL_BTC_ETH;
-
-		tradingDays = RSI_TRADING_DAYS_BTC_ETH;
-
-
-	
-
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
 	{		
-		if (orderIndex >= 0 && pParams->orderInfo[orderIndex].isOpen == TRUE
-			&& (pParams->orderInfo[orderIndex].type == BUY && pBase_Indicators->maTrend < 0
-			|| pParams->orderInfo[orderIndex].type == SELL && pBase_Indicators->maTrend > 0)
-			)
-			isCloseOrdersEOD = TRUE;
-
-		/* Use configured stopHour if provided; otherwise fall back to symbol default */
-		stopHour = (pIndicators->stopHour != 0) ? pIndicators->stopHour : STOP_HOUR_AUDUSD;
-
-		isEnableMACDSlow = FALSE;
-		isEnableFlatTrend = TRUE;
-		isEnableTooFar = TRUE;
-		//isEnableRangeTrade = TRUE;
-		pIndicators->startHourOnLimt = pIndicators->startHour;
+		configureLimitForAUDUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &stopHour, &isEnableMACDSlow, &isEnableFlatTrend, &isEnableTooFar, &isCloseOrdersEOD);
 	}
 
 	if ((BOOL)pParams->settings[IS_BACKTESTING] == TRUE)		
