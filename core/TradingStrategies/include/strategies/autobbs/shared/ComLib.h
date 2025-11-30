@@ -38,10 +38,9 @@ extern "C" {
 		AUTOBBS_BBS_WEEKLY_ATR_FACTOR = ADDITIONAL_PARAM_21,  // BBS Swing: Weekly ATR factor for range detection (e.g., 0.4 = 40%)
 		AUTOBBS_BBS_4H_START_HOUR_OFFSET = ADDITIONAL_PARAM_22,  // BBS Swing: 4H bar start hour offset (0 = standard, 1 = XAUUSD style)
 		AUTOBBS_BBS_ENABLE_WEEKLY_ATR_VALIDATION = ADDITIONAL_PARAM_23, // BBS Swing: Enable weekly ATR validation (1 = TRUE, 0 = FALSE)
-		AUTOBBS_STOPHOUR = ADDITIONAL_PARAM_24 // Stop hour for trading (optimizer parameter)
-} AdditionalSettings;
-
-
+		AUTOBBS_STOPHOUR = ADDITIONAL_PARAM_24, // Stop hour for trading (optimizer parameter)
+		AUTOBBS_MACD_LEVEL = ADDITIONAL_PARAM_25 // MACD entry threshold level (0 = use symbol default)
+	} AdditionalSettings;
 	typedef struct indicators_t
 	{
 		//BBS indicators	

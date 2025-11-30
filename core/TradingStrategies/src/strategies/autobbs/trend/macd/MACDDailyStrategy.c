@@ -293,7 +293,10 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 	pConfig->fastMAPeriod = MACD_FAST_PERIOD_SHORT;
 	pConfig->slowMAPeriod = MACD_SLOW_PERIOD_SHORT;
 	pConfig->signalMAPeriod = MACD_SIGNAL_SHORT;
-	pConfig->stopLossMultiplier = 1.0;
+	/* Use SL_ATR_MULTIPLIER from .set file, fallback to default 1.8 if 0 */
+	double slMultiplier = parameter(SL_ATR_MULTIPLIER);
+	pConfig->stopLossMultiplier = (slMultiplier > 0.0) ? slMultiplier : 1.0;
+	
 	pConfig->maxRisk = 2.0;
 	pConfig->range = 10000;
 	pConfig->baselinePeriod = MA_BASELINE_PERIOD_20;
@@ -365,7 +368,8 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 			pConfig->signalMAPeriod = 7;
 		}
 
-		pConfig->stopLossMultiplier = 1.8;
+		/* Use SL_ATR_MULTIPLIER from .set file, fallback to default 1.8 if 0 */
+		pConfig->stopLossMultiplier = (slMultiplier > 0.0) ? slMultiplier : 1.8;
 		pConfig->maxRisk = 1.5;
 		pConfig->isDailyOnly = FALSE;
 		pConfig->shiftPreDayBar = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
@@ -394,7 +398,9 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 		 * - Fixed stop loss: Oil trends can be strong, so SL doesn't move back
 		 * - Lot sizes: 0.01 minimum for risk management
 		 */
-		pConfig->level = 0.35;
+		/* Use AUTOBBS_MACD_LEVEL from .set file, fallback to default 0.35 if 0 */
+		double macdLevel = parameter(AUTOBBS_MACD_LEVEL);
+		pConfig->level = (macdLevel > 0.0) ? macdLevel : 0.35;
 		pConfig->maxLevel = 0.01 * pParams->bidAsk.ask[0];
 		pConfig->histLevel = 0.01;
 		pConfig->isVolumeControl = FALSE;
@@ -407,7 +413,8 @@ static void initializeSymbolConfig(MACDSymbolConfig* pConfig, StrategyParams* pP
 		pConfig->isEnableMaxLevelSell = FALSE;
 		pConfig->isEnableMaxLevel = TRUE;
 		pConfig->useWeeklyBaseLine = TRUE;
-		pConfig->stopLossMultiplier = 1.8;
+		/* Use SL_ATR_MULTIPLIER from .set file, fallback to default 1.8 if 0 */
+		pConfig->stopLossMultiplier = (slMultiplier > 0.0) ? slMultiplier : 1.8;
 		pConfig->maxRisk = 1.5;
 		pConfig->isDailyOnly = TRUE;
 		pConfig->shiftPreDayBar = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;

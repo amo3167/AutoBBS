@@ -2,34 +2,69 @@ package PortfolioResult.PortfolioResult;
 
 import java.io.IOException;
 import java.time.*;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.stream.Collectors;
 
 import model.*;
-import org.apache.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
-import org.joda.time.Minutes;
 import service.FileService;
-import service.IFileService;
-import service.IStatisticsService;
+import service.FileServiceImpl;
+import service.MT4ConversionService;
+import service.MT4ConversionServiceImpl;
+import service.PortfolioOptimizer;
+import service.PortfolioOptimizerImpl;
+import service.RateAdjustmentService;
+import service.RateAdjustmentServiceImpl;
 import service.StatisticsService;
+import service.StatisticsServiceImpl;
 
 /**
- * Hello world!
- *
+ * Portfolio Result Analysis Application
+ * 
+ * <p>This is the main entry point for the AutoBBS portfolio analysis and optimization system.
+ * It provides functionality for:</p>
+ * <ul>
+ *   <li>Running portfolio simulations with specified risk allocations</li>
+ *   <li>Optimizing portfolio risk allocations using brute-force grid search</li>
+ *   <li>Validating trading results against MT4 platform</li>
+ *   <li>Converting and merging historical rate data between formats</li>
+ *   <li>Adjusting timezone data for various currency pairs and commodities</li>
+ * </ul>
+ * 
+ * <p><strong>Command-line modes:</strong></p>
+ * <ul>
+ *   <li><code>run &lt;riskFile&gt; &lt;checkOrders&gt; [startDate]</code> - Run portfolio simulation</li>
+ *   <li><code>runCustom &lt;pair&gt; &lt;...params&gt; [startDate]</code> - Run custom pair configuration</li>
+ *   <li><code>optimizer &lt;riskFile&gt; &lt;predefinedFile&gt; &lt;factorsFile&gt; [startDate]</code> - Optimize portfolio</li>
+ *   <li><code>optimizerLevel2</code> - Run second-level optimization</li>
+ *   <li><code>MT4Rate &lt;mt4File&gt; &lt;ntsFile&gt;</code> - Convert MT4 rates to NTS format</li>
+ *   <li><code>MT4RateMerge &lt;mt4File&gt; &lt;newMt4File&gt; &lt;errorFile&gt; &lt;timeFrame&gt;</code> - Merge MT4 rate files</li>
+ *   <li><code>XAGUSD_60M, USTEC_60M, EURUSD_5M, EURGBP_5M</code> - Adjust rates for specific pairs</li>
+ * </ul>
+ * 
+ * @version 1.0
+ * @since 2021
  */
-public class App 
-{
-	private final static Logger logger = Logger.getLogger(App.class);
+public class App {
+	private static final Logger logger = LogManager.getLogger(App.class);
 	
-	private static IModelData model = new ModelData();	
-	private static IStatisticsService statisticsService = new StatisticsService(model);
-	private static IFileService fileService = new FileService(model,statisticsService);
-	private static ConfigReader configReader = new ConfigReader();
-
-    public static void main( String[] args ) throws IOException {
+	// Service dependencies
+	private static final ModelDataService model = new ModelDataServiceImpl();
+	private static final StatisticsService statisticsService = new StatisticsServiceImpl(model);
+	private static final FileService fileService = new FileServiceImpl(model, statisticsService);
+	private static final ConfigReader configReader = new ConfigReader();
+	private static final RateAdjustmentService rateAdjustmentService = new RateAdjustmentServiceImpl(model, fileService);
+	private static final MT4ConversionService mt4ConversionService = new MT4ConversionServiceImpl(fileService);
+	private static final PortfolioOptimizer portfolioOptimizer = new PortfolioOptimizerImpl(model, statisticsService);
+	
+	// Constants
+	private static final double PRICE_TOLERANCE = 0.005; // 0.5% tolerance
+	private static final double LOTS_TOLERANCE = 0.3; // 30% tolerance
+	private static final String MANUAL_STRATEGY_ID = "0";
+    public static void main( String[] args ) throws IOException, com.opencsv.exceptions.CsvValidationException {
 
 		Map<String,Double> sRisks = new HashMap<>();
 		Map<String,Double> predefinedStrategies = new HashMap<>();
@@ -45,7 +80,6 @@ public class App
 
 			LocalDate startDate = LocalDate.of(2000,1,1);
 			if(args.length == 4) {
-				DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 				startDate = LocalDate.parse(args[3]);
 			}
 			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
@@ -54,11 +88,10 @@ public class App
 		}else if (args[0].equals("runCustom")) {
 			LocalDate startDate = LocalDate.of(2000,1,1);
 			if(args.length == 5) {
-				DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 				startDate = LocalDate.parse(args[4]);
 			}
 			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-			run_custom(args[1]);
+			runCustomPairStrategy(args[1]);
 		} else if (args[0].equals("optimizer")) {
 			sRisks = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[1]);
 			predefinedStrategies = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[2]);
@@ -66,7 +99,6 @@ public class App
 
 			LocalDate startDate = LocalDate.of(2000,1,1);
 			if(args.length == 5) {
-				DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 				startDate = LocalDate.parse(args[4]);
 			}
 			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
@@ -77,482 +109,43 @@ public class App
 			runOptimizerLevel2();
 		}
     	else if(args[0].equals("XAGUSD_60M")){
-			adjustRates_XAGUSD_60M();
+			String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\";
+			rateAdjustmentService.adjustXAGUSD_60M(baseDir);
 		} else if(args[0].equals("USTEC_60M")){
-			adjustRates_USTECUSD_60M();
+			String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\";
+			rateAdjustmentService.adjustUSTECUSD_60M(baseDir);
 		} else if(args[0].equals("EURUSD_5M")){
-			adjustRates_EURUSD_5M();
+			String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\";
+			rateAdjustmentService.adjustEURUSD_5M(baseDir);
 		} else if(args[0].equals("EURGBP_5M")){
-			adjustRates_EURGBP_5M();
+			String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\";
+			rateAdjustmentService.adjustEURGBP_5M(baseDir);
 		} else if(args[0].equals("MT4Rate")){
 			String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
 			String ntsFile = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
-			System.out.printf("Start to convert from %s to %s\n",mt4File,ntsFile);
-
-			convert_mt4_rate(mt4File,ntsFile);
+			logger.info("Converting MT4 rate file from {} to {}", mt4File, ntsFile);
+			mt4ConversionService.convertMT4ToNTS(mt4File, ntsFile);
 		} else if(args[0].equals("MT4RateMerge")){
 			String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
 			String newMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
 			String errorMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[3];
-			System.out.printf("Start to merge from %s to %s\n",newMt4File,mt4File);
-
-			merge_mt4_rate(mt4File,newMt4File,errorMt4File,Integer.parseInt(args[4]));
+			int timeFrame = Integer.parseInt(args[4]);
+			logger.info("Merging MT4 rate files: {} + {} -> {}", mt4File, newMt4File, mt4File);
+			mt4ConversionService.mergeMT4Rates(mt4File, newMt4File, errorMt4File, timeFrame);
 		}
-
-
-
-
-
-    	//run_optimizer_DailyTrading();
-    	
-    	//run_optimizer_withoutDailyTrading();
-    	
-    	//checkRates();
-    	//adjustRates_XAUUSD();
-    	//adjustRates_XAUUSD_5M();
-    	
-    	//checkRates_GBPJPY_5M();
-    	//adjustRates_GBPJPY_5M();
-    	//adjustRates_USDJPY_5M();    	
-    	//adjustRates_GBPUSD_5M();
-    	
-    	//adjustRates_GBPJPY_1M();
-    	//adjustRates_USDJPY_1M();    	
-    	//adjustRates_GBPUSD_1M();
-    	
-    	//adjustRates_GBPJPY_15M();
-    	//adjustRates_USDJPY_15M();    	
-    	//adjustRates_GBPUSD_15M();
-    	
-    	//adjustRates_XAUUSD_15M();
-    	
-    	//adjustRates_USDCAD_60M();
 
     }
 
-    private static int getSkippingDays(LocalDateTime start,LocalDateTime end){
-    	int i = 0;
-		LocalDateTime tmp = start;
-    	while(end.isAfter(tmp)) {
-			if (tmp.getDayOfWeek() == DayOfWeek.SATURDAY || tmp.getDayOfWeek() == DayOfWeek.SUNDAY)
-				i++;
-			tmp = tmp.plusDays(1);
-		}
-    	return i;
-	}
-
-	private static void merge_mt4_rate(String mt4_rate_file, String new_mt4_rate_file,String error_file,int timeFrame) throws IOException{
-
-
-			List<Rates> currentRates = fileService.readMt4RateCSV(mt4_rate_file);
-			List<Rates> newRates = fileService.readMt4RateCSV(new_mt4_rate_file);
-			Optional<Date> lastDateTime = currentRates.stream()
-					.map(it->it.datetime)
-					.max(Date::compareTo);
-
-			Optional<Date> lastNewDateTime = newRates.stream()
-					.map(it->it.datetime)
-					.max(Date::compareTo);
-
-			if(lastDateTime.isPresent() && lastNewDateTime.isPresent()){
-				LocalDateTime start = lastDateTime.get().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-				LocalDateTime end = lastNewDateTime.get().toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-				System.out.printf("lastDateTime=%s lastNewDateTime=%s\n",start.toString(),end.toString());
-
-				if(lastNewDateTime.get().after(lastDateTime.get())){
-					int weekends = getSkippingDays(start,end);
-					double discountRate = 0.01;
-
-					if(mt4_rate_file.contains("XAU")){
-						discountRate = 0.1;
-					}
-
-					double maxBars = (double) (ChronoUnit.MINUTES.between(start,end) - weekends * 1440) / timeFrame;
-
-					double minBars = maxBars * discountRate;
-
-					List<Rates> addRates = newRates.stream()
-							.filter(it -> it.datetime.after(lastDateTime.get()))
-							.collect(Collectors.toList());
-					long mergedBars = addRates.size();
-					System.out.printf("MaxBars=%f, MinBars=%f, MergedBars =%d\n",maxBars,minBars, mergedBars);
-
-					if(mergedBars >= minBars || mergedBars == maxBars) {
-						currentRates.addAll(addRates);
-						fileService.writeMT4RateCSV(mt4_rate_file,currentRates);
-					}
-					else {
-						double missingBars = Math.min(maxBars,minBars) - mergedBars;
-
-						fileService.writeToErrorFile(error_file,String.format("Missing at least %f bars",minBars));
-					}
-				}
-			}
-
-
-	}
-
-    private static void convert_mt4_rate(String mt4_rate_file, String nts_rate_file) throws IOException{
-
-
-		List<Rates> mt4Rates = fileService.readMt4RateCSV(mt4_rate_file);
-		List<Rates> ntsRates = fileService.readNtsRateCSV(nts_rate_file);
-
-		Optional<Date> lastDateTime = ntsRates.stream()
-				.map(it->it.datetime)
-				.max(Date::compareTo);
-
-		mt4Rates.stream()
-				.filter(it -> !lastDateTime.isPresent() || it.datetime.after(lastDateTime.get()))
-				.forEach(ntsRates::add);
-
-			fileService.writeNtsRateCSV(nts_rate_file,ntsRates);
-
-	}
-    
-    private static void adjustRates_USDCAD_60M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDCAD 60M\\USDCAD_60_2013.csv");    		
-    		
-    		List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDCAD 60M\\USDCAD_60.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_GBPUSD_1M(){
-    	try {
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2013.csv");
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2014.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2015.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1_2018.csv");
-    		
-    		List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 1M\\GBPUSD_1.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-
-    private static void adjustRates_USDJPY_1M(){
-    	try {    		
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2013.csv");
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2014.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2015.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1_2018.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 1M\\USDJPY_1.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_GBPJPY_1M(){
-    	try {
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2013.csv");
-//    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2014.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2015.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1_2018.csv");
-    		
-    		List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 1M\\GBPJPY_1.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_GBPUSD_5M(){
-    	try {    		
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 5M\\GBPUSD_5_2013.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 5M\\GBPUSD_5_2015.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 5M\\GBPUSD_5.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_USDJPY_5M(){
-    	try {    		
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 5M\\USDJPY_5_2013.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 5M\\USDJPY_5_2015.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 5M\\USDJPY_5.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_GBPJPY_5M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5_2013.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5_2015.csv");
-    		
-    		List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-
-	private static void adjustRates_EURUSD_5M(){
-		try {
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\EURUSD_Candlestick_5_M_BID_02.01.2017-01.01.2018.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\EURUSD_Candlestick_5_M_BID_02.01.2018-01.01.2019.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\EURUSD_Candlestick_5_M_BID_02.01.2019-02.01.2020.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\EURUSD_Candlestick_5_M_BID_02.01.2020-01.01.2021.csv");
-
-			List<Rates> rates = model.adjustTimeZone();
-
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\EURUSD_5.csv",rates);
-
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-	}
-
-	private static void adjustRates_EURGBP_5M(){
-		try {
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_Candlestick_5_M_BID_01.01.2015-01.01.2016.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_Candlestick_5_M_BID_01.01.2016-01.01.2018.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_Candlestick_5_M_BID_01.01.2018-01.01.2019.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_Candlestick_5_M_BID_01.01.2019-01.01.2020.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_Candlestick_5_M_BID_01.01.2020-01.05.2021.csv");
-
-			List<Rates> rates = model.adjustTimeZone();
-
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\EURGBP_5.csv",rates);
-
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-	}
-    
-    private static void adjustRates_GBPUSD_15M(){
-    	try {    		
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 15M\\GBPUSD_15_2013_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 15M\\GBPUSD_15_2016_2018.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPUSD 15M\\GBPUSD_15.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_GBPJPY_15M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 15M\\GBPJPY_15_2013_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 15M\\GBPJPY_15_2016_2018.csv");
-    		
-    		List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 15M\\GBPJPY_15.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_USDJPY_15M(){
-    	try {    		
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 15M\\USDJPY_15_2013.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 15M\\USDJPY_15_2014.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 15M\\USDJPY_15_2015_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 15M\\USDJPY_15_2018.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\USDJPY 15M\\USDJPY_15.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_XAUUSD_5M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 5M\\XAUUSD_5_2013_raw.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 5M\\XAUUSD_5_raw.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone_Commodity();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 5M\\XAUUSD_5.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-
-	private static void adjustRates_XAGUSD_60M(){
-		try {
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\XAGUSD_Candlestick_1_Hour_BID_01.05.2014-01.05.2015.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\XAGUSD_Candlestick_1_Hour_BID_01.05.2015-01.05.2017.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\XAGUSD_Candlestick_1_Hour_BID_01.05.2017-01.05.2018.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\XAGUSD_Candlestick_1_Hour_BID_01.05.2018-01.05.2019.csv");
-
-
-			List<Rates> rates = model.adjustTimeZone_Commodity();
-
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\XAGUSD_60.csv",rates);
-
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-	}
-
-	private static void adjustRates_USTECUSD_60M(){
-		try {
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\USATECH.IDXUSD_Candlestick_1_Hour_BID_01.01.2014-01.04.2018.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\USATECH.IDXUSD_Candlestick_1_Hour_BID_01.01.2018-01.04.2020.csv");
-
-
-			List<Rates> rates = model.adjustTimeZone_Commodity();
-
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\USTECUSD_60.csv",rates);
-
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-	}
-    
-    private static void adjustRates_XAUUSD_15M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 15M\\XAUUSD_15_2013_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 15M\\XAUUSD_15_2016_2018.csv");
-    		
-			List<Rates> rates = model.adjustTimeZone_Commodity();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 15M\\XAUUSD_15.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void adjustRates_XAUUSD(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2018.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2015.csv");
-    		//fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2014.csv");
-			//fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2013.csv");			
-			
-			List<Rates> rates = model.adjustTimeZone_Commodity();
-			
-			fileService.writeNtsRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1.csv",rates);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void checkRates_GBPJPY_5M(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5_2013.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5_2015.csv");			
-			
-			//Find out timezone change period
-			
-			model.checkDailyRates(5);
-			
-			fileService.generateDailyCheckReport("C:\\Users\\amo31\\Google Drive\\FX\\Share\\GBPJPY 5M\\GBPJPY_5_dailycheck.csv");
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-    
-    private static void checkRates(){
-    	try {
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2018.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2017.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2016.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2015.csv");
-    		fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2014.csv");
-			fileService.readHistoricalRateCSV("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_2013.csv");			
-			
-			//Find out timezone change period
-			
-			model.checkDailyRates(1);
-			
-			fileService.generateDailyCheckReport("C:\\Users\\amo31\\Google Drive\\FX\\Share\\XAUUSD 1M\\XAUUSD_1_dailycheck.csv");
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}
-    }
-	private static void run(){
-		Map<String,Double> sRisks = new HashMap<String,Double>();
-
-
-		// Expected risk / Based risk
-		// Base case: 1
-		sRisks.put("841005", 0.2*1/1.0);
-		//sRisks.put("842001", 0.2*1/1.0);
-		sRisks.put("860006", 2.0*1.0/1.0);
-		sRisks.put("860007", 1.8*1.0/1.0);
-		sRisks.put("860011", 0.4*1.0/1.0);
-		sRisks.put("860008", 0.2*1.0/1.0);
-		sRisks.put("500002", 1.8*1.0/1.0);
-		sRisks.put("900002", 1.8*1.0/1.0);
-		sRisks.put("860001", 1.0*0.3/0.3);
-		sRisks.put("860002", 0.2*0.3/0.3);
-		sRisks.put("860013", 1.8*1.0/1.0);
-		//sRisks.put("500008", 1.0*1.0/1.0);
-
-
-
-		run(sRisks,false);
-	}
-
-    private static void run2(){
-    	Map<String,Double> sRisks = new HashMap<String,Double>();
-		
-		// Expected risk / Based risk
-    	// Base case: 1
-		sRisks.put("841005", 0.2*1/1.0);
-		//sRisks.put("842001", 0.2*1/1.0);
-		sRisks.put("860006", 2.2*1.0/1.0);
-		sRisks.put("860007", 1.4*1.0/1.0);
-		sRisks.put("860011", 1.0*1.0/1.0);
-		sRisks.put("860008", 0.2*1.0/1.0);
-		sRisks.put("500002", 2.0*1.0/1.0);
-		sRisks.put("900002", 1.8*1.0/1.0);
-		sRisks.put("860001", 1.0*0.3/0.3);
-		sRisks.put("860002", 0.2*0.3/0.3);
-
-		run(sRisks,false);
-    }
-
-	private static void todayOrderChecking() throws IOException {
+    /**
+	 * Validates today's trading orders against MT4 platform.
+	 * 
+	 * <p>Compares open and closed orders from portfolio testing against actual MT4 orders.
+	 * Validates order parameters including lots, prices, stop loss, and take profit.
+	 * Writes mismatched orders to files for manual review.</p>
+	 * 
+	 * @throws IOException if file operations fail
+	 */
+    private static void todayOrderChecking() throws IOException {
     	double equityMT4 = fileService.readEquityCSV(configReader.getPropValues("PortfolioOpenOrders_Location") + "Equity.csv");
 		Instant previousClosedDate = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).minusDays(1).toInstant();
 		//Instant currentDate = ZonedDateTime.now().truncatedTo(ChronoUnit.DAYS).toInstant();
@@ -578,7 +171,25 @@ public class App
 
 	}
 
-    private static void ordersResultsFromTesting(List<Results> ordersResultsFromTesting,List<Results> ordersResultsFromMT4,String fileName,boolean isClosedOrder) throws IOException {
+	/**
+	 * Compares testing results against MT4 results and identifies mismatches.
+	 * 
+	 * <p>Groups orders by strategy ID and compares:
+	 * <ul>
+	 *   <li>Order counts per strategy</li>
+	 *   <li>Order parameters (lots, prices, stop loss, take profit)</li>
+	 *   <li>Order types (buy/sell)</li>
+	 * </ul>
+	 * 
+	 * <p>Manual orders (strategy ID "0") are flagged but not compared.</p>
+	 * 
+	 * @param ordersResultsFromTesting Orders generated by portfolio testing
+	 * @param ordersResultsFromMT4 Orders reported by MT4 platform
+	 * @param fileName Output file name for mismatched orders
+	 * @param isClosedOrder True if comparing closed orders, false for open orders
+	 * @throws IOException if file write operations fail
+	 */
+    private static void ordersResultsFromTesting(List<Results> ordersResultsFromTesting, List<Results> ordersResultsFromMT4, String fileName, boolean isClosedOrder) throws IOException {
 		//Checking
 		// 1. group by strategy ID
 		Map<String, List<Results>> OpenOrdersGroupsFromMT4 =
@@ -597,8 +208,8 @@ public class App
 		List<String> matchedStrategy = new ArrayList<>();
 
 		for (Map.Entry<String, List<Results>> orderGroup : OpenOrdersGroupsFromMT4.entrySet()) {
-			if("0".equals(orderGroup.getKey())){
-				misMatchedOrderGroups.put(orderGroup.getKey(),"Manual orders are not generated from testing!");
+			if (MANUAL_STRATEGY_ID.equals(orderGroup.getKey())) {
+				misMatchedOrderGroups.put(orderGroup.getKey(), "Manual orders are not generated from testing!");
 				continue;
 			}
 
@@ -641,15 +252,49 @@ public class App
 
 	}
 
-	private static boolean isMatchedPrice(double testingPrice, double mt4Price){
-		return Math.abs(testingPrice - mt4Price) <= mt4Price * 0.01 * 0.5;
+	/**
+	 * Checks if two prices match within tolerance.
+	 * 
+	 * @param testingPrice Price from testing results
+	 * @param mt4Price Price from MT4
+	 * @return True if prices are within PRICE_TOLERANCE (0.5%)
+	 */
+	private static boolean isMatchedPrice(double testingPrice, double mt4Price) {
+		return Math.abs(testingPrice - mt4Price) <= mt4Price * PRICE_TOLERANCE;
 	}
 
-	private static boolean isMatchedLots(double testingLots, double mt4Lots){
-		return Math.abs(testingLots - mt4Lots) <= mt4Lots * 0.3;
+	/**
+	 * Checks if two lot sizes match within tolerance.
+	 * 
+	 * @param testingLots Lot size from testing results
+	 * @param mt4Lots Lot size from MT4
+	 * @return True if lot sizes are within LOTS_TOLERANCE (30%)
+	 */
+	private static boolean isMatchedLots(double testingLots, double mt4Lots) {
+		return Math.abs(testingLots - mt4Lots) <= mt4Lots * LOTS_TOLERANCE;
 	}
 
-	private static boolean compareOrders(Results orderFromTesting, Results orderFromMT4, Map<String, String> misMatched,boolean isClosedOrder){
+	/**
+	 * Compares individual orders from testing and MT4, recording any mismatches.
+	 * 
+	 * <p>Validates:
+	 * <ul>
+	 *   <li>Strategy ID must match</li>
+	 *   <li>Order type (buy/sell) must match</li>
+	 *   <li>Open price must match within tolerance</li>
+	 *   <li>Close price must match within tolerance (for closed orders)</li>
+	 *   <li>Lot size must match within tolerance</li>
+	 *   <li>Stop loss price must match within tolerance</li>
+	 *   <li>Take profit price must match within tolerance</li>
+	 * </ul>
+	 * 
+	 * @param orderFromTesting Order from portfolio testing
+	 * @param orderFromMT4 Order from MT4 platform
+	 * @param misMatched Map to store mismatch descriptions
+	 * @param isClosedOrder True to validate close price, false to skip
+	 * @return True if all validations pass, false otherwise
+	 */
+	private static boolean compareOrders(Results orderFromTesting, Results orderFromMT4, Map<String, String> misMatched, boolean isClosedOrder) {
 		if(!orderFromTesting.strategyID.equals(orderFromMT4.strategyID)) {
 			misMatched.put(orderFromMT4.strategyID, "unMatched strategy ID.");
 			return false;
@@ -695,47 +340,79 @@ public class App
 		return true;
 	}
 
-	private static void run(Map<String,Double> sRisks,boolean fromOptimized){
-    	run(sRisks,fromOptimized,false);
+	/**
+	 * Convenience method that runs portfolio simulation without order checking.
+	 * 
+	 * @param sRisks Strategy risk allocations (strategy ID -> risk multiplier)
+	 * @param fromOptimized True if results are from optimization, false otherwise
+	 */
+	private static void run(Map<String, Double> sRisks, boolean fromOptimized) {
+    	run(sRisks, fromOptimized, false);
 	}
 
-    private static void run(Map<String,Double> sRisks,boolean fromOptimized,boolean isCheckingOpenOrder){
-	
-    	model.initModelData(sRisks,true);
+	/**
+	 * Runs portfolio simulation with specified risk allocations.
+	 * 
+	 * <p>Process:
+	 * <ol>
+	 *   <li>Initialize model with risk allocations</li>
+	 *   <li>Load historical trading results for each strategy</li>
+	 *   <li>Generate portfolio results (unless from optimizer)</li>
+	 *   <li>Optionally validate against MT4 orders</li>
+	 *   <li>Generate weekly and monthly reports</li>
+	 *   <li>Calculate comprehensive statistics</li>
+	 *   <li>Write results to CSV files</li>
+	 * </ol>
+	 * 
+	 * @param sRisks Strategy risk allocations (strategy ID -> risk multiplier)
+	 * @param fromOptimized True if called from optimizer (skips portfolio result generation)
+	 * @param isCheckingOpenOrder True to validate orders against MT4
+	 */
+    private static void run(Map<String,  Double> sRisks,  boolean fromOptimized,  boolean isCheckingOpenOrder)  {
+    	model.initModelData(sRisks, true);
     	
 		try {
-			sRisks.keySet().stream().forEach(id-> {
-
-				try {
-					fileService.readCSV(configReader.getPropValues("PortfolioResult_Location") + String.format("results_%s.txt",id),id);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-
-			});
-
-			if(!fromOptimized) {
-				fileService.writeCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioResult_adjusted",true);
+			// Load historical results for all strategies
+			String resultsLocation = configReader.getPropValues("PortfolioResult_Location");
+			for (String strategyId : sRisks.keySet()) {
+				String resultFile = resultsLocation + String.format("results_%s.txt", strategyId);
+				fileService.readCSV(resultFile, strategyId);
 			}
 
-			if(isCheckingOpenOrder){
+			if (!fromOptimized) {
+				fileService.writeCVS(resultsLocation + "portfolioResult_adjusted", true);
+			}
+
+			if (isCheckingOpenOrder) {
 				todayOrderChecking();
 			}
 			
-			//generate weekly and monthly report
-			fileService.generateWeelyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioWeeklyResult_adjusted",true);
-			fileService.generateMonthlyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioMonthlyResult_adjusted",true);
-			
-			statisticsService.caculate(ModelData.INITBALANCE,true);	
-			
-			//Write all statiscs
-			fileService.writeStatiscsListCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioStatistics_adjusted",false);
+		// Generate weekly and monthly reports
+		fileService.generateWeelyReport(resultsLocation + "portfolioWeeklyReport_adjusted", true);
+		fileService.generateMonthlyReport(resultsLocation + "portfolioMonthlyReport_adjusted", true);
+		
+		statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);			// Write statistics
+			fileService.writeStatiscsListCVS(resultsLocation + "portfolioStatistics_adjusted", false);
+			logger.info("Portfolio simulation completed successfully");
 			
 		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
+			logger.error("Portfolio simulation failed: {}", e.getMessage(), e);
+			throw new RuntimeException("Failed to run portfolio simulation", e);
 		}
     }
-	private static void run_custom(String pair){
+
+	/**
+	 * Runs portfolio simulation for predefined custom trading pair configurations.
+	 * 
+	 * <p>This method contains hardcoded strategy combinations for specific trading pairs:
+	 * US500, GBPAUD, GBPJPY, XAUUSD, XAUUSD_5M, BTCUSD, and Limit orders.</p>
+	 * 
+	 * <p>Note: Risk allocations are specific to historical optimization results and
+	 * should be reviewed before live trading.</p>
+	 * 
+	 * @param pair Trading pair identifier (e.g., "US500", "GBPJPY", "XAUUSD")
+	 */
+	private static void runCustomPairStrategy(String pair) {
 		Map<String,Double> sRisks = new HashMap<String,Double>();
     	if("US500".equals(pair)) { //it is ok for now,but not for long term.
 			sRisks.put("900001", 0.5*1.0/1.0);
@@ -780,7 +457,16 @@ public class App
 
 	}
 
-    private static void runCustom(Map<String,Double> sRisks,String newStrategyId){
+	/**
+	 * Runs portfolio simulation and generates a combined strategy result file.
+	 * 
+	 * <p>Similar to run() but additionally exports results as a new single strategy
+	 * with the specified ID. This allows treating a portfolio as a meta-strategy.</p>
+	 * 
+	 * @param sRisks Strategy risk allocations (strategy ID -> risk multiplier)
+	 * @param newStrategyId ID for the combined portfolio strategy result file
+	 */
+    private static void runCustom(Map<String, Double> sRisks, String newStrategyId) {
 
     	model.initModelData(sRisks,true);
     	
@@ -800,10 +486,10 @@ public class App
 
 
 			//generate weekly and monthly report
-			fileService.generateWeelyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioWeeklyResult_adjusted",true);
-			fileService.generateMonthlyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioMonthlyResult_adjusted",true);
+			fileService.generateWeelyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioWeeklyReport_adjusted",true);
+			fileService.generateMonthlyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioMonthlyReport_adjusted",true);
 
-			statisticsService.caculate(ModelData.INITBALANCE,true);
+			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE,true);
 
 			//Write all statiscs
 			fileService.writeStatiscsListCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioStatistics_adjusted",false);
@@ -813,7 +499,20 @@ public class App
 		}
     }
 
-	private static void runOptimizerLevel2(){
+	/**
+	 * Performs 5-dimensional portfolio optimization with reduced risk multipliers.
+	 * 
+	 * <p>Similar to run_optimizer() but uses:
+	 * <ul>
+	 *   <li>5 strategies instead of 6</li>
+	 *   <li>5 risk multipliers (0.2, 0.4, 1.0, 1.4, 1.8) instead of 7</li>
+	 *   <li>Total combinations: 3,125 (5^5) vs 117,649 (7^6)</li>
+	 * </ul>
+	 * 
+	 * <p>This provides faster optimization at the cost of less granularity.
+	 * Used for quick iterations or when computational resources are limited.</p>
+	 */
+	private static void runOptimizerLevel2() {
 		Map<String,Double> sRisks = new HashMap<>();
 
 		// Expected risk / Based risk
@@ -844,7 +543,7 @@ public class App
 			fileService.writeCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioResult_adjusted.csv",true);
 
 			//base case:
-			statisticsService.caculate(ModelData.INITBALANCE,true);
+			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE,true);
 
 			//Brutal optimizer
 			sRisks.clear();
@@ -861,7 +560,7 @@ public class App
 								sRisks.put(strategy.get(4), run.get(i5));
 
 								model.addStrategyList(sRisks);
-								statisticsService.caculate(ModelData.INITBALANCE, true);
+								statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);
 							}
 
 						}
@@ -879,198 +578,145 @@ public class App
 
 		List<Statistics> sList = statisticsService.selectModels(true);
 
-		//Run the top model
-		run(sList.get(0).strategyRisk,true);
+	//Run the top model
+	run(sList.get(0).strategyRisk,true);
+}
+
+	/**
+	 * Performs brute-force portfolio optimization by testing all combinations of risk multipliers
+	 * for a set of trading strategies.
+	 * 
+	 * <p>This method executes an N-dimensional grid search over risk multipliers (0.2 to 2.2) for
+	 * strategies not in the predefinedStrategies set. Predefined strategies maintain their original
+	 * risk allocations throughout the optimization process.</p>
+	 * 
+	 * <p>Optimization process:</p>
+	 * <ol>
+	 *   <li>Load historical results for all strategies</li>
+	 *   <li>Calculate baseline statistics with original risk allocations</li>
+	 *   <li>Test all risk multiplier combinations (7^N iterations for N strategies)</li>
+	 *   <li>Select best portfolio based on Martin Ratio and other criteria</li>
+	 *   <li>Re-run simulation with optimal risk allocation</li>
+	 * </ol>
+	 * 
+	 * <p>Examples of computational cost:</p>
+	 * <ul>
+	 *   <li>3 strategies × 7 multipliers = 343 combinations</li>
+	 *   <li>4 strategies × 7 multipliers = 2,401 combinations</li>
+	 *   <li>5 strategies × 7 multipliers = 16,807 combinations</li>
+	 *   <li>6 strategies × 7 multipliers = 117,649 combinations</li>
+	 *   <li>7 strategies × 7 multipliers = 823,543 combinations</li>
+	 * </ul>
+	 * 
+	 * <p>Note: This is a computationally expensive operation that scales exponentially.
+	 * Consider using fewer strategies or risk levels for large portfolios.</p>
+	 * 
+	 * @param sRisks Initial strategy risk allocations (strategy ID -> risk multiplier).
+	 *               Keys represent strategy IDs, values represent base risk multipliers.
+	 *               This map is modified during optimization.
+	 * @param predefinedStrategies Strategies with fixed risk allocations (strategy ID -> risk multiplier).
+	 *                             These strategies are not optimized but are included in every
+	 *                             portfolio configuration.
+	 */
+	private static void run_optimizer(Map<String,Double> sRisks, Map<String,Double> predefinedStrategies) {
+		// Separate strategies to optimize from predefined ones
+		List<String> strategiesToOptimize = sRisks.keySet().stream()
+				.sorted()
+				.filter(id -> !predefinedStrategies.keySet().contains(id))
+				.collect(Collectors.toList());
+
+		// Risk multipliers to test: 0.2x, 0.4x, 1.0x, 1.4x, 1.8x, 2.0x, 2.2x
+		// Represents 20% to 220% of base risk allocation
+		List<Double> riskMultipliers = new ArrayList<>(Arrays.asList(0.2, 0.4, 1.0, 1.4, 1.8, 2.0, 2.2));
+
+		if (strategiesToOptimize.isEmpty()) {
+			logger.error("No strategies to optimize. All strategies are predefined.");
+			throw new IllegalArgumentException("At least one strategy must be optimizable");
+		}
+
+		model.initModelData(sRisks, true);
+
+		try {
+			// Load historical trading results for each strategy
+			loadStrategyResults(sRisks.keySet());
+
+			// Write baseline portfolio results
+			String portfolioResultPath = configReader.getPropValues("PortfolioResult_Location") + "portfolioResult_adjusted.csv";
+			fileService.writeCVS(portfolioResultPath, true);
+
+			// Calculate baseline statistics
+			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);
+
+			// Choose optimization strategy based on portfolio size
+			int totalCombinations = (int) Math.pow(riskMultipliers.size(), strategiesToOptimize.size());
+			logger.info("Starting portfolio optimization: {} strategies to optimize, {} predefined",
+					strategiesToOptimize.size(), predefinedStrategies.size());
+			logger.info("{} risk levels per strategy = {} total combinations",
+					riskMultipliers.size(), totalCombinations);
+
+			sRisks.clear();
+			
+			// Auto-select algorithm based on portfolio size
+			if (strategiesToOptimize.size() <= 6) {
+				// Small portfolio: use exhaustive grid search (guaranteed optimal)
+				logger.info("Using GRID_SEARCH (exhaustive) - optimal for {} strategies", strategiesToOptimize.size());
+				portfolioOptimizer.optimizePortfolio(strategiesToOptimize, riskMultipliers, predefinedStrategies);
+				// Note: grid search writes results directly to model, no need to update sRisks
+			} else if (strategiesToOptimize.size() <= 10) {
+				// Medium portfolio: use genetic algorithm (95-98% optimal, much faster)
+				int maxEvaluations = Math.min(10000, totalCombinations);
+				logger.info("Using GENETIC_ALGORITHM - efficient for {} strategies (budget: {} evaluations)",
+						strategiesToOptimize.size(), maxEvaluations);
+				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
+						strategiesToOptimize, riskMultipliers, predefinedStrategies,
+						PortfolioOptimizer.OptimizationStrategy.GENETIC_ALGORITHM,
+						maxEvaluations);
+				sRisks.putAll(bestAllocation);
+			} else {
+				// Large portfolio: use coarse-to-fine hierarchical search
+				int maxEvaluations = 20000;
+				logger.info("Using COARSE_TO_FINE - scalable for {} strategies (budget: {} evaluations)",
+						strategiesToOptimize.size(), maxEvaluations);
+				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
+						strategiesToOptimize, riskMultipliers, predefinedStrategies,
+						PortfolioOptimizer.OptimizationStrategy.COARSE_TO_FINE,
+						maxEvaluations);
+				sRisks.putAll(bestAllocation);
+			}
+
+			// Write all optimization results
+			String optimizedStatsPath = configReader.getPropValues("PortfolioResult_Location") + "portfolioStatistics_optimize_adjusted.csv";
+			fileService.writeStatiscsListCVS(optimizedStatsPath, true);
+
+			logger.info("Optimization complete. Results written to {}", optimizedStatsPath);
+
+		} catch (IOException e) {
+			logger.error("Error during portfolio optimization: {}", e.getMessage(), e);
+			throw new RuntimeException("Portfolio optimization failed", e);
+		}
+
+		// Select and run the best performing portfolio
+		List<Statistics> optimizedModels = statisticsService.selectModels(true);
+		if (optimizedModels.isEmpty()) {
+			logger.error("No valid portfolio configurations found during optimization");
+			return;
+		}
+
+		logger.info("Running simulation with optimal portfolio configuration");
+		run(optimizedModels.get(0).strategyRisk, true);
 	}
-    
-    private static void run_optimizer(Map<String,Double> sRisks,Map<String,Double> predefinedStrategies){
 
-		List<String> strategy = sRisks.keySet().stream().sorted().filter(id->!predefinedStrategies.keySet().contains(id)).collect(Collectors.toList());
-		
-	
-		//List<Double> run = new ArrayList<>(  Arrays.asList(0.2,0.5,0.8,1.0,1.2,1.5,1.8));
-		List<Double> run = new ArrayList<>(  Arrays.asList(0.2,0.4,1.0,1.4,1.8,2.0,2.2));
-		
-    	model.initModelData(sRisks,true);
-    	
-		try {
-			sRisks.keySet().stream().forEach(id-> {
-				try {
-					fileService.readCSV(configReader.getPropValues("PortfolioResult_Location") + String.format("results_%s.txt",id),id);
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			});
-
-			fileService.writeCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioResult_adjusted.csv",true);
-			
-			//base case:
-			statisticsService.caculate(ModelData.INITBALANCE,true);	
-			
-			//Brutal optimizer
-			sRisks.clear();			
-						
-			for (int i1 = 0; i1 < run.size(); i1++) {
-				 sRisks.put(strategy.get(0), run.get(i1));
-		            for (int i2 = 0; i2 < run.size(); i2++) {
-		            	sRisks.put(strategy.get(1), run.get(i2));
-		            	for (int i3 = 0; i3 < run.size(); i3++) {
-		            		sRisks.put(strategy.get(2), run.get(i3));	            			
-		            		for (int i4 = 0; i4 < run.size(); i4++) {
-		            			sRisks.put(strategy.get(3), run.get(i4));
-		            			for (int i5 = 0; i5 < run.size(); i5++) {
-			            			sRisks.put(strategy.get(4), run.get(i5));
-			            			for (int i6 = 0; i6 < run.size(); i6++) {
-				            			sRisks.put(strategy.get(5), run.get(i6));
-//											for (int i7 = 0; i7 < run.size(); i7++) {
-//												sRisks.put(strategy.get(6), run.get(i7));
-
-//												sRisks.put("841005", 0.2);
-//												sRisks.put("900002", 1.8);
-//												sRisks.put("860006", 2.2);
-//												sRisks.put("842001", 0.0);
-
-												sRisks.putAll(predefinedStrategies);
-
-												model.addStrategyList(sRisks);
-												statisticsService.caculate(ModelData.INITBALANCE, true);
-
-				            			}
-//			            			}
-		            			}
-		            		}
-		            	}
-		            }	           					    
-		            			            
-		        }
-			
-	
-			//Write all statiscs
-			fileService.writeStatiscsListCVS(configReader.getPropValues("PortfolioResult_Location") + "portfolioStatistics_optimize_adjusted.csv",true);
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}	
-		
-		List<Statistics> sList = statisticsService.selectModels(true);
-		
-		//Run the top model
-		run(sList.get(0).strategyRisk,true);
-    }
-    
-    
-    private static void run_optimizer_withoutDailyTrading(){
-    	Map<String,Double> sRisks = new HashMap<String,Double>();
-		
-		// Expected risk / Based risk
-    	// Base case: 1
-		sRisks.put("840005", 0.3/0.3);		
-		sRisks.put("841005", 1.0/1.0);
-		sRisks.put("842001", 1.0/1.0);
-		sRisks.put("850001", 0.8/0.8);
-	
-    	model.initModelData(sRisks,true);
-    	
-		try {
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\840005.txt","840005");
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\841005.txt","841005");			
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\842001.txt","842001");
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\850001.txt","850001");
-			
-			fileService.writeCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioResult_adjusted.csv",true);
-			
-			//base case:
-			statisticsService.caculate(ModelData.INITBALANCE,true);	
-			
-			//Brutal optimizer
-			sRisks.clear();
-			
-			List<Double> run = new ArrayList<Double>(  Arrays.asList(0.5,0.8,1.0,1.2,1.5));
-			
-			for (int i1 = 0; i1 < run.size(); i1++) {
-				 sRisks.put("840005", run.get(i1));
-		            for (int i2 = 0; i2 < run.size(); i2++) {
-		            	sRisks.put("841005", run.get(i2));
-		            	for (int i3 = 0; i3 < run.size(); i3++) {
-		            		sRisks.put("842001", run.get(i3));
-		            		for (int i4 = 0; i4 < run.size(); i4++) {
-		            			sRisks.put("850001", run.get(i4));		            			
-		            			// one run here:
-		            			model.addStrategyList(sRisks);
-		            			statisticsService.caculate(ModelData.INITBALANCE,true);
-		            		}
-		            	}
-		            }
-		        }
-			
-//			sRisks.put("840005", 0.3/0.3);		
-//			sRisks.put("841005", 1.04/1.0);
-//			sRisks.put("842001", 0.96/1.0);
-//			sRisks.put("850001", 0.65/0.8);
-//			sRisks.put("841008", 0.6/0.3);
-//			sRisks.put("840007", 0.46/0.3);
-//			model.addStrategyList(sRisks);
-//			
-//			statisticsService.caculate(ModelData.INITBALANCE,true);
-			
-			//Write all statiscs
-			fileService.writeStatiscsListCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioStatistics_adjusted.csv",true);
-			
-//			fileService.writeCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioResult_original.csv",false);			
-//			statisticsService.caculate(ModelData.INITBALANCE,false);			
-//			fileService.writeStatiscsCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioStatistics_original.csv");
-			
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}	
-    }
-    
-    private static void run_optimizer_DailyTrading(){
-    	Map<String,Double> sRisks = new HashMap<String,Double>();
-		
-		// Expected risk / Based risk
-    	// Base case: 1
-		sRisks.put("860001", 0.3/0.3);		
-		sRisks.put("860003", 0.3/0.3);
-		sRisks.put("860002", 0.3/0.3);		
-	
-    	model.initModelData(sRisks,true);
-    	
-		try {
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\860001.txt","860001");
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\860003.txt","860003");			
-			fileService.readCSV("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\860002.txt","860002");
-			
-			
-			fileService.writeCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioResult_adjusted.csv",true);
-			
-			//base case:
-			statisticsService.caculate(ModelData.INITBALANCE,true);	
-			
-			//Brutal optimizer
-			sRisks.clear();
-			
-			List<Double> run = new ArrayList<Double>(  Arrays.asList(0.2,0.5,0.8,1.0,1.2,1.5,1.8));
-			
-			for (int i1 = 0; i1 < run.size(); i1++) {
-				 sRisks.put("860001", run.get(i1));
-		            for (int i2 = 0; i2 < run.size(); i2++) {
-		            	sRisks.put("860003", run.get(i2));
-		            	for (int i3 = 0; i3 < run.size(); i3++) {
-		            		sRisks.put("860002", run.get(i3));
-		            		model.addStrategyList(sRisks);
-		            		statisticsService.caculate(ModelData.INITBALANCE,true);		            		
-		            	}
-		            }
-		        }
-			//Write all statiscs
-			fileService.writeStatiscsListCVS("C:\\Users\\amo31\\Google Drive\\FX\\Trading\\Kelpie Project\\Portfolio Test\\PortfolioResult\\portfolioStatistics_adjusted.csv",true);
-			
-			
-		} catch (IOException e) {
-			logger.error(e.getMessage(),e);
-		}	
-    }
-    
+		/**
+		 * Loads historical trading results for all strategies.
+		 *
+		 * @param strategyIds Set of strategy IDs to load results for
+		 * @throws IOException if any result file cannot be read
+		 */
+		private static void loadStrategyResults(Set<String> strategyIds) throws IOException {
+			String resultsLocation = configReader.getPropValues("PortfolioResult_Location");
+			for (String strategyId : strategyIds) {
+				String resultFile = resultsLocation + String.format("results_%s.txt", strategyId);
+				fileService.readCSV(resultFile, strategyId);
+			}
+		}
 }
