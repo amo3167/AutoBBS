@@ -12,8 +12,8 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<maven.compiler.source>1.8</maven.compiler.source>
-		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>17</maven.compiler.source>
+		<maven.compiler.target>17</maven.compiler.target>
 	</properties>
 
 	<dependencies>
@@ -63,6 +63,20 @@
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-math3</artifactId>
 			<version>3.6.1</version>
+		</dependency>
+
+		<!-- High-Performance Collections -->
+		<dependency>
+			<groupId>it.unimi.dsi</groupId>
+			<artifactId>fastutil</artifactId>
+			<version>8.5.12</version>
+		</dependency>
+
+		<!-- Performance Monitoring -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-core</artifactId>
+			<version>1.12.0</version>
 		</dependency>
 
 	</dependencies>
@@ -116,11 +130,11 @@
 			<artifactId>maven-compiler-plugin</artifactId>
 			<version>3.12.1</version>
 			<configuration>
-				<source>1.8</source>
-				<target>1.8</target>
+				<release>17</release>
 				<compilerArgs>
 					<arg>-Xlint:all</arg>
 					<arg>-Xlint:-options</arg>
+					<arg>--enable-preview</arg>
 				</compilerArgs>
 				<showWarnings>true</showWarnings>
 				<showDeprecation>true</showDeprecation>
