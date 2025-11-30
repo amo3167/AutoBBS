@@ -3,6 +3,10 @@ package model;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.annotation.concurrent.ThreadSafe;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -22,6 +26,7 @@ import service.DateTimeHelper;
  * @version 2.0
  * @since 2025
  */
+@ThreadSafe
 public class ModelDataServiceImpl implements ModelDataService {
 	private static final Logger logger = LogManager.getLogger(ModelDataServiceImpl.class);
 	
@@ -63,7 +68,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 	}
 
 	@Override
-	public void initModelData(Map<String, Double> risks, boolean isNoCashOut) {
+	public void initModelData(@Nonnull Map<String, Double> risks, boolean isNoCashOut) {
 		Objects.requireNonNull(risks, "Strategy risks map cannot be null");
 		if (risks.isEmpty()) {
 			throw new IllegalArgumentException("Strategy risks map cannot be empty");
@@ -125,7 +130,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 	}
 
 	@Override
-	public void setStartDate(Date startDate) {
+	public void setStartDate(@Nullable Date startDate) {
 		this.startDate = startDate;
 	}
 
