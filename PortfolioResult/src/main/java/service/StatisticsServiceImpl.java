@@ -4,9 +4,6 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.stream.Collectors;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
-
 import model.ModelDataService;
 import model.Results;
 import model.Statistics;
@@ -15,7 +12,6 @@ import model.Statistics;
  * Implementation of {@link StatisticsService} for calculating portfolio statistics and performance metrics.
  * Computes returns, risk metrics, ratios, and filters strategies based on optimization criteria.
  */
-@ThreadSafe
 public class StatisticsServiceImpl implements StatisticsService {
 
 	// Time conversion constants
@@ -36,7 +32,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 	 * 
 	 * @param model  the model data containing results and configuration
 	 */
-	public StatisticsServiceImpl(@Nonnull ModelDataService model) {
+	public StatisticsServiceImpl(ModelDataService model) {
 		if (model == null) {
 			throw new IllegalArgumentException("Model cannot be null");
 		}

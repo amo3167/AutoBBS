@@ -7,9 +7,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
-import javax.annotation.Nonnull;
-import javax.annotation.concurrent.ThreadSafe;
-
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -38,7 +35,6 @@ import model.ModelDataServiceImpl;
  * @version 2.0
  * @since 2025
  */
-@ThreadSafe
 public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	private static final Logger logger = LogManager.getLogger(PortfolioOptimizerImpl.class);
 	
@@ -82,12 +78,11 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	}
 	
 	@Override
-	@Nonnull
 	public Map<String, Double> optimize(
-			@Nonnull List<String> strategies,
-			@Nonnull List<Double> riskMultipliers,
-			@Nonnull Map<String, Double> predefinedStrategies,
-			@Nonnull OptimizationStrategy strategy,
+			List<String> strategies,
+			List<Double> riskMultipliers,
+			Map<String, Double> predefinedStrategies,
+			OptimizationStrategy strategy,
 			int maxEvaluations) {
 		
 		logger.info("Starting {} optimization for {} strategies with budget of {} evaluations",
@@ -188,7 +183,7 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	}
 	
 	@Override
-	public double evaluateFitness(@Nonnull Map<String, Double> riskAllocation) {
+	public double evaluateFitness(Map<String, Double> riskAllocation) {
 		// Check cache first (50-70% hit rate in optimization loops)
 		int cacheKey = riskAllocation.hashCode();
 		Double cachedFitness = fitnessCache.get(cacheKey);
