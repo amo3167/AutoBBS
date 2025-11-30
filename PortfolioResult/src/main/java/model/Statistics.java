@@ -1,6 +1,7 @@
 package model;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.OptionalDouble;
 
 /**
@@ -67,7 +68,10 @@ public class Statistics {
 	public double martin;
 
 	/** Map of strategy IDs to their risk allocations */
-	public HashMap<String, Double> strategyRisk = new HashMap<>();
+	public Map<String, Double> strategyRisk = new HashMap<>();
+	
+	/**
+	 * Gets strategy risk as FastUtil map for performance.
 
 	/**
 	 * Default constructor.

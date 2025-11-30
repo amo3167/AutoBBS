@@ -217,7 +217,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 			try {
 				Double risk = strategyRisk.get(result.strategyID);
 				if (risk == null) {
-					System.err.println("No risk multiplier found for strategy: " + result.strategyID);
+					logger.warn("No risk multiplier found for strategy: {}", result.strategyID);
 					continue;
 				}
 
