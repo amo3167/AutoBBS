@@ -267,7 +267,7 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 	{
 		BOOL shouldReturn = FALSE;
 		configureLimitForBTCUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, timeString,
-			&startHour, &tooFarLimit, &isCloseOrdersEOD, &isEnableWeeklyATR, &isEnableRangeTrade,
+			&startHour, &stopHour, &tooFarLimit, &isCloseOrdersEOD, &isEnableWeeklyATR, &isEnableRangeTrade,
 			&isEnableDoubleEntry, &isEnableTooFar, &fastMAPeriod, &slowMAPeriod, &signalMAPeriod,
 			&tradingDays, &shouldReturn);
 		if (shouldReturn)
@@ -284,11 +284,9 @@ AsirikuyReturnCode workoutExecutionTrend_Limit(StrategyParams* pParams, Indicato
 			return SUCCESS;
 	}
 	else if (strstr(pParams->tradeSymbol, "AUDUSD") != NULL)
-	{		
-		configureLimitForAUDUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &stopHour, &isEnableMACDSlow, &isEnableFlatTrend, &isEnableTooFar, &isCloseOrdersEOD);
-	}
-
-	if ((BOOL)pParams->settings[IS_BACKTESTING] == TRUE)		
+	{
+		configureLimitForAUDUSD(pParams, pIndicators, pBase_Indicators, orderIndex, &timeInfo1, &stopHour, &isEnableMACDSlow, &isEnableFlatTrend, &isEnableTooFar, &isCloseOrdersEOD);
+	}	if ((BOOL)pParams->settings[IS_BACKTESTING] == TRUE)		
 		pIndicators->adjust = 0;	
 		
 

@@ -40,7 +40,7 @@
  * @param isCloseOrdersEOD Output: end-of-day close flag (conditional)
  */
 void configureLimitForAUDUSD(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators,
-    int orderIndex, int *stopHour, BOOL *isEnableMACDSlow, BOOL *isEnableFlatTrend, BOOL *isEnableTooFar, BOOL *isCloseOrdersEOD);
+    int orderIndex, struct tm* timeInfo, int *stopHour, BOOL *isEnableMACDSlow, BOOL *isEnableFlatTrend, BOOL *isEnableTooFar, BOOL *isCloseOrdersEOD);
 
 /**
  * @brief Configure Limit strategy parameters for GBPUSD.
@@ -206,7 +206,7 @@ void configureLimitForEURUSD(StrategyParams* pParams, Indicators* pIndicators, B
  * @return SUCCESS (check shouldReturn flag for early return indication)
  */
 AsirikuyReturnCode configureLimitForBTCUSD(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators* pBase_Indicators,
-    int orderIndex, struct tm* timeInfo, const char* timeString, int *startHour, double *tooFarLimit,
+    int orderIndex, struct tm* timeInfo, const char* timeString, int *startHour, int *stopHour, double *tooFarLimit,
     BOOL *isCloseOrdersEOD, BOOL *isEnableWeeklyATR, BOOL *isEnableRangeTrade,
     BOOL *isEnableDoubleEntry, BOOL *isEnableTooFar, int *fastMAPeriod, int *slowMAPeriod,
     int *signalMAPeriod, int *tradingDays, BOOL *shouldReturn);
