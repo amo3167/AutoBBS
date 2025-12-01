@@ -1,27 +1,34 @@
 package model;
 
 import java.util.Date;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 
 /**
  * Represents a trading result with order details, P&L, and position information.
  * Comparable by close time, then strategy ID, then order number.
  */
+@NoArgsConstructor
+@EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public class Results implements Comparable<Results> {
 
 	/** The strategy identifier */
+	@EqualsAndHashCode.Include
 	public String strategyID;
 	
 	/** The order number/identifier */
+	@EqualsAndHashCode.Include
 	public String orderNumber;
 	
 	/** The order type (BUY or SELL) */
+	@EqualsAndHashCode.Include
 	public String orderType;
 	
 	/** The time when the order was opened */
 	public Date openTime;
 	
 	/** The time when the order was closed */
+	@EqualsAndHashCode.Include
 	public Date closeTime;
 	
 	/** The price at which the order was opened */
@@ -49,6 +56,7 @@ public class Results implements Comparable<Results> {
 	public String id;
 	
 	/** The currency pair or trading instrument */
+	@EqualsAndHashCode.Include
 	public String pair;
 	
 	/** The swap/rollover charges */
@@ -65,12 +73,6 @@ public class Results implements Comparable<Results> {
 	
 	/** The profit/loss percentage */
 	public double pl;
-
-	/**
-	 * Default constructor.
-	 */
-	public Results() {
-	}
 
 	/**
 	 * Copy constructor.
@@ -100,37 +102,6 @@ public class Results implements Comparable<Results> {
 	}
 
 	/**
-	 * Checks equality based on strategy ID, order number, pair, close time, and order type.
-	 * 
-	 * @param other the object to compare with
-	 * @return true if all key fields are equal
-	 */
-	@Override
-	public boolean equals(Object other) {
-		if (!(other instanceof Results)) {
-			return false;
-		}
-
-		Results that = (Results) other;
-		return Objects.equals(this.strategyID, that.strategyID)
-				&& Objects.equals(this.orderNumber, that.orderNumber)
-				&& Objects.equals(this.pair, that.pair)
-				&& Objects.equals(this.closeTime, that.closeTime)
-				&& Objects.equals(this.orderType, that.orderType);
-	}
-
-	/**
-	 * Generates hash code based on key identifying fields.
-	 * 
-	 * @return the hash code
-	 */
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.strategyID, this.orderNumber,
-				this.pair, this.closeTime, this.orderType);
-	}
-
-	/**
 	 * Compares results by close time, then strategy ID, then order number.
 	 * 
 	 * @param obj the Results object to compare to
@@ -151,6 +122,7 @@ public class Results implements Comparable<Results> {
 
 	/**
 	 * Returns a string representation of the trading result.
+	 * Custom toString to match original format.
 	 * 
 	 * @return formatted string with key trade details
 	 */

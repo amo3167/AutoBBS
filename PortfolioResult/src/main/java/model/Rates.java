@@ -1,12 +1,17 @@
 package model;
 
 import java.util.Date;
-import java.util.Objects;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+import lombok.AllArgsConstructor;
 
 /**
  * Represents market rate data (OHLCV - Open, High, Low, Close, Volume).
  * Comparable by datetime to allow chronological sorting.
  */
+@EqualsAndHashCode
+@NoArgsConstructor
+@AllArgsConstructor
 public class Rates implements Comparable<Rates> {
 
 	/** The timestamp for this rate data */
@@ -26,12 +31,6 @@ public class Rates implements Comparable<Rates> {
 	
 	/** The trading volume */
 	public double volume;
-
-	/**
-	 * Default constructor.
-	 */
-	public Rates() {
-	}
 
 	/**
 	 * Copy constructor.
@@ -56,37 +55,5 @@ public class Rates implements Comparable<Rates> {
 	@Override
 	public int compareTo(Rates obj) {
 		return this.datetime.compareTo(obj.datetime);
-	}
-
-	/**
-	 * Checks equality based on all OHLCV fields.
-	 * 
-	 * @param other the object to compare with
-	 * @return true if all fields are equal
-	 */
-	@Override
-	public boolean equals(Object other) {
-		if (!(other instanceof Rates)) {
-			return false;
-		}
-
-		Rates that = (Rates) other;
-		return Double.compare(this.open, that.open) == 0
-				&& Double.compare(this.close, that.close) == 0
-				&& Double.compare(this.high, that.high) == 0
-				&& Double.compare(this.low, that.low) == 0
-				&& Double.compare(this.volume, that.volume) == 0
-				&& Objects.equals(this.datetime, that.datetime);
-	}
-
-	/**
-	 * Generates hash code based on all OHLCV fields.
-	 * 
-	 * @return the hash code
-	 */
-	@Override
-	public int hashCode() {
-		return Objects.hash(this.open, this.close, this.high, 
-				this.low, this.volume, this.datetime);
 	}
 }

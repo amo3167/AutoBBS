@@ -280,7 +280,7 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		int[] evaluationCount = {0};
 		
 		Map<String, Double> currentAllocation = new HashMap<>(predefinedStrategies);
-		@SuppressWarnings({"unchecked", "rawtypes"})
+		@SuppressWarnings("unchecked")
 		Map<String, Double>[] bestAllocationArray = new Map[]{bestAllocation};
 		exploreGrid(strategies, riskMultipliers, predefinedStrategies, currentAllocation,
 				0, evaluationCount, maxEvaluations, new double[]{bestFitness}, bestAllocationArray);

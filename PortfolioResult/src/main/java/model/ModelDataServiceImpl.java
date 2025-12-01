@@ -51,6 +51,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 	 * @param risks         map of strategy IDs to risk multipliers
 	 * @param isNoCashOut   true to use P&L percentage, false to use absolute profit
 	 */
+	@SuppressWarnings("this-escape")
 	public ModelDataServiceImpl(Map<String, Double> risks, boolean isNoCashOut) {
 		initModelData(risks, isNoCashOut);
 	}
@@ -58,6 +59,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 	/**
 	 * Constructs an empty ModelDataServiceImpl with default settings.
 	 */
+	@SuppressWarnings("this-escape")
 	public ModelDataServiceImpl() {
 		clear();
 	}
@@ -83,12 +85,11 @@ public class ModelDataServiceImpl implements ModelDataService {
 		
 		clear();
 		// Normalize incoming strategy IDs to avoid mismatches due to whitespace
-		if (risks != null) {
-			for (Map.Entry<String, Double> e : risks.entrySet()) {
-				String key = e.getKey() == null ? null : e.getKey().trim();
-				if (key != null && !key.isEmpty()) {
-					strategyRisk.put(key, e.getValue());
-				}
+		// risks is guaranteed non-null by Objects.requireNonNull check above
+		for (Map.Entry<String, Double> e : risks.entrySet()) {
+			String key = e.getKey() == null ? null : e.getKey().trim();
+			if (key != null && !key.isEmpty()) {
+				strategyRisk.put(key, e.getValue());
 			}
 		}
 		this.noCashOutMode = isNoCashOut;
@@ -350,9 +351,11 @@ public class ModelDataServiceImpl implements ModelDataService {
 	}	
 	
 	@Override
+	@SuppressWarnings("synchronization")
 	public synchronized void saveStatistics(Statistics statistics) {
 		if (statistics != null) {
 			// Create thread-safe copy of strategy risk map
+			// Nested synchronization is intentional for fine-grained locking
 			synchronized (this.strategyRisk) {
 				statistics.strategyRisk = new HashMap<>(this.strategyRisk);
 			}

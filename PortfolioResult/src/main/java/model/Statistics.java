@@ -3,11 +3,15 @@ package model;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.OptionalDouble;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * Holds statistical metrics for portfolio performance analysis.
  * Includes returns, risk metrics, ratios, and trade statistics.
  */
+@Data
+@NoArgsConstructor
 public class Statistics {
 	
 	/** Total return percentage */
@@ -69,13 +73,4 @@ public class Statistics {
 
 	/** Map of strategy IDs to their risk allocations */
 	public Map<String, Double> strategyRisk = new HashMap<>();
-	
-	/**
-	 * Gets strategy risk as FastUtil map for performance.
-
-	/**
-	 * Default constructor.
-	 */
-	public Statistics() {
-	}
 }

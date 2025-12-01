@@ -87,6 +87,14 @@
 			<scope>compile</scope>
 		</dependency>
 
+		<!-- Lombok - Reduces boilerplate code (getters, setters, equals, hashCode, toString, constructors) -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>1.18.34</version>
+			<scope>provided</scope>
+		</dependency>
+
 	</dependencies>
 
 	<build>
@@ -146,6 +154,13 @@
 				</compilerArgs>
 				<showWarnings>true</showWarnings>
 				<showDeprecation>true</showDeprecation>
+				<annotationProcessorPaths>
+					<path>
+						<groupId>org.projectlombok</groupId>
+						<artifactId>lombok</artifactId>
+						<version>1.18.34</version>
+					</path>
+				</annotationProcessorPaths>
 			</configuration>
 		</plugin>		<plugin>
 			<groupId>org.apache.maven.plugins</groupId>
