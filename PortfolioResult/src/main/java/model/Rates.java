@@ -1,6 +1,7 @@
 package model;
 
 import java.util.Date;
+import lombok.AllArgsConstructor;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
@@ -10,6 +11,7 @@ import lombok.NoArgsConstructor;
  */
 @EqualsAndHashCode
 @NoArgsConstructor
+@AllArgsConstructor
 public class Rates implements Comparable<Rates> {
 
 	/** The timestamp for this rate data */
