@@ -21,6 +21,11 @@ PRESET_FILE="${CONFIG_DIR}/portfolioOptimizePreset${CONFIG_NUM}.config"
 FACTOR_FILE="${CONFIG_DIR}/portfolioOptimizeFactor${CONFIG_NUM}.config"
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 
+# Filenames to pass to Java app (without directory prefix, as App.java prepends PortfolioRisk_Location)
+CONFIG_NAME="portfolioOptimize${CONFIG_NUM}.config"
+PRESET_NAME="portfolioOptimizePreset${CONFIG_NUM}.config"
+FACTOR_NAME="portfolioOptimizeFactor${CONFIG_NUM}.config"
+
 # Validate files exist
 if [ ! -f "$CONFIG_FILE" ]; then
     echo "Error: Config file not found: $CONFIG_FILE"
@@ -74,13 +79,13 @@ for seed in $(seq 1 $NUM_SEEDS); do
     
     LOG_FILE="$RESULTS_DIR/seed_${seed}.log"
     
-    # Run optimizer
+    # Run optimizer (pass filenames only, App.java prepends PortfolioRisk_Location)
     java -Xmx4g -cp "$JAR_FILE" \
         PortfolioResult.PortfolioResult.App \
         optimizer \
-        "$CONFIG_FILE" \
-        "$PRESET_FILE" \
-        "$FACTOR_FILE" \
+        "$CONFIG_NAME" \
+        "$PRESET_NAME" \
+        "$FACTOR_NAME" \
         "$START_DATE" \
         "$seed" \
         > "$LOG_FILE" 2>&1
@@ -105,6 +110,9 @@ for seed in $(seq 1 $NUM_SEEDS); do
     # Copy output directory to results
     SEED_OUTPUT_DIR="$RESULTS_DIR/seed_${seed}"
     cp -r "$OUTPUT_DIR" "$SEED_OUTPUT_DIR"
+    
+    # Track optimizer directory for cleanup later
+    echo "$OUTPUT_DIR" >> "$RESULTS_DIR/.optimizer_dirs_to_cleanup.txt"
     
     # Extract statistics
     STATS_FILE=$(find "$SEED_OUTPUT_DIR" -name "portfolioStatistics_adjusted_*.csv" | head -1)
@@ -232,6 +240,25 @@ try:
         print(f"  Best Portfolio: {best['best_portfolio']}")
         print()
         
+        # Check for identical results (indicates convergence to optimal solution)
+        unique_results = {}
+        for r in results:
+            key = (r['martin'], r['total_return'], r['cagr'], r['max_dd'])
+            if key not in unique_results:
+                unique_results[key] = []
+            unique_results[key].append(r['seed'])
+        
+        if len(unique_results) < len(results):
+            print("=" * 100)
+            print("NOTE: Some seeds produced identical results (convergence to optimal solution):")
+            print("=" * 100)
+            for key, seeds in unique_results.items():
+                if len(seeds) > 1:
+                    print(f"  Seeds {', '.join(map(str, sorted(seeds)))}: Martin={key[0]:.6f}, Return={key[1]:.6f}x")
+                    print(f"    → This indicates the genetic algorithm found the same optimal solution")
+                    print(f"    → Different seeds explore different paths but may converge to the same result")
+            print()
+        
         # Show improvement over worst
         if len(results) > 1:
             worst = results[-1]
@@ -275,4 +302,72 @@ else
     echo "ERROR: Failed to analyze results"
     exit 1
 fi
+
+# Cleanup temporary files (disable exit on error for cleanup)
+set +e
+echo ""
+echo "=========================================="
+echo "Cleaning up temporary files..."
+echo "=========================================="
+
+# Clean up timestamped CSV files in batch root directory
+BATCH_DIR="batch"
+CLEANED=0
+
+PATTERNS=(
+    "portfolioStatistics_adjusted_*.csv"
+    "portfolioResult_baseline_*.csv"
+    "portfolioResult_adjusted_*.csv"
+    "portfolioDailyReport_adjusted_*.csv"
+    "portfolioWeeklyReport_adjusted_*.csv"
+    "portfolioMonthlyReport_adjusted_*.csv"
+)
+
+for pattern in "${PATTERNS[@]}"; do
+    while IFS= read -r file; do
+        if [ -f "$file" ]; then
+            # Only remove files in batch root, not in output subdirectories
+            if [[ "$file" == "${BATCH_DIR}/"* ]] && [[ "$file" != *"/output/"* ]]; then
+                rm -f "$file" 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    ((CLEANED++))
+                fi
+            fi
+        fi
+    done < <(find "$BATCH_DIR" -maxdepth 1 -name "$pattern" -type f 2>/dev/null)
+done
+
+if [ $CLEANED -gt 0 ]; then
+    echo "  ✓ Cleaned up $CLEANED timestamped CSV files from batch directory"
+else
+    echo "  ✓ No timestamped CSV files to clean"
+fi
+
+# Clean up optimizer directories that were copied to seed_* directories
+OPTIMIZER_CLEANED=0
+if [ -f "$RESULTS_DIR/.optimizer_dirs_to_cleanup.txt" ]; then
+    while IFS= read -r optimizer_dir; do
+        if [ -n "$optimizer_dir" ] && [ -d "$optimizer_dir" ]; then
+            rm -rf "$optimizer_dir" 2>/dev/null
+            if [ $? -eq 0 ]; then
+                ((OPTIMIZER_CLEANED++))
+                echo "  ✓ Removed optimizer directory: $(basename "$optimizer_dir")"
+            fi
+        fi
+    done < "$RESULTS_DIR/.optimizer_dirs_to_cleanup.txt"
+    rm -f "$RESULTS_DIR/.optimizer_dirs_to_cleanup.txt" 2>/dev/null
+fi
+
+if [ $OPTIMIZER_CLEANED -gt 0 ]; then
+    echo "  ✓ Cleaned up $OPTIMIZER_CLEANED optimizer directories"
+else
+    echo "  ✓ No optimizer directories to clean"
+fi
+
+echo ""
+echo "Cleanup completed!"
+echo ""
+
+# Re-enable exit on error
+set -e
 

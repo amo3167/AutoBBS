@@ -17,6 +17,8 @@ cd "$PROJECT_ROOT"
 
 CONFIG_DIR="portfolioRiskConfig"
 RISK_CONFIG="${CONFIG_DIR}/portfoliorisk${CONFIG_NUM}.config"
+# Filename to pass to Java app (without directory prefix, as App.java prepends PortfolioRisk_Location)
+RISK_CONFIG_NAME="portfoliorisk${CONFIG_NUM}.config"
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 BATCH_DIR="batch"
 OUTPUT_BASE="batch/output"
@@ -58,7 +60,7 @@ echo ""
 java -Xmx4g -cp "$JAR_FILE" \
     PortfolioResult.PortfolioResult.App \
     run \
-    "$RISK_CONFIG" \
+    "$RISK_CONFIG_NAME" \
     "$CHECK_ORDERS" \
     "$START_DATE" \
     > "$OUTPUT_DIR/simulation.log" 2>&1

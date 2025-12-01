@@ -17,6 +17,10 @@ CONFIG_DIR="portfolioRiskConfig"
 CONFIG_FILE="${CONFIG_DIR}/portfolioOptimize${CONFIG_NUM}.config"
 PRESET_FILE="${CONFIG_DIR}/portfolioOptimizePreset${CONFIG_NUM}.config"
 FACTOR_FILE="${CONFIG_DIR}/portfolioOptimizeFactor${CONFIG_NUM}.config"
+# Filenames to pass to Java app (without directory prefix, as App.java prepends PortfolioRisk_Location)
+CONFIG_NAME="portfolioOptimize${CONFIG_NUM}.config"
+PRESET_NAME="portfolioOptimizePreset${CONFIG_NUM}.config"
+FACTOR_NAME="portfolioOptimizeFactor${CONFIG_NUM}.config"
 LOG_FILE="optimizer${CONFIG_NUM}.log"
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 
@@ -53,14 +57,14 @@ echo "Log File:    $LOG_FILE"
 echo "=========================================="
 echo ""
 
-# Run optimizer
+# Run optimizer (pass filenames only, App.java prepends PortfolioRisk_Location)
 echo "Starting optimizer at $(date)..."
 java -Xmx4g -cp "$JAR_FILE" \
     PortfolioResult.PortfolioResult.App \
     optimizer \
-    "$CONFIG_FILE" \
-    "$PRESET_FILE" \
-    "$FACTOR_FILE" \
+    "$CONFIG_NAME" \
+    "$PRESET_NAME" \
+    "$FACTOR_NAME" \
     "$START_DATE" \
     2>&1 | tee "$LOG_FILE"
 
