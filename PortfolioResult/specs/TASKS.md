@@ -78,42 +78,65 @@ Upgrade Log4j from vulnerable 1.2.17 to secure 2.23.0 to address CVE-2019-17571 
 
 ### TASK-002: Add Comprehensive Unit Tests
 **Priority:** 🔴 P0 - Critical  
-**Status:** ⏳ TODO  
+**Status:** 🔄 IN PROGRESS  
 **Estimate:** 1-2 weeks  
-**Assignee:** TBD
+**Started:** December 1, 2025
 
 **Description:**
 Add comprehensive unit tests for critical business logic. Current coverage <10%, target 70%+.
 
 **Acceptance Criteria:**
-- [ ] Test FileService CSV reading/writing
-- [ ] Test StatisticsService calculations (Sharpe ratio, drawdown, etc.)
-- [ ] Test ModelData risk adjustments
-- [ ] Test portfolio construction logic
-- [ ] Test date/time handling
-- [ ] Test optimization algorithm
-- [ ] Achieve 70%+ code coverage on service layer
-- [ ] All tests pass in CI
+- [x] Test FileService CSV reading/writing
+- [x] Test StatisticsService calculations (Sharpe ratio, drawdown, etc.)
+- [x] Test ModelData risk adjustments
+- [x] Test portfolio construction logic
+- [x] Test date/time handling
+- [ ] Test optimization algorithm (pending - requires integration test setup)
+- [ ] Achieve 70%+ code coverage on service layer (in progress)
+- [x] All tests pass in CI
 
-**Test Classes to Create:**
+**Test Classes Created:**
 ```
 src/test/java/
 ├── service/
-│   ├── FileServiceTest.java
-│   ├── StatisticsServiceTest.java
-│   └── DateTimeHelperTest.java
+│   ├── DateTimeHelperTest.java ✅ (17 tests)
+│   ├── StatisticsServiceTest.java ✅ (17 tests)
+│   └── FileServiceTest.java ✅ (12 tests)
 ├── model/
-│   ├── ModelDataTest.java
-│   ├── ResultsTest.java
-│   └── StatisticsTest.java
+│   ├── ResultsTest.java ✅ (9 tests)
+│   ├── StatisticsTest.java ✅ (21 tests)
+│   └── ModelDataServiceTest.java ✅ (18 tests)
 └── PortfolioResult/
     └── PortfolioResult/
-        └── AppIntegrationTest.java
+        └── AppTest.java (existing placeholder)
 ```
 
-**Dependencies:** TASK-003 (JUnit 5 upgrade)
+**Test Results:**
+- ✅ DateTimeHelperTest: 17 tests passing
+- ✅ StatisticsServiceTest: 17 tests passing
+- ✅ FileServiceTest: 12 tests passing
+- ✅ ResultsTest: 9 tests passing
+- ✅ StatisticsTest: 21 tests passing
+- ✅ ModelDataServiceTest: 18 tests passing
+- **Total: 94 tests passing**
+
+**Test Coverage:**
+- Date/time utilities: ✅ Complete (17 tests)
+- Statistics calculations: ✅ Core calculations tested (17 tests)
+- Model classes: ✅ Complete (30 tests: Results 9, Statistics 21)
+- File I/O: ✅ Complete (12 tests - CSV reading/writing with temp files)
+- ModelData service: ✅ Complete (18 tests - risk adjustments, portfolio construction)
+- Optimization algorithms: ⏳ Pending (requires integration test setup)
+
+**Dependencies:** TASK-003 (JUnit 5 upgrade) ✅ Complete
 
 **Risk:** Low - Existing code is stable
+
+**Progress:**
+- Created comprehensive test suite for critical business logic
+- All tests passing with JUnit 5 and Mockito 5
+- Tests cover edge cases (null values, empty lists, all winning/losing trades)
+- Tests verify calculation correctness for key metrics
 
 ---
 
@@ -908,7 +931,7 @@ All P0+P1+P2 ────► TASK-017 (Refactor) ────► TASK-018 (Paral
 ## Progress Tracking
 
 **Overall Completion:**
-- P0 Tasks: 2/3 (67%) - TASK-001 (Log4j upgrade) ✅ DONE, TASK-003 (Regression tests) ✅ DONE
+- P0 Tasks: 2/3 (67%) - TASK-001 (Log4j upgrade) ✅ DONE, TASK-002 (Unit Tests) 🔄 IN PROGRESS, TASK-003 (Regression tests) ✅ DONE
 - P1 Tasks: 0/4 (0%)
 - P2 Tasks: 0/5 (0%)
 - P3 Tasks: 0/4 (0%)
