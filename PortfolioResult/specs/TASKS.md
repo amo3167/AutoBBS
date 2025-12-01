@@ -1,8 +1,8 @@
 # PortfolioResult - Implementation Tasks
 
 ## Document Information
-- **Version:** 1.0.0
-- **Last Updated:** November 30, 2025
+- **Version:** 1.1.0
+- **Last Updated:** December 1, 2025
 - **Status:** Active
 
 ---
@@ -127,7 +127,7 @@ Establish baseline regression tests before any upgrades. Create golden dataset f
 **Files to Create:**
 - `test-data/baseline_portfolio_stats.csv`
 - `test-data/baseline_optimization_results.csv`
-- `scripts/run_regression_tests.sh`
+- `scripts/run_regression_tests.sh` (Note: scripts/ folder now exists)
 - `scripts/compare_results.py`
 
 **Dependencies:** None
@@ -347,6 +347,8 @@ HistoricalData_Location=./history/
 XAUUSD_5M_Path=${HistoricalData_Location}/XAUUSD_5M/
 GBPJPY_5M_Path=${HistoricalData_Location}/GBPJPY_5M/
 # etc.
+
+# Note: PortfolioRisk_Location already updated to ./portfolioRiskConfig/
 ```
 
 **Dependencies:** None
@@ -402,8 +404,8 @@ private static final double PRICE_TOLERANCE = 0.005; // 0.5%
 Refactor large methods (>50 lines) into smaller, more testable functions.
 
 **Target Methods:**
-- `App.main()` - 100+ lines
-- `App.run_optimizer()` - 50+ lines of nested loops
+- `App.main()` - 100+ lines (Note: Some refactoring done for command handling)
+- `App.run_optimizer()` - 50+ lines of nested loops (Note: Now supports deterministic seeds)
 - `App.todayOrderChecking()` - Complex validation logic
 - `FileService` methods - Long CSV processing
 
@@ -841,6 +843,33 @@ All P0+P1+P2 ────► TASK-017 (Refactor) ────► TASK-018 (Paral
 
 ---
 
+## ✅ Recently Completed (December 2025)
+
+### Project Reorganization
+- ✅ **Scripts Organization**: All `.sh` and `.py` files moved to `scripts/` folder
+- ✅ **Config Organization**: All portfolio config files moved to `portfolioRiskConfig/` folder
+- ✅ **Path Updates**: Updated all scripts and config.properties to use new paths
+- ✅ **Script Enhancements**: Updated scripts to work from `scripts/` directory with proper `PROJECT_ROOT` handling
+
+### Optimization Improvements
+- ✅ **Deterministic Seed Support**: Added random seed parameter to optimization for reproducible results
+- ✅ **Multi-Seed Optimization**: Created `scripts/run_multiple_seeds.sh` to run optimization with multiple seeds and find best result
+- ✅ **Automatic Visualization**: `scripts/run_optimizer.sh` now automatically generates visualizations after optimization
+- ✅ **Portfolio Simulation Script**: Created `scripts/run_portfolio.sh` with config number support and automatic visualization
+
+### Visualization Enhancements
+- ✅ **File Handling**: Updated `scripts/visualize_portfolio.py` to handle both timestamped and non-timestamped files
+- ✅ **Cleanup**: Scripts now properly clean up temporary files and avoid duplicates
+
+**Related Documentation:**
+- `docs/DETERMINISTIC_SEED_TEST_RESULTS.md`
+- `docs/MULTI_SEED_OPTIMIZATION_GUIDE.md`
+- `docs/PORTFOLIO_SIMULATION_GUIDE.md`
+- `docs/OPTIMIZATION_BUDGET_SCALING.md`
+- `docs/GENETIC_ALGORITHM_VS_COARSE_TO_FINE.md`
+
+---
+
 ## Progress Tracking
 
 **Overall Completion:**
@@ -850,7 +879,13 @@ All P0+P1+P2 ────► TASK-017 (Refactor) ────► TASK-018 (Paral
 - P3 Tasks: 0/4 (0%)
 - P4 Tasks: 0/4 (0%)
 
-**Last Updated:** 2025-11-30
+**Recently Completed (Outside Task List):**
+- Project reorganization and script enhancements
+- Deterministic optimization support
+- Multi-seed optimization automation
+- Automatic visualization generation
+
+**Last Updated:** 2025-12-01
 
 ---
 
@@ -896,11 +931,14 @@ mvn versions:display-dependency-updates
 
 **Regression Test Commands:**
 ```bash
-# Run baseline portfolio
-java -jar target/PortfolioResult-1.0.0-jar-with-dependencies.jar run portfoliorisk1.config false
+# Run baseline portfolio (using config number)
+./scripts/run_portfolio.sh 1 false
+
+# Or using direct JAR call (using new config path)
+java -jar target/PortfolioResult-1.0.0-jar-with-dependencies.jar run portfolioRiskConfig/portfoliorisk1.config false
 
 # Compare results
-diff baseline_stats.csv Batch/portfolioStatistics_adjusted.csv
+diff baseline_stats.csv batch/portfolioStatistics_adjusted.csv
 ```
 
 **Code Quality Commands:**
@@ -921,5 +959,6 @@ find src/ -name "*.java" -exec wc -l {} \; | sort -rn
 
 | Version | Date | Author | Changes |
 |---------|------|--------|---------|
+| 1.1.0 | 2025-12-01 | Auto | Updated to reflect project reorganization, deterministic seeds, multi-seed optimization, and script enhancements |
 | 1.0.0 | 2025-11-30 | GitHub Copilot | Initial task list |
 
