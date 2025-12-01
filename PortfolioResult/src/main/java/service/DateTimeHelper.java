@@ -145,6 +145,21 @@ public final class DateTimeHelper {
 	}
 
 	/**
+	 * Gets the day in year (YYYYMMDD format).
+	 * 
+	 * @param date the date
+	 * @return the day as YYYYMMDD integer
+	 */
+	public static Integer getDayInYear(Date date) {
+		Calendar cal = Calendar.getInstance();
+		cal.setTime(date);
+		return Integer.parseInt(String.format("%d%02d%02d", 
+				cal.get(Calendar.YEAR), 
+				cal.get(Calendar.MONTH) + 1,
+				cal.get(Calendar.DAY_OF_MONTH)));
+	}
+
+	/**
 	 * Gets the hour of day (0-23).
 	 * 
 	 * @param date the date

@@ -60,6 +60,9 @@ public class Results implements Comparable<Results> {
 	/** The month number in the year */
 	public Integer monthInYear;
 	
+	/** The day in year (YYYYMMDD format) */
+	public Integer dayInYear;
+	
 	/** The profit/loss percentage */
 	public double pl;
 
@@ -92,6 +95,7 @@ public class Results implements Comparable<Results> {
 		this.swap = that.swap;
 		this.weekInYear = that.weekInYear;
 		this.monthInYear = that.monthInYear;
+		this.dayInYear = that.dayInYear;
 		this.pl = that.pl;
 	}
 

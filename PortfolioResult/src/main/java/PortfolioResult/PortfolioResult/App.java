@@ -1,15 +1,30 @@
 package PortfolioResult.PortfolioResult;
 
 import java.io.IOException;
-import java.time.*;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import model.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import model.ModelDataService;
+import model.ModelDataServiceImpl;
+import model.Results;
+import model.Statistics;
 import service.FileService;
 import service.FileServiceImpl;
 import service.MT4ConversionService;
@@ -66,74 +81,98 @@ public class App {
 	private static final String MANUAL_STRATEGY_ID = "0";
     public static void main( String[] args ) throws IOException, com.opencsv.exceptions.CsvValidationException {
 
-		Map<String,Double> sRisks = new HashMap<>();
-		Map<String,Double> predefinedStrategies = new HashMap<>();
-		Map<String,Double> factors = new HashMap<>();
+		@SuppressWarnings("unused")
+		Map<String,Double> sRisks;
+		@SuppressWarnings("unused")
+		Map<String,Double> predefinedStrategies;
+		@SuppressWarnings("unused")
+		Map<String,Double> factors;
     	/*
     	 *  optimizer
     	 *  run
     	 */
 
-    	if(args[0].equals("run")) {
-			sRisks = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[1]);
-			boolean isCheckingOpenOrder = Boolean.parseBoolean(args[2]);
+    	switch (args[0]) {
+			case "run": {
+				sRisks = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[1]);
+				boolean isCheckingOpenOrder = Boolean.parseBoolean(args[2]);
 
-			LocalDate startDate = LocalDate.of(2000,1,1);
-			if(args.length == 4) {
-				startDate = LocalDate.parse(args[3]);
+				LocalDate startDate = LocalDate.of(2000,1,1);
+				if(args.length == 4) {
+					startDate = LocalDate.parse(args[3]);
+				}
+				model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+
+				run(sRisks, false, isCheckingOpenOrder, null);
+				break;
 			}
-			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-
-			run(sRisks, false,isCheckingOpenOrder);
-		}else if (args[0].equals("runCustom")) {
-			LocalDate startDate = LocalDate.of(2000,1,1);
-			if(args.length == 5) {
-				startDate = LocalDate.parse(args[4]);
+			case "runCustom": {
+				LocalDate startDate = LocalDate.of(2000,1,1);
+				if(args.length == 5) {
+					startDate = LocalDate.parse(args[4]);
+				}
+				model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+				runCustomPairStrategy(args[1]);
+				break;
 			}
-			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-			runCustomPairStrategy(args[1]);
-		} else if (args[0].equals("optimizer")) {
-			sRisks = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[1]);
-			predefinedStrategies = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[2]);
-			factors = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[3]);
+			case "optimizer": {
+				sRisks = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[1]);
+				predefinedStrategies = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[2]);
+				factors = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[3]);
 
-			LocalDate startDate = LocalDate.of(2000,1,1);
-			if(args.length == 5) {
-				startDate = LocalDate.parse(args[4]);
+				LocalDate startDate = LocalDate.of(2000,1,1);
+				if(args.length == 5) {
+					startDate = LocalDate.parse(args[4]);
+				}
+				model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
+				model.setFactors(factors);
+
+				run_optimizer(sRisks,predefinedStrategies);
+				break;
 			}
-			model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
-			model.setFactors(factors);
-
-			run_optimizer(sRisks,predefinedStrategies);
-		} else if (args[0].equals("optimizerLevel2")) {
-			runOptimizerLevel2();
+			case "optimizerLevel2":
+				runOptimizerLevel2();
+				break;
+			case "XAGUSD_60M": {
+				String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\";
+				rateAdjustmentService.adjustXAGUSD_60M(baseDir);
+				break;
+			}
+			case "USTEC_60M": {
+				String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\";
+				rateAdjustmentService.adjustUSTECUSD_60M(baseDir);
+				break;
+			}
+			case "EURUSD_5M": {
+				String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\";
+				rateAdjustmentService.adjustEURUSD_5M(baseDir);
+				break;
+			}
+			case "EURGBP_5M": {
+				String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\";
+				rateAdjustmentService.adjustEURGBP_5M(baseDir);
+				break;
+			}
+			case "MT4Rate": {
+				String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
+				String ntsFile = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
+				logger.info("Converting MT4 rate file from {} to {}", mt4File, ntsFile);
+				mt4ConversionService.convertMT4ToNTS(mt4File, ntsFile);
+				break;
+			}
+			case "MT4RateMerge": {
+				String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
+				String newMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
+				String errorMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[3];
+				int timeFrame = Integer.parseInt(args[4]);
+				logger.info("Merging MT4 rate files: {} + {} -> {}", mt4File, newMt4File, mt4File);
+				mt4ConversionService.mergeMT4Rates(mt4File, newMt4File, errorMt4File, timeFrame);
+				break;
+			}
+			default:
+				logger.warn("Unknown command: {}", args[0]);
+				break;
 		}
-    	else if(args[0].equals("XAGUSD_60M")){
-			String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\XAGUSD_60M\\";
-			rateAdjustmentService.adjustXAGUSD_60M(baseDir);
-		} else if(args[0].equals("USTEC_60M")){
-			String baseDir = "C:\\Users\\amo31\\Google Drive (oceanxplorertechnology@gmail.com)\\FX\\NTS Batch\\history\\Data gap\\USTECUSD_60M\\";
-			rateAdjustmentService.adjustUSTECUSD_60M(baseDir);
-		} else if(args[0].equals("EURUSD_5M")){
-			String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURUSD 5M\\";
-			rateAdjustmentService.adjustEURUSD_5M(baseDir);
-		} else if(args[0].equals("EURGBP_5M")){
-			String baseDir = "C:\\Users\\amo31\\Google Drive\\FX\\Share\\EURGBP 5M\\";
-			rateAdjustmentService.adjustEURGBP_5M(baseDir);
-		} else if(args[0].equals("MT4Rate")){
-			String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
-			String ntsFile = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
-			logger.info("Converting MT4 rate file from {} to {}", mt4File, ntsFile);
-			mt4ConversionService.convertMT4ToNTS(mt4File, ntsFile);
-		} else if(args[0].equals("MT4RateMerge")){
-			String mt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[1];
-			String newMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[2];
-			String errorMt4File = configReader.getPropValues("PortfolioOpenOrders_Location") + args[3];
-			int timeFrame = Integer.parseInt(args[4]);
-			logger.info("Merging MT4 rate files: {} + {} -> {}", mt4File, newMt4File, mt4File);
-			mt4ConversionService.mergeMT4Rates(mt4File, newMt4File, errorMt4File, timeFrame);
-		}
-
     }
 
     /**
@@ -347,7 +386,21 @@ public class App {
 	 * @param fromOptimized True if results are from optimization, false otherwise
 	 */
 	private static void run(Map<String, Double> sRisks, boolean fromOptimized) {
-    	run(sRisks, fromOptimized, false);
+    	run(sRisks, fromOptimized, false, null);
+	}
+
+	/**
+	 * Runs portfolio simulation with custom output directory.
+	 * 
+	 * @param sRisks Strategy risk allocations (strategy ID -> risk multiplier)
+	 * @param fromOptimized True if results are from optimization
+	 * @param outputDir Custom output directory (null for default location)
+	 * @deprecated This method is never used. Use {@link #run(Map, boolean, boolean, String)} instead.
+	 */
+	@Deprecated
+	@SuppressWarnings("unused")
+	private static void run(Map<String, Double> sRisks, boolean fromOptimized, String outputDir) {
+    	run(sRisks, fromOptimized, false, outputDir);
 	}
 
 	/**
@@ -367,32 +420,42 @@ public class App {
 	 * @param sRisks Strategy risk allocations (strategy ID -> risk multiplier)
 	 * @param fromOptimized True if called from optimizer (skips portfolio result generation)
 	 * @param isCheckingOpenOrder True to validate orders against MT4
+	 * @param outputDir Custom output directory (null for default location)
 	 */
-    private static void run(Map<String,  Double> sRisks,  boolean fromOptimized,  boolean isCheckingOpenOrder)  {
+    private static void run(Map<String,  Double> sRisks,  boolean fromOptimized,  boolean isCheckingOpenOrder, String outputDir)  {
     	model.initModelData(sRisks, true);
     	
 		try {
 			// Load historical results for all strategies
 			String resultsLocation = configReader.getPropValues("PortfolioResult_Location");
+			
+			// Use custom output directory if provided, otherwise use default
+			String outputLocation = (outputDir != null) ? outputDir : resultsLocation;
 			for (String strategyId : sRisks.keySet()) {
 				String resultFile = resultsLocation + String.format("results_%s.txt", strategyId);
 				fileService.readCSV(resultFile, strategyId);
 			}
 
+			// Generate baseline portfolio results (chronologically sorted, risk-adjusted)
+			// Baseline is always generated with timestamp for consistency
+			fileService.writeCVS(outputLocation + "portfolioResult_baseline", true);
+			
+			// Also generate adjusted results for normal runs (non-optimizer)
 			if (!fromOptimized) {
-				fileService.writeCVS(resultsLocation + "portfolioResult_adjusted", true);
+				fileService.writeCVS(outputLocation + "portfolioResult_adjusted", true);
 			}
 
 			if (isCheckingOpenOrder) {
 				todayOrderChecking();
 			}
 			
-		// Generate weekly and monthly reports
-		fileService.generateWeelyReport(resultsLocation + "portfolioWeeklyReport_adjusted", true);
-		fileService.generateMonthlyReport(resultsLocation + "portfolioMonthlyReport_adjusted", true);
+		// Generate weekly, daily and monthly reports
+		fileService.generateWeelyReport(outputLocation + "portfolioWeeklyReport_adjusted", true);
+		fileService.generateDailyReport(outputLocation + "portfolioDailyReport_adjusted", true);
+		fileService.generateMonthlyReport(outputLocation + "portfolioMonthlyReport_adjusted", true);
 		
 		statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);			// Write statistics
-			fileService.writeStatiscsListCVS(resultsLocation + "portfolioStatistics_adjusted", false);
+			fileService.writeStatiscsListCVS(outputLocation + "portfolioStatistics_adjusted", false);
 			logger.info("Portfolio simulation completed successfully");
 			
 		} catch (IOException e) {
@@ -413,48 +476,59 @@ public class App {
 	 * @param pair Trading pair identifier (e.g., "US500", "GBPJPY", "XAUUSD")
 	 */
 	private static void runCustomPairStrategy(String pair) {
-		Map<String,Double> sRisks = new HashMap<String,Double>();
-    	if("US500".equals(pair)) { //it is ok for now,but not for long term.
-			sRisks.put("900001", 0.5*1.0/1.0);
-			sRisks.put("500001", 1.0/1.0);
-			runCustom(sRisks,"400001");
+		Map<String,Double> sRisks = new HashMap<>();
+    	switch (pair) {
+			case "US500": { //it is ok for now,but not for long term.
+				sRisks.put("900001", 0.5*1.0/1.0);
+				sRisks.put("500001", 1.0/1.0);
+				runCustom(sRisks,"400001");
+				break;
+			}
+			case "GBPAUD": {
+				sRisks.put("860012", 0.5/1.0); //it doesn't help with portfolio.
+				sRisks.put("500002", 1.0/1.0);
+				runCustom(sRisks,"400002");
+				break;
+			}
+			case "GBPJPY": {
+				sRisks.put("860006", 1.0/1.0);
+				sRisks.put("841005", 1.0/1.0);
+				sRisks.put("860002", 0.7*1.0/1.0);
+				runCustom(sRisks,"400003");
+				break;
+			}
+			case "XAUUSD": {
+				sRisks.put("860007", 1.0/1.0);
+				sRisks.put("842001", 0.7*1.0/1.0);
+				sRisks.put("860003", 0.5*1.0/1.0);
+				runCustom(sRisks,"400004");
+				break;
+			}
+			case "XAUUSD_5M": {
+				sRisks.put("860001", 0.5*1.0/1.0);
+				sRisks.put("860003", 0.5*1.0/1.0);
+				runCustom(sRisks,"400005");
+				break;
+			}
+			case "BTCUSD": {
+				sRisks.put("300002", 0.6*1.0/1.0);
+				sRisks.put("200002", 1*1.0/1.0);
+				runCustom(sRisks,"400002");
+				break;
+			}
+			case "Limit": {
+				//sRisks.put("200002", 1.0/1.0);
+				sRisks.put("200003", 1.0/1.0);
+				sRisks.put("200005", 1.0/1.0);
+				sRisks.put("200007", 1.0/1.0);
+				sRisks.put("200009", 1.0/1.0);
+				runCustom(sRisks,"220000");
+				break;
+			}
+			default:
+				logger.warn("Unknown pair: {}", pair);
+				break;
 		}
-		else if("GBPAUD".equals(pair)) {
-			sRisks.put("860012", 0.5/1.0); //it doesn't help with portfolio.
-			sRisks.put("500002", 1.0/1.0);
-			runCustom(sRisks,"400002");
-		}
-		else if("GBPJPY".equals(pair)) {
-			sRisks.put("860006", 1.0/1.0);
-			sRisks.put("841005", 1.0/1.0);
-			sRisks.put("860002", 0.7*1.0/1.0);
-			runCustom(sRisks,"400003");
-		}
-		else if("XAUUSD".equals(pair)) {
-			sRisks.put("860007", 1.0/1.0);
-			sRisks.put("842001", 0.7*1.0/1.0);
-			sRisks.put("860003", 0.5*1.0/1.0);
-			runCustom(sRisks,"400004");
-		}
-		else if("XAUUSD_5M".equals(pair)) {
-			sRisks.put("860001", 0.5*1.0/1.0);
-			sRisks.put("860003", 0.5*1.0/1.0);
-			runCustom(sRisks,"400005");
-		}
-		else if("BTCUSD".equals(pair)) {
-			sRisks.put("300002", 0.6*1.0/1.0);
-			sRisks.put("200002", 1*1.0/1.0);
-			runCustom(sRisks,"400002");
-		}
-		else if("Limit".equals(pair)) {
-			//sRisks.put("200002", 1.0/1.0);
-			sRisks.put("200003", 1.0/1.0);
-			sRisks.put("200005", 1.0/1.0);
-			sRisks.put("200007", 1.0/1.0);
-			sRisks.put("200009", 1.0/1.0);
-			runCustom(sRisks,"220000");
-		}
-
 	}
 
 	/**
@@ -476,7 +550,7 @@ public class App {
 				try {
 					fileService.readCSV(configReader.getPropValues("PortfolioResult_Location") + String.format("results_%s.txt",id),id);
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("Error reading CSV file for strategy {}: {}", id, e.getMessage(), e);
 				}
 			});
 
@@ -485,8 +559,9 @@ public class App {
 			fileService.writeNewStrategyCVS(configReader.getPropValues("PortfolioResult_Location") + "results_"+newStrategyId,true);
 
 
-			//generate weekly and monthly report
+			//generate weekly, daily and monthly report
 			fileService.generateWeelyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioWeeklyReport_adjusted",true);
+			fileService.generateDailyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioDailyReport_adjusted",true);
 			fileService.generateMonthlyReport(configReader.getPropValues("PortfolioResult_Location") + "portfolioMonthlyReport_adjusted",true);
 
 			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE,true);
@@ -536,7 +611,7 @@ public class App {
 				try {
 					fileService.readCSV(configReader.getPropValues("PortfolioResult_Location") + String.format("results_%s.txt",id),id);
 				} catch (IOException e) {
-					e.printStackTrace();
+					logger.error("Error reading CSV file for strategy {}: {}", id, e.getMessage(), e);
 				}
 			});
 
@@ -636,12 +711,22 @@ public class App {
 
 		model.initModelData(sRisks, true);
 
+		// Create output directory with timestamp at method level
+		String timestamp = java.time.LocalDateTime.now().format(
+			java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
+		String outputDir;
+
 		try {
+			// Create output directory first
+			outputDir = configReader.getPropValues("PortfolioResult_Location") 
+					+ "output/optimizer_" + timestamp + "/";
+			java.nio.file.Files.createDirectories(java.nio.file.Paths.get(outputDir));
+			
 			// Load historical trading results for each strategy
 			loadStrategyResults(sRisks.keySet());
 
-			// Write baseline portfolio results
-			String portfolioResultPath = configReader.getPropValues("PortfolioResult_Location") + "portfolioResult_adjusted.csv";
+			// Write baseline portfolio results to optimizer output directory
+			String portfolioResultPath = outputDir + "portfolioResult_baseline.csv";
 			fileService.writeCVS(portfolioResultPath, true);
 
 			// Calculate baseline statistics
@@ -650,13 +735,12 @@ public class App {
 			// Choose optimization strategy based on portfolio size
 			int totalCombinations = (int) Math.pow(riskMultipliers.size(), strategiesToOptimize.size());
 			logger.info("Starting portfolio optimization: {} strategies to optimize, {} predefined",
-					strategiesToOptimize.size(), predefinedStrategies.size());
+			 strategiesToOptimize.size(), predefinedStrategies.size());
 			logger.info("{} risk levels per strategy = {} total combinations",
 					riskMultipliers.size(), totalCombinations);
+			logger.info("Output directory: {}", outputDir);
 
-			sRisks.clear();
-			
-			// Auto-select algorithm based on portfolio size
+			sRisks.clear();			// Auto-select algorithm based on portfolio size
 			if (strategiesToOptimize.size() <= 6) {
 				// Small portfolio: use exhaustive grid search (guaranteed optimal)
 				logger.info("Using GRID_SEARCH (exhaustive) - optimal for {} strategies", strategiesToOptimize.size());
@@ -664,7 +748,7 @@ public class App {
 				// Note: grid search writes results directly to model, no need to update sRisks
 			} else if (strategiesToOptimize.size() <= 10) {
 				// Medium portfolio: use genetic algorithm (95-98% optimal, much faster)
-				int maxEvaluations = Math.min(10000, totalCombinations);
+				int maxEvaluations = Math.min(100000, totalCombinations);
 				logger.info("Using GENETIC_ALGORITHM - efficient for {} strategies (budget: {} evaluations)",
 						strategiesToOptimize.size(), maxEvaluations);
 				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
@@ -674,7 +758,7 @@ public class App {
 				sRisks.putAll(bestAllocation);
 			} else {
 				// Large portfolio: use coarse-to-fine hierarchical search
-				int maxEvaluations = 20000;
+				int maxEvaluations = 100000;
 				logger.info("Using COARSE_TO_FINE - scalable for {} strategies (budget: {} evaluations)",
 						strategiesToOptimize.size(), maxEvaluations);
 				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
@@ -684,11 +768,36 @@ public class App {
 				sRisks.putAll(bestAllocation);
 			}
 
-			// Write all optimization results
-			String optimizedStatsPath = configReader.getPropValues("PortfolioResult_Location") + "portfolioStatistics_optimize_adjusted.csv";
-			fileService.writeStatiscsListCVS(optimizedStatsPath, true);
 
-			logger.info("Optimization complete. Results written to {}", optimizedStatsPath);
+		// Write all optimization results to output directory
+		String optimizedStatsPath = outputDir + "portfolioStatistics_optimize_adjusted.csv";
+		String configSummaryPath = outputDir + "optimization_config.txt";			fileService.writeStatiscsListCVS(optimizedStatsPath, true);
+			
+			// Write configuration summary
+			try (java.io.PrintWriter writer = new java.io.PrintWriter(configSummaryPath)) {
+				writer.println("Optimization Configuration");
+				writer.println("=========================");
+				writer.println("Timestamp: " + timestamp);
+				writer.println("Strategies to optimize: " + strategiesToOptimize.size());
+				writer.println("Predefined strategies: " + predefinedStrategies.size());
+				writer.println("Risk multipliers: " + riskMultipliers);
+				writer.println("Total combinations: " + totalCombinations);
+				writer.println("");
+				writer.println("Strategies to optimize:");
+				strategiesToOptimize.forEach(s -> writer.println("  - " + s));
+				if (!predefinedStrategies.isEmpty()) {
+					writer.println("\nPredefined strategies:");
+					predefinedStrategies.forEach((k, v) -> writer.println("  - " + k + ": " + v));
+				}
+				if (!model.getFactors().isEmpty()) {
+					writer.println("\nOptimization factors:");
+					model.getFactors().forEach((k, v) -> writer.println("  - " + k + ": " + v));
+				}
+			} catch (java.io.FileNotFoundException e) {
+				logger.warn("Could not write config summary: {}", e.getMessage());
+			}
+
+			logger.info("Optimization complete. Results written to {}", outputDir);
 
 		} catch (IOException e) {
 			logger.error("Error during portfolio optimization: {}", e.getMessage(), e);
@@ -703,7 +812,26 @@ public class App {
 		}
 
 		logger.info("Running simulation with optimal portfolio configuration");
-		run(optimizedModels.get(0).strategyRisk, true);
+		
+		// Write best portfolio to output directory
+		Statistics bestModel = optimizedModels.get(0);
+		try {
+			String bestPortfolioPath = outputDir + "best_portfolio.csv";
+			try (java.io.PrintWriter writer = new java.io.PrintWriter(bestPortfolioPath)) {
+				writer.println("StrategyID,Risk");
+				bestModel.strategyRisk.entrySet().stream()
+						.sorted(java.util.Map.Entry.comparingByKey())
+						.forEach(e -> writer.println(e.getKey() + "," + e.getValue()));
+			}
+			logger.info("Best portfolio written to {}", bestPortfolioPath);
+		} catch (java.io.FileNotFoundException e) {
+			logger.warn("Could not write best portfolio: {}", e.getMessage());
+		}
+		
+		// Run final simulation with best portfolio configuration (isOptimized=false)
+		// This will re-run the entire process: clear model, reload results, recalculate statistics
+		// This allows comparison between optimization results and fresh recalculation
+		run(bestModel.strategyRisk, true, false, outputDir);
 	}
 
 		/**

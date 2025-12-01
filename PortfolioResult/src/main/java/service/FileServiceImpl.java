@@ -1,14 +1,22 @@
 package service;
 
-import java.io.*;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.apache.commons.beanutils.converters.FileConverter;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,10 +49,9 @@ import model.Statistics;
 public class FileServiceImpl implements FileService {
 
 	private final static Logger logger = LogManager.getLogger(FileServiceImpl.class);
-	private static final int BUFFER_SIZE = 8192; // 8KB buffer for optimal I/O
 	
-	private ModelDataService model;
-	private StatisticsService service;
+	private final ModelDataService model;
+	private final StatisticsService service;
 
 	public FileServiceImpl(ModelDataService model, StatisticsService service) {
 		this.model = model;
@@ -54,7 +61,7 @@ public class FileServiceImpl implements FileService {
 	@Override
 	public Map<String, Double> readPortfolioRisk(String filePath) {
 
-		Map<String,Double> sRisks = new HashMap<String,Double>();
+		Map<String,Double> sRisks = new HashMap<>();
 
 		try (Reader reader = Files.newBufferedReader(Paths.get(filePath));
 			 CSVReader csvReader = new CSVReaderBuilder(reader).withSkipLines(1).build();
@@ -62,7 +69,8 @@ public class FileServiceImpl implements FileService {
 		) {
 			List<String[]> records = csvReader.readAll();
 			for (String[] record : records) {
-				sRisks.put(record[0],Double.parseDouble(record[1]));
+				double riskValue = Double.parseDouble(record[1]);
+				sRisks.put(record[0], riskValue);
 			}
 		}
 		catch (Exception e){
@@ -214,6 +222,7 @@ public class FileServiceImpl implements FileService {
 
 				result.weekInYear = DateTimeHelper.getWeekInYear(result.closeTime);
 				result.monthInYear = DateTimeHelper.getMonthInYear(result.closeTime);
+				result.dayInYear = DateTimeHelper.getDayInYear(result.closeTime);
 				result.pl = result.profit / result.balance;
 //                if(result.closePrice == 0)
 //                	continue;
@@ -327,7 +336,35 @@ public class FileServiceImpl implements FileService {
 		//List<Statistics> sList = model.getTopStatistics(10);
 		List<Statistics> sList = service.selectModels(isOptimized);
 		
-		Map<String, Double > risk =model.getStrategyRisks();
+		// Collect ALL strategy IDs from ALL statistics objects to ensure consistent ordering
+		// This handles cases where different portfolios have different strategy sets
+		Set<String> allStrategyIds = new java.util.HashSet<>();
+		for (Statistics stats : sList) {
+			if (stats.strategyRisk != null) {
+				allStrategyIds.addAll(stats.strategyRisk.keySet());
+			}
+		}
+		
+		// Sort strategy IDs to ensure consistent column order
+		List<String> sortedStrategyIds = allStrategyIds.stream()
+				.sorted()
+				.collect(java.util.stream.Collectors.toList());
+		
+		// Deduplicate by portfolio configuration (remove cache-induced duplicates)
+		// Keep only the first occurrence of each unique portfolio
+		Map<String, Statistics> uniquePortfolios = new java.util.LinkedHashMap<>();
+		for (Statistics stats : sList) {
+			// Create portfolio key from the actual strategyRisk map in this statistics object
+			// Use sortedStrategyIds to ensure consistent key format
+			String portfolioKey = sortedStrategyIds.stream()
+					.map(id -> {
+						Double riskValue = stats.strategyRisk != null ? stats.strategyRisk.get(id) : null;
+						return riskValue != null ? String.valueOf(riskValue) : "0.0";
+					})
+					.collect(java.util.stream.Collectors.joining(","));
+			uniquePortfolios.putIfAbsent(portfolioKey, stats);
+		}
+		List<Statistics> deduplicatedList = new java.util.ArrayList<>(uniquePortfolios.values());
 		
 		try (
 			Writer writer = Files.newBufferedWriter(Paths.get(
@@ -340,11 +377,11 @@ public class FileServiceImpl implements FileService {
 					"Risk_reward", "BestTrade", "WorstTrade", "UlcerIndex", "Martin"};
 			
 			
-			ArrayUtils.addAll(headerRecord,risk.keySet().toArray());
+			ArrayUtils.addAll(headerRecord,sortedStrategyIds.toArray());
 			
-			csvWriter.writeNext((String[]) ArrayUtils.addAll(headerRecord,risk.keySet().toArray()));
+			csvWriter.writeNext((String[]) ArrayUtils.addAll(headerRecord,sortedStrategyIds.toArray()));
 
-			for (Statistics statistics : sList) {
+			for (Statistics statistics : deduplicatedList) {
 				
 				String[] base = new String[] { 
 						Double.toString(statistics.totalReturn), Double.toString(statistics.max_dd),
@@ -359,15 +396,57 @@ public class FileServiceImpl implements FileService {
 						Double.toString(statistics.ulcerIndex), Double.toString(statistics.martin)
 				};
 				
-								
-				csvWriter.writeNext((String[]) ArrayUtils.addAll(base,statistics.strategyRisk.values().stream().map(d->Double.toString(d)).toArray()));
+			
+		// Write strategy risks in same sorted order as header
+		String[] riskValues = sortedStrategyIds.stream()
+				.map(id -> Double.toString(statistics.strategyRisk.getOrDefault(id, 0.0)))
+				.toArray(String[]::new);			csvWriter.writeNext(ArrayUtils.addAll(base, riskValues));
+		}		} catch (IOException e) {
+			logger.error(e.getMessage(), e);
+		}
+	}
+
+	@Override
+	public void generateDailyReport(String filePath, boolean isAdjusted) throws IOException {
+		try (Writer writer = Files.newBufferedWriter(Paths.get(
+				String.format("%s_%s.csv",filePath,DateTimeHelper.getCurrentLocalDateTimeStamp())));
+
+				CSVWriter csvWriter = new CSVWriter(writer, CSVWriter.DEFAULT_SEPARATOR, CSVWriter.NO_QUOTE_CHARACTER,
+						CSVWriter.DEFAULT_ESCAPE_CHARACTER, CSVWriter.DEFAULT_LINE_END);) {
+			String[] headerRecord = {"Date","Lots", "Daily Return","Daily Return %", "Balance"};
+			csvWriter.writeNext(headerRecord);
+
+			List<Results> results = model.getAdjustedData(isAdjusted);
+			
+			Map<Integer, List<Results>> dailyResults =  
+					results.stream().collect(Collectors.groupingBy(d->d.dayInYear))
+					.entrySet().stream().sorted(Map.Entry.comparingByKey())
+					.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
+	                        (oldValue, newValue) -> oldValue, LinkedHashMap::new));			
+	        
+	        
+			Double balance = ModelDataServiceImpl.INITBALANCE;
+			for (Entry<Integer, List<Results>> day : dailyResults.entrySet()) {
+				Double dailyReturn = day.getValue().stream().mapToDouble(d->d.profit).sum();
+				Double dailyTotalLots = day.getValue().stream().mapToDouble(d->d.lots).sum();
+				
+				balance += dailyReturn;
+				
+				csvWriter.writeNext(new String[] { 
+						day.getKey().toString(),
+						Double.toString(dailyTotalLots),
+						Double.toString(dailyReturn),
+						Double.toString(dailyReturn/balance),
+						Double.toString(balance)
+				});				
 			}
 
 		} catch (IOException e) {
 			logger.error(e.getMessage(), e);
 		}
+		
 	}
-
+	
 	@Override
 	public void generateWeelyReport(String filePath, boolean isAdjusted) throws IOException {
 		try (Writer writer = Files.newBufferedWriter(Paths.get(
@@ -576,13 +655,8 @@ public class FileServiceImpl implements FileService {
 
 	@Override
 	public void writeToErrorFile(String filePath,String data) throws IOException {
-		try {
-			File newTextFile = new File(filePath);
-
-			FileWriter fw = new FileWriter(newTextFile);
+		try (FileWriter fw = new FileWriter(new File(filePath))) {
 			fw.write(data);
-			fw.close();
-
 		} catch (IOException e) {
 			logger.error(e.getMessage(), e);
 		}

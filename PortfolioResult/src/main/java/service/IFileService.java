@@ -24,6 +24,8 @@ public interface IFileService {
 	public void writeNewStrategyCVS(String filePath, boolean isAdjusted) throws IOException;
 
 	public void generateWeelyReport(String filePath,boolean isAdjusted) throws IOException;
+	
+	public void generateDailyReport(String filePath,boolean isAdjusted) throws IOException;
 	public void generateMonthlyReport(String filePath,boolean isAdjusted) throws IOException;
 	
 	public void writeStatiscsCVS(String filePath,Statistics statistics) throws IOException;

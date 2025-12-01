@@ -69,7 +69,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 		statistics.profit_factor = plMetrics.totalWinning / plMetrics.totalLosing;
 
 		// Drawdown and time-based metrics
-		DrawdownMetrics ddMetrics = calculateDrawdownMetrics(results);
+		DrawdownMetrics ddMetrics = calculateDrawdownMetrics(results, initialBalance);
 		statistics.max_dd = ddMetrics.maxDrawdownDepth;
 		statistics.max_dd_length = ddMetrics.maxDrawdownLengthDays;
 
@@ -182,12 +182,19 @@ public class StatisticsServiceImpl implements StatisticsService {
 	}
 
 	/**
-	 * Calculates maximum drawdown depth and length.
+	 * Calculates maximum drawdown depth and length using portfolio balance.
+	 * 
+	 * Note: result.balance already contains the cumulative portfolio balance
+	 * after risk adjustments are applied in ModelDataServiceImpl.applyRiskAdjustments().
+	 * 
+	 * @param results the list of trading results sorted by close time
+	 * @param initialBalance the starting portfolio balance (not used, kept for API compatibility)
+	 * @return DrawdownMetrics containing max drawdown depth and length
 	 */
-	private DrawdownMetrics calculateDrawdownMetrics(List<Results> results) {
+	private DrawdownMetrics calculateDrawdownMetrics(List<Results> results, double initialBalance) {
 		DrawdownMetrics metrics = new DrawdownMetrics();
 		
-		double maxBalance = 0.0;
+		double maxBalance = initialBalance;
 		double currentDDDepth = 0.0;
 		double maxDDDepth = 0.0;
 		long currentDDLength = 0;
@@ -195,13 +202,16 @@ public class StatisticsServiceImpl implements StatisticsService {
 		long ddStartTime = results.get(0).closeTime.getTime();
 
 		for (Results result : results) {
-			if (result.balance < maxBalance) {
+			// result.balance already contains cumulative portfolio balance
+			double portfolioBalance = result.balance;
+			
+			if (portfolioBalance < maxBalance) {
 				// In drawdown
-				currentDDDepth = ((maxBalance - result.balance) / maxBalance) * PERCENTAGE_MULTIPLIER;
+				currentDDDepth = ((maxBalance - portfolioBalance) / maxBalance) * PERCENTAGE_MULTIPLIER;
 				currentDDLength = result.closeTime.getTime() - ddStartTime;
-			} else if (result.balance > maxBalance) {
+			} else if (portfolioBalance > maxBalance) {
 				// New high - reset drawdown
-				maxBalance = result.balance;
+				maxBalance = portfolioBalance;
 				currentDDDepth = 0.0;
 				currentDDLength = 0;
 				ddStartTime = result.closeTime.getTime();
@@ -226,43 +236,74 @@ public class StatisticsServiceImpl implements StatisticsService {
 	 * Calculates R-squared (coefficient of determination) for equity curve.
 	 */
 	private double calculateRSquared(List<Results> results, long numTrades) {
+		if (results.isEmpty() || numTrades == 0) {
+			return 0.0;
+		}
+		
 		double firstBalance = results.get(0).balance;
 		long firstTime = results.get(0).closeTime.getTime();
 		
-		// Calculate linear regression slope
-		double sumBalanceTime = 0.0;
-		double timeSqrSum = 0.0;
-		double avgBalanceLog = 0.0;
+		// First pass: Calculate means
+		double sumTime = 0.0;
+		double sumLogBalance = 0.0;
 
 		for (Results result : results) {
 			long timeDiff = result.closeTime.getTime() - firstTime;
 			double logBalanceChange = Math.log(result.balance) - Math.log(firstBalance);
 			
-			timeSqrSum += Math.pow(timeDiff, 2);
-			sumBalanceTime += timeDiff * logBalanceChange;
-			avgBalanceLog += logBalanceChange / numTrades;
+			sumTime += timeDiff;
+			sumLogBalance += logBalanceChange;
 		}
 
-		double linearRegressionSlope = sumBalanceTime / timeSqrSum;
+		double avgTime = sumTime / numTrades;
+		double avgLogBalance = sumLogBalance / numTrades;
 
-		// Calculate coefficient of determination
+		// Second pass: Calculate linear regression coefficients using least squares
+		double sumXY = 0.0;
+		double sumXX = 0.0;
+
+		for (Results result : results) {
+			long timeDiff = result.closeTime.getTime() - firstTime;
+			double logBalanceChange = Math.log(result.balance) - Math.log(firstBalance);
+			
+			double xDev = timeDiff - avgTime;
+			double yDev = logBalanceChange - avgLogBalance;
+			
+			sumXY += xDev * yDev;
+			sumXX += xDev * xDev;
+		}
+
+		// Avoid division by zero
+		if (sumXX == 0) {
+			return 0.0;
+		}
+
+		double slope = sumXY / sumXX;
+		double intercept = avgLogBalance - slope * avgTime;
+
+		// Third pass: Calculate R² (coefficient of determination)
 		double sumSquaredResiduals = 0.0;
 		double sumSquaredTotal = 0.0;
 
 		for (Results result : results) {
 			long timeDiff = result.closeTime.getTime() - firstTime;
 			double logBalanceChange = Math.log(result.balance) - Math.log(firstBalance);
-			double predicted = linearRegressionSlope * timeDiff;
+			double predicted = slope * timeDiff + intercept;
 			
-			sumSquaredResiduals += Math.pow(predicted - logBalanceChange, 2);
-			sumSquaredTotal += Math.pow(logBalanceChange - avgBalanceLog, 2);
+			sumSquaredResiduals += Math.pow(logBalanceChange - predicted, 2);
+			sumSquaredTotal += Math.pow(logBalanceChange - avgLogBalance, 2);
 		}
 
-		if (sumSquaredTotal == 0 || (1 - sumSquaredResiduals / sumSquaredTotal) < 0) {
+		// Avoid division by zero
+		if (sumSquaredTotal == 0) {
 			return 0.0;
 		}
 		
-		return 1.0 - sumSquaredResiduals / sumSquaredTotal;
+		double rSquared = 1.0 - sumSquaredResiduals / sumSquaredTotal;
+		
+		// R² can technically be negative if model is worse than horizontal line
+		// Return 0 in that case (model has no predictive value)
+		return Math.max(0.0, rSquared);
 	}
 
 	/**

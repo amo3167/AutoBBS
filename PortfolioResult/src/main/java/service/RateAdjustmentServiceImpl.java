@@ -18,9 +18,15 @@ public class RateAdjustmentServiceImpl implements RateAdjustmentService {
 	private static final Logger logger = LogManager.getLogger(RateAdjustmentServiceImpl.class);
 	
 	// Timezone offset constants (in hours)
+	// Note: These constants are kept for documentation purposes but are not currently used
+	// as the timezone adjustments are handled by the ModelDataService implementation
+	@SuppressWarnings("unused")
 	private static final int EURUSD_TZ_OFFSET = 3;
+	@SuppressWarnings("unused")
 	private static final int EURGBP_TZ_OFFSET = 3;
+	@SuppressWarnings("unused")
 	private static final int XAGUSD_TZ_OFFSET = 8;
+	@SuppressWarnings("unused")
 	private static final int USTEC_TZ_OFFSET = 8;
 	
 	private final ModelDataService model;

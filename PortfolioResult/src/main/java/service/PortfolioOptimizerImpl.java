@@ -12,6 +12,7 @@ import org.apache.logging.log4j.Logger;
 
 import model.ModelDataService;
 import model.ModelDataServiceImpl;
+import model.Statistics;
 
 /**
  * Implementation of smart portfolio optimization strategies.
@@ -61,7 +62,7 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			Math.max(2, Runtime.getRuntime().availableProcessors() - 1));
 	
 	// Genetic algorithm parameters
-	private static final int GA_POPULATION_SIZE = 50;
+	private static final int GA_POPULATION_SIZE = 200;  // Larger population for better diversity
 	private static final int GA_GENERATIONS = 100;
 	private static final double GA_MUTATION_RATE = 0.15;
 	private static final double GA_CROSSOVER_RATE = 0.7;
@@ -118,6 +119,7 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	 * @param riskMultipliers List of risk multipliers to test
 	 * @param predefinedStrategies Strategies with fixed risk allocations
 	 */
+	@Override
 	public void optimizePortfolio(List<String> strategies, List<Double> riskMultipliers,
 	                              Map<String,Double> predefinedStrategies) {
 		if (strategies.isEmpty()) {
@@ -159,12 +161,13 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	                                     int depth, int[] iterationCounter, int logInterval) {
 		// Base case: all strategies have been assigned a risk multiplier
 		if (depth == strategies.size()) {
-		// Add predefined strategies with fixed risk allocations
-		workingRisks.putAll(predefinedStrategies);
-		
-		// Calculate statistics for this portfolio configuration
-		model.addStrategyList(workingRisks);
-		statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);			// Track progress
+			// Merge with predefined strategies and evaluate
+			Map<String,Double> completeRisks = new HashMap<>(predefinedStrategies);
+			completeRisks.putAll(workingRisks);
+			
+			// Calculate statistics for this portfolio configuration
+			model.addStrategyList(completeRisks);
+			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);			// Track progress
 			iterationCounter[0]++;
 			if (iterationCounter[0] % logInterval == 0) {
 				logger.info("Completed {} iterations...", iterationCounter[0]);
@@ -197,12 +200,49 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		cacheMisses.incrementAndGet();
 		long startTime = System.nanoTime();
 		
-		model.addStrategyList(riskAllocation);
-		statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);
+		// Apply constraint penalties from optimization factors BEFORE computing
+		Double minMaxDD = model.getFactors().get("min_max_dd");
+		Double maxMaxDD = model.getFactors().get("max_max_dd");
+		Double maxUlcerIndex = model.getFactors().get("max_ulcerIndex");
+		
+		// CRITICAL: Synchronize on model to ensure atomic operation
+		// This prevents race conditions where multiple threads modify strategyRisk
+		// and then read it, causing incorrect filtering of results
+		synchronized (model) {
+			model.addStrategyList(riskAllocation);
+			statisticsService.calculate(ModelDataServiceImpl.INITBALANCE, true);
+		}
 		
 		// Use Martin Ratio as primary fitness metric (CAGR / Ulcer Index)
 		// This balances return against risk-adjusted drawdown
-		double fitness = model.getStatistics().get(model.getStatistics().size() - 1).martin;
+		List<Statistics> stats = model.getStatistics();
+		if (stats.isEmpty()) {
+			logger.warn("No statistics computed for fitness evaluation");
+			return 0.0;
+		}
+		
+		Statistics lastStats = stats.get(stats.size() - 1);
+		
+		// If constraints are defined, penalize violations and DON'T save statistics
+		if (minMaxDD != null && maxMaxDD != null && maxUlcerIndex != null) {
+			if (lastStats.max_dd < minMaxDD || lastStats.max_dd > maxMaxDD || 
+				lastStats.ulcerIndex > maxUlcerIndex) {
+				// Log first few violations for debugging
+				if (cacheMisses.get() <= 10) {
+					logger.warn("Portfolio rejected: max_dd={} (need {}-{}), ulcerIndex={} (max {}), Martin={}",
+							String.format("%.2f", lastStats.max_dd), minMaxDD, maxMaxDD,
+							String.format("%.2f", lastStats.ulcerIndex), maxUlcerIndex,
+							String.format("%.2f", lastStats.martin));
+				}
+				// Remove the rejected statistics so it doesn't appear in results
+				stats.remove(stats.size() - 1);
+				// Return 0 fitness for constraint violations
+				fitnessCache.put(cacheKey, 0.0);
+				return 0.0;
+			}
+		}
+		
+		double fitness = lastStats.martin;
 		
 		// Cache the result
 		fitnessCache.put(cacheKey, fitness);
@@ -240,8 +280,10 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		int[] evaluationCount = {0};
 		
 		Map<String, Double> currentAllocation = new HashMap<>(predefinedStrategies);
+		@SuppressWarnings({"unchecked", "rawtypes"})
+		Map<String, Double>[] bestAllocationArray = new Map[]{bestAllocation};
 		exploreGrid(strategies, riskMultipliers, predefinedStrategies, currentAllocation,
-				0, evaluationCount, maxEvaluations, new double[]{bestFitness}, new Map[]{bestAllocation});
+				0, evaluationCount, maxEvaluations, new double[]{bestFitness}, bestAllocationArray);
 		
 		logger.info("Grid search completed {} evaluations. Best fitness: {}", evaluationCount[0], bestFitness);
 		return bestAllocation != null ? bestAllocation : new HashMap<>();
@@ -353,8 +395,11 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			Map<String, Double> predefinedStrategies,
 			int maxEvaluations) {
 		
-		int generations = Math.min(GA_GENERATIONS, maxEvaluations / GA_POPULATION_SIZE);
-		logger.info("Running GA: {} generations, population size {}", generations, GA_POPULATION_SIZE);
+		// Calculate generations needed to use full evaluation budget
+		// Account for initial population + offspring per generation (minus cached elites)
+		int generations = Math.max(GA_GENERATIONS, maxEvaluations / GA_POPULATION_SIZE);
+		logger.info("Running GA: up to {} generations, population size {} (budget: {} evaluations)", 
+				generations, GA_POPULATION_SIZE, maxEvaluations);
 		
 		// Initialize population randomly
 		List<Individual> population = new ArrayList<>();
@@ -380,13 +425,20 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 					.max(Comparator.comparingDouble(ind -> ind.fitness))
 					.orElse(null);
 			
-			if (best == null || (genBest != null && genBest.fitness > best.fitness)) {
+			if (genBest != null && (best == null || genBest.fitness > best.fitness)) {
 				best = genBest;
 				logger.debug("Generation {}: best fitness = {}", gen, best.fitness);
 			}
 			
 			if ((gen + 1) % 10 == 0) {
-				logger.info("GA generation {}/{}: best fitness = {}", gen + 1, generations, best.fitness);
+				logger.info("GA generation {}/{}: best fitness = {} ({} evaluations)", 
+						gen + 1, generations, best != null ? String.format("%.2f", best.fitness) : "0.0", evaluations);
+			}
+			
+			// Stop early if we've reached the evaluation budget
+			if (evaluations >= maxEvaluations) {
+				logger.info("Reached evaluation budget at generation {}/{}", gen + 1, generations);
+				break;
 			}
 			
 			// Create next generation
@@ -418,7 +470,8 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			population = nextGen;
 		}
 		
-		logger.info("GA completed {} evaluations. Best fitness: {}", evaluations, best.fitness);
+		logger.info("GA completed {} evaluations (target: {}). Best fitness: {}", 
+				evaluations, maxEvaluations, best != null ? String.format("%.2f", best.fitness) : "0.0");
 		return best != null ? best.allocation : new HashMap<>();
 	}
 	
@@ -472,8 +525,8 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			temperature *= SA_COOLING_RATE;
 			
 			if (evaluations % 1000 == 0) {
-				logger.info("SA progress: {} evaluations, temp = {:.2f}, best fitness = {}",
-						evaluations, temperature, bestFitness);
+				logger.info("SA progress: {} evaluations, temp = {}, best fitness = {}",
+						evaluations, String.format("%.2f", temperature), bestFitness);
 			}
 		}
 		
@@ -492,6 +545,10 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			Map<String, Double> predefinedStrategies,
 			int maxEvaluations) {
 		
+		// Track global best across all stages
+		Map<String, Double> globalBest = null;
+		double globalBestFitness = Double.NEGATIVE_INFINITY;
+		
 		// Stage 1: Coarse search with fewer risk levels (use 3 levels)
 		List<Double> coarseMultipliers = Arrays.asList(
 				riskMultipliers.get(0),
@@ -506,21 +563,51 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		Map<String, Double> coarseBest = randomSearch(strategies, coarseMultipliers, 
 				predefinedStrategies, stage1Budget);
 		
+		// Merge with predefined strategies for stage 2
+		Map<String, Double> coarseComplete = new HashMap<>(predefinedStrategies);
+		coarseComplete.putAll(coarseBest);
+		double stage1Fitness = evaluateFitness(coarseComplete);
+		if (stage1Fitness > globalBestFitness) {
+			globalBest = new HashMap<>(coarseComplete);
+			globalBestFitness = stage1Fitness;
+			logger.info("Stage 1 best fitness: {}", globalBestFitness);
+		}
+		
 		// Stage 2: Refine around best solution
 		int stage2Budget = maxEvaluations / 3;
 		logger.info("Coarse-to-fine stage 2: refining around best solution, budget {}", stage2Budget);
 		
-		Map<String, Double> refined = localSearch(strategies, riskMultipliers, coarseBest,
+		Map<String, Double> refined = localSearch(strategies, riskMultipliers, coarseComplete,
 				predefinedStrategies, stage2Budget);
+		
+		// Merge with predefined strategies for stage 3
+		Map<String, Double> refinedComplete = new HashMap<>(predefinedStrategies);
+		refinedComplete.putAll(refined);
+		double stage2Fitness = evaluateFitness(refinedComplete);
+		if (stage2Fitness > globalBestFitness) {
+			globalBest = new HashMap<>(refinedComplete);
+			globalBestFitness = stage2Fitness;
+			logger.info("Stage 2 improved! New best fitness: {}", globalBestFitness);
+		}
 		
 		// Stage 3: Final polish with full resolution
 		int stage3Budget = maxEvaluations - stage1Budget - stage2Budget;
 		logger.info("Coarse-to-fine stage 3: final refinement, budget {}", stage3Budget);
 		
-		Map<String, Double> finalBest = localSearch(strategies, riskMultipliers, refined,
+		Map<String, Double> finalBest = localSearch(strategies, riskMultipliers, refinedComplete,
 				predefinedStrategies, stage3Budget);
 		
-		return finalBest;
+		Map<String, Double> finalComplete = new HashMap<>(predefinedStrategies);
+		finalComplete.putAll(finalBest);
+		double stage3Fitness = evaluateFitness(finalComplete);
+		if (stage3Fitness > globalBestFitness) {
+			globalBest = new HashMap<>(finalComplete);
+			globalBestFitness = stage3Fitness;
+			logger.info("Stage 3 improved! New best fitness: {}", globalBestFitness);
+		}
+		
+		logger.info("COARSE_TO_FINE completed. Global best fitness: {}", globalBestFitness);
+		return globalBest;
 	}
 	
 	// Helper methods for genetic algorithm
@@ -568,10 +655,11 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	
 	private Individual crossover(Individual parent1, Individual parent2, List<String> strategies) {
 		ThreadLocalRandom random = ThreadLocalRandom.current();
-		Map<String, Double> childAllocation = new HashMap<>();
+		// Start with parent1's full allocation (includes predefined strategies)
+		Map<String, Double> childAllocation = new HashMap<>(parent1.allocation);
 		
+		// For strategies being optimized, randomly inherit from either parent
 		for (String strategy : strategies) {
-			// Randomly inherit from either parent
 			childAllocation.put(strategy,
 					random.nextBoolean() ? parent1.allocation.get(strategy) : parent2.allocation.get(strategy));
 		}
@@ -587,19 +675,18 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	}
 	
 	private Map<String, Double> localSearch(List<String> strategies, List<Double> riskMultipliers,
-											 Map<String, Double> startPoint, Map<String, Double> predefinedStrategies,
+											 Map<String, Double> startPoint, @SuppressWarnings("unused") Map<String, Double> predefinedStrategies,
 											 int maxEvaluations) {
+		// startPoint should already include predefined strategies (predefinedStrategies parameter kept for API consistency)
 		Map<String, Double> best = new HashMap<>(startPoint);
-		best.putAll(predefinedStrategies);
 		double bestFitness = evaluateFitness(best);
 		int evaluations = 1;
 		
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		
 		while (evaluations < maxEvaluations) {
-			// Try modifying one strategy at a time
+			// Try modifying one strategy at a time (only the strategies being optimized)
 			String strategy = strategies.get(random.nextInt(strategies.size()));
-			Double originalValue = best.get(strategy);
 			
 			for (Double multiplier : riskMultipliers) {
 				if (evaluations >= maxEvaluations) break;

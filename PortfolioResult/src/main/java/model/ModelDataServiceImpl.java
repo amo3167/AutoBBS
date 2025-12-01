@@ -82,11 +82,18 @@ public class ModelDataServiceImpl implements ModelDataService {
 		}
 		
 		clear();
-		strategyRisk.putAll(risks);
+		// Normalize incoming strategy IDs to avoid mismatches due to whitespace
+		if (risks != null) {
+			for (Map.Entry<String, Double> e : risks.entrySet()) {
+				String key = e.getKey() == null ? null : e.getKey().trim();
+				if (key != null && !key.isEmpty()) {
+					strategyRisk.put(key, e.getValue());
+				}
+			}
+		}
 		this.noCashOutMode = isNoCashOut;
-		
 		logger.debug("Initialized model with {} strategies, noCashOutMode={}", 
-				risks.size(), isNoCashOut);
+				strategyRisk.size(), isNoCashOut);
 	}
 
 	@Override
@@ -97,7 +104,7 @@ public class ModelDataServiceImpl implements ModelDataService {
 		statisticList.clear();
 		dailyChecks.clear();
 		rates.clear();
-		factors.clear();
+		// Note: factors are preserved across clear() as they're set once at startup
 	}
 
 	@Override
@@ -153,8 +160,9 @@ public class ModelDataServiceImpl implements ModelDataService {
 	
 	@Override
 	public List<Results> getAdjustedData(boolean isAdjusted) {
-		List<Results> adjustedResults = filterResultsByStartDate(isAdjusted);
-		return applyRiskAdjustments(adjustedResults);
+		List<Results> filteredResults = filterResultsByStartDate(isAdjusted);
+		List<Results> sortedResults = sortResultsChronologically(filteredResults);
+		return applyRiskAdjustments(sortedResults);
 	}
 
 	/**
@@ -186,7 +194,15 @@ public class ModelDataServiceImpl implements ModelDataService {
 
 	/**
 	 * Calculates the effective start date as the latest of configured start date
-	 * and the maximum first trade date across all strategies.
+	 * and the maximum first trade date across strategies in the current portfolio.
+	 * 
+	 * <p>Only considers first dates for strategies that are actually in the current
+	 * portfolio allocation (strategyRisk map). This prevents filtering out trades
+	 * from strategies that are in the portfolio but started earlier than other
+	 * strategies that are not in the portfolio.</p>
+	 * 
+	 * <p><strong>Thread Safety:</strong> Creates a defensive copy of strategyRisk
+	 * keys to avoid ConcurrentModificationException during parallel execution.</p>
 	 * 
 	 * @return the effective start date
 	 */
@@ -195,54 +211,151 @@ public class ModelDataServiceImpl implements ModelDataService {
 			return startDate;
 		}
 
-		Date maxFirstDate = firstDates.values().stream()
-				.max(Date::compareTo)
-				.orElse(startDate);
+		// Thread-safe: Create a defensive copy of strategyRisk keys to avoid
+		// ConcurrentModificationException when accessed from multiple threads
+		Set<String> portfolioStrategies;
+		synchronized (this.strategyRisk) {
+			portfolioStrategies = new HashSet<>(strategyRisk.keySet());
+		}
 
-		return (startDate != null && maxFirstDate.before(startDate)) 
+		// Only consider first dates for strategies in the current portfolio allocation
+		Optional<Date> maxFirstDate = portfolioStrategies.stream()
+				.map(firstDates::get)
+				.filter(Objects::nonNull)
+				.max(Date::compareTo);
+
+		if (!maxFirstDate.isPresent()) {
+			return startDate;
+		}
+
+		Date maxDate = maxFirstDate.get();
+		return (startDate != null && maxDate.before(startDate)) 
 				? startDate 
-				: maxFirstDate;
+				: maxDate;
+	}
+
+	/**
+	 * Sorts results chronologically by execution time across all strategies.
+	 * 
+	 * <p>For closed trades, uses close time. For open trades (closePrice == 0),
+	 * uses open time. This ensures portfolio balance is calculated correctly
+	 * as trades execute in chronological order across all strategies.</p>
+	 * 
+	 * <p>Sorting order:
+	 * <ol>
+	 *   <li>Primary: Execution time (close time for closed trades, open time for open trades)</li>
+	 *   <li>Secondary: Strategy ID (for trades at same time)</li>
+	 *   <li>Tertiary: Order number (for trades at same time from same strategy)</li>
+	 * </ol>
+	 * 
+	 * @param results List of results to sort
+	 * @return Chronologically sorted list of results
+	 */
+	private List<Results> sortResultsChronologically(List<Results> results) {
+		if (results == null || results.isEmpty()) {
+			return new ArrayList<>();
+		}
+		
+		return results.stream()
+			.sorted((r1, r2) -> {
+				// Determine execution time: use close time for closed trades, open time for open trades
+				Date time1 = getExecutionTime(r1);
+				Date time2 = getExecutionTime(r2);
+				
+				// Primary sort: execution time
+				int timeCompare = time1.compareTo(time2);
+				if (timeCompare != 0) {
+					return timeCompare;
+				}
+				
+				// Secondary sort: strategy ID (for trades at same time)
+				int strategyCompare = r1.strategyID.compareToIgnoreCase(r2.strategyID);
+				if (strategyCompare != 0) {
+					return strategyCompare;
+				}
+				
+				// Tertiary sort: order number (for trades at same time from same strategy)
+				return r1.orderNumber.compareToIgnoreCase(r2.orderNumber);
+			})
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Gets the execution time for a trade result.
+	 * 
+	 * <p>For closed trades (closePrice != 0), returns close time.
+	 * For open trades (closePrice == 0), returns open time.</p>
+	 * 
+	 * @param result The trade result
+	 * @return Execution time (close time for closed trades, open time for open trades)
+	 */
+	private Date getExecutionTime(Results result) {
+		// Open trade: closePrice is 0 or closeTime is null/invalid
+		if (result.closePrice == 0 || result.closeTime == null) {
+			return result.openTime != null ? result.openTime : new Date(0);
+		}
+		// Closed trade: use close time
+		return result.closeTime;
 	}
 
 	/**
 	 * Applies risk multipliers and computes running balance for results.
 	 * 
+	 * <p>Only includes results for strategies with defined risk multipliers.
+	 * Filters out results for strategies not in the current allocation.</p>
+	 * 
 	 * @param results  list of results to adjust
-	 * @return adjusted results with risk-weighted profits and balances
+	 * @return adjusted results with risk-weighted profits and balances (filtered)
 	 */
 	private List<Results> applyRiskAdjustments(List<Results> results) {
+		List<Results> adjustedResults = new ArrayList<>();
 		double balance = INITBALANCE;
 
 		for (Results result : results) {
 			try {
 				Double risk = strategyRisk.get(result.strategyID);
 				if (risk == null) {
-					logger.warn("No risk multiplier found for strategy: {}", result.strategyID);
+					// Strategy exists in data but not in current allocation - skip it
+					// This is expected during optimization when testing different allocations
 					continue;
 				}
 
-				double leverage = balance / result.balance;
-				result.lots = leverage * result.lots * risk;
+				// CRITICAL: Create a copy to avoid modifying the original Results object
+				// This prevents stale data when the same Results objects are reused across
+				// different portfolio evaluations in the optimization loop
+				Results adjustedResult = new Results(result);
+
+				// Calculate profit based on percentage return (result.pl) applied to portfolio balance
+				// result.pl = profit / per-strategy-balance (calculated in FileServiceImpl.readCSV)
+				// We apply this percentage return to the current portfolio balance with risk multiplier
+				adjustedResult.profit = adjustedResult.pl * balance * risk;
 				
-				if (noCashOutMode) {
-					result.profit = result.pl * balance * risk;
-				} else {
-					result.profit = result.profit * risk;
-				}
+				// Update lots proportionally to reflect portfolio allocation
+				// (lots are used for visualization/debugging, actual profit comes from result.pl)
+				double leverage = balance / INITBALANCE;
+				adjustedResult.lots = leverage * adjustedResult.lots * risk;
 				
-				balance += result.profit;
-				result.balance = balance;
+				balance += adjustedResult.profit;
+				adjustedResult.balance = balance;
+				
+				// Only add results that have been processed with risk adjustments
+				adjustedResults.add(adjustedResult);
 				
 			} catch (Exception e) {
 				System.err.println("Error adjusting result: " + e.getMessage());
 			}
 		}
 
-		return results;
-	}	@Override
-	public void saveStatistics(Statistics statistics) {
+		return adjustedResults;
+	}	
+	
+	@Override
+	public synchronized void saveStatistics(Statistics statistics) {
 		if (statistics != null) {
-			statistics.strategyRisk = new HashMap<>(this.strategyRisk);
+			// Create thread-safe copy of strategy risk map
+			synchronized (this.strategyRisk) {
+				statistics.strategyRisk = new HashMap<>(this.strategyRisk);
+			}
 			this.statisticList.add(statistics);
 		}
 	}
@@ -277,10 +390,16 @@ public class ModelDataServiceImpl implements ModelDataService {
 	}
 
 	@Override
-	public void addStrategyList(Map<String, Double> risks) {
+	public synchronized void addStrategyList(Map<String, Double> risks) {
 		if (risks != null) {
-			strategyRisk.clear();
-			strategyRisk.putAll(risks);
+			synchronized (this.strategyRisk) {
+				strategyRisk.clear();
+				for (Map.Entry<String, Double> e : risks.entrySet()) {
+					if (e.getKey() != null) {
+						strategyRisk.put(e.getKey().trim(), e.getValue());
+					}
+				}
+			}
 		}
 	}
 
