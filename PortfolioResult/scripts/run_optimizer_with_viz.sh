@@ -26,7 +26,8 @@ NC='\033[0m' # No Color
 
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-OUTPUT_BASE_DIR="${SCRIPT_DIR}/batch/output"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+OUTPUT_BASE_DIR="${PROJECT_ROOT}/batch/output"
 VISUALIZER_SCRIPT="${SCRIPT_DIR}/visualize_portfolio.py"
 
 # Parse arguments
@@ -90,10 +91,11 @@ fi
 
 # Run optimizer and capture output
 OPTIMIZER_START=$(date +%s)
-echo -e "${YELLOW}Running: ./run_optimizer.sh ${CONFIG_NUM} ${START_DATE}${NC}"
+echo -e "${YELLOW}Running: ${SCRIPT_DIR}/run_optimizer.sh ${CONFIG_NUM} ${START_DATE}${NC}"
 echo ""
 
-if ./run_optimizer.sh "${CONFIG_NUM}" "${START_DATE}"; then
+cd "${PROJECT_ROOT}"
+if "${SCRIPT_DIR}/run_optimizer.sh" "${CONFIG_NUM}" "${START_DATE}"; then
     OPTIMIZER_END=$(date +%s)
     OPTIMIZER_DURATION=$((OPTIMIZER_END - OPTIMIZER_START))
     echo ""
@@ -152,7 +154,7 @@ else
     # Check if visualizer script exists
     if [[ ! -f "$VISUALIZER_SCRIPT" ]]; then
         echo -e "${RED}✗ Visualizer script not found: ${VISUALIZER_SCRIPT}${NC}"
-        echo -e "${YELLOW}Please ensure visualize_portfolio.py is in the PortfolioResult directory${NC}"
+        echo -e "${YELLOW}Please ensure visualize_portfolio.py is in the scripts directory${NC}"
         exit 1
     fi
     

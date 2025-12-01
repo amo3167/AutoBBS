@@ -6,15 +6,17 @@
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
 
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 TEST_SEED=12345
 
 # Config files
-OPTIMIZE_CONFIG="portfolioOptimize5.config"
-PRESET_CONFIG="portfolioOptimizePreset5.config"
-FACTOR_CONFIG="portfolioOptimizeFactor5.config"
+CONFIG_DIR="portfolioRiskConfig"
+OPTIMIZE_CONFIG="${CONFIG_DIR}/portfolioOptimize5.config"
+PRESET_CONFIG="${CONFIG_DIR}/portfolioOptimizePreset5.config"
+FACTOR_CONFIG="${CONFIG_DIR}/portfolioOptimizeFactor5.config"
 START_DATE="2018-01-01"
 
 echo "=================================="

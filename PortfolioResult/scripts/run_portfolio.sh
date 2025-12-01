@@ -2,18 +2,21 @@
 
 # Portfolio Simulation Runner with Visualization
 # Runs portfolio simulation and generates visual charts
-# Usage: ./run_portfolio.sh <risk_config> [start_date] [check_orders]
-# Example: ./run_portfolio.sh portfoliorisk5.config 2018-01-01 false
+# Usage: ./run_portfolio.sh <config_number> [start_date] [check_orders]
+# Example: ./run_portfolio.sh 5 2018-01-01 false
 
 set -e
 
-RISK_CONFIG=${1:-portfoliorisk5.config}
+CONFIG_NUM=${1:-5}
 START_DATE=${2:-2018-01-01}
 CHECK_ORDERS=${3:-false}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
 
+CONFIG_DIR="portfolioRiskConfig"
+RISK_CONFIG="${CONFIG_DIR}/portfoliorisk${CONFIG_NUM}.config"
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 BATCH_DIR="batch"
 OUTPUT_BASE="batch/output"
@@ -21,6 +24,8 @@ OUTPUT_BASE="batch/output"
 # Validate config file exists
 if [ ! -f "$RISK_CONFIG" ]; then
     echo "Error: Risk config file not found: $RISK_CONFIG"
+    echo "Available config files:"
+    ls -1 ${CONFIG_DIR}/portfoliorisk*.config 2>/dev/null | sed 's/.*\//  /' || echo "  (none found)"
     exit 1
 fi
 
@@ -38,10 +43,11 @@ mkdir -p "$OUTPUT_DIR"
 echo "=========================================="
 echo "Portfolio Simulation Runner"
 echo "=========================================="
-echo "Risk Config:  $RISK_CONFIG"
-echo "Start Date:   $START_DATE"
-echo "Check Orders: $CHECK_ORDERS"
-echo "Output Dir:   $OUTPUT_DIR"
+echo "Config Number: $CONFIG_NUM"
+echo "Risk Config:   $RISK_CONFIG"
+echo "Start Date:    $START_DATE"
+echo "Check Orders:  $CHECK_ORDERS"
+echo "Output Dir:    $OUTPUT_DIR"
 echo "=========================================="
 echo ""
 
@@ -219,8 +225,9 @@ echo "=========================================="
 echo ""
 
 # Check if visualization script exists
-if [ ! -f "visualize_portfolio.py" ]; then
-    echo "  Warning: visualize_portfolio.py not found"
+VISUALIZER_SCRIPT="${SCRIPT_DIR}/visualize_portfolio.py"
+if [ ! -f "$VISUALIZER_SCRIPT" ]; then
+    echo "  Warning: visualize_portfolio.py not found in scripts directory"
     echo "  Skipping visualization generation"
     echo ""
 else
@@ -233,7 +240,7 @@ else
     else
         echo "  Running visualization script..."
         # Suppress warnings about missing optimization files (expected for portfolio simulation)
-        python3 visualize_portfolio.py "$OUTPUT_DIR" -o "$OUTPUT_DIR/visualizations" 2>&1 | grep -v "Not found\|not available" | tee "$OUTPUT_DIR/visualization.log"
+        python3 "$VISUALIZER_SCRIPT" "$OUTPUT_DIR" -o "$OUTPUT_DIR/visualizations" 2>&1 | grep -v "Not found\|not available" | tee "$OUTPUT_DIR/visualization.log"
         
         VIZ_EXIT_CODE=${PIPESTATUS[0]}
         

@@ -12,11 +12,13 @@ START_DATE=${2:-2018-01-01}
 NUM_SEEDS=${3:-10}
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$PROJECT_ROOT"
 
-CONFIG_FILE="portfolioOptimize${CONFIG_NUM}.config"
-PRESET_FILE="portfolioOptimizePreset${CONFIG_NUM}.config"
-FACTOR_FILE="portfolioOptimizeFactor${CONFIG_NUM}.config"
+CONFIG_DIR="portfolioRiskConfig"
+CONFIG_FILE="${CONFIG_DIR}/portfolioOptimize${CONFIG_NUM}.config"
+PRESET_FILE="${CONFIG_DIR}/portfolioOptimizePreset${CONFIG_NUM}.config"
+FACTOR_FILE="${CONFIG_DIR}/portfolioOptimizeFactor${CONFIG_NUM}.config"
 JAR_FILE="target/PortfolioResult-1.0.0-jar-with-dependencies.jar"
 
 # Validate files exist
