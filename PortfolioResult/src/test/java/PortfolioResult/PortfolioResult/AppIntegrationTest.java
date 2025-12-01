@@ -33,8 +33,6 @@ class AppIntegrationTest {
 
 	private Path testConfigDir;
 	private Path testBatchDir;
-	private String originalConfigLocation;
-	private String originalBatchLocation;
 
 	@BeforeEach
 	void setUp() throws IOException {

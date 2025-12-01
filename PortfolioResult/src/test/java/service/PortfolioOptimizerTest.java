@@ -18,7 +18,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import model.ModelDataService;
-import model.Results;
 import model.Statistics;
 import service.PortfolioOptimizer.OptimizationStrategy;
 
