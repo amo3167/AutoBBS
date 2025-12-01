@@ -1,6 +1,5 @@
 package service;
 
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -180,13 +179,16 @@ class MT4ConversionServiceTest {
 	private List<Rates> createTestRates(int count) {
 		List<Rates> rates = new ArrayList<>();
 		for (int i = 0; i < count; i++) {
-			Rates rate = new Rates();
-			rate.datetime = new Date(System.currentTimeMillis() + (i * 60000));
-			rate.open = 1.2000 + (i * 0.0001);
-			rate.high = 1.2010 + (i * 0.0001);
-			rate.low = 1.1990 + (i * 0.0001);
-			rate.close = 1.2005 + (i * 0.0001);
-			rate.volume = 1000 + i;
+			// Using @AllArgsConstructor: (datetime, open, close, high, low, volume)
+			// Parameter order matches field declaration order in Rates class
+			Rates rate = new Rates(
+				new Date(System.currentTimeMillis() + (i * 60000)),  // datetime
+				1.2000 + (i * 0.0001),  // open
+				1.2005 + (i * 0.0001),  // close
+				1.2010 + (i * 0.0001),  // high
+				1.1990 + (i * 0.0001),  // low
+				1000 + i                 // volume
+			);
 			rates.add(rate);
 		}
 		return rates;

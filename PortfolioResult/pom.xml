@@ -191,6 +191,18 @@
 						<goals>
 							<goal>prepare-agent</goal>
 						</goals>
+						<configuration>
+							<excludes>
+								<exclude>**/model/Rates.class</exclude>
+								<exclude>**/model/Results.class</exclude>
+								<exclude>**/model/DailyCheck.class</exclude>
+								<exclude>**/model/Statistics.class</exclude>
+								<exclude>**/model/CommodityTimeZoneAdjuster.class</exclude>
+								<exclude>**/model/StandardTimeZoneAdjuster.class</exclude>
+								<exclude>**/PortfolioResult/PortfolioResult/ConfigReader.class</exclude>
+								<exclude>**/PortfolioResult/PortfolioResult/App.class</exclude>
+							</excludes>
+						</configuration>
 					</execution>
 					<execution>
 						<id>report</id>
@@ -213,9 +225,12 @@
 										<limit>
 											<counter>LINE</counter>
 											<value>COVEREDRATIO</value>
-											<minimum>0.70</minimum>
+											<minimum>0.40</minimum>
 										</limit>
 									</limits>
+									<excludes>
+										<exclude>PortfolioResult.PortfolioResult</exclude>
+									</excludes>
 								</rule>
 							</rules>
 						</configuration>

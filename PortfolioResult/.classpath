@@ -32,4 +32,5 @@
 	<classpathentry kind="var" path="M2_REPO/it/unimi/dsi/fastutil/8.5.12/fastutil-8.5.12.jar"/>
 	<classpathentry kind="var" path="M2_REPO/io/micrometer/micrometer-core/1.12.0/micrometer-core-1.12.0.jar"/>
 	<classpathentry kind="var" path="M2_REPO/org/projectlombok/lombok/1.18.34/lombok-1.18.34.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.APT_CONTAINER/org.eclipse.jdt.annotationprocessor.aptcontainer?project=PortfolioResult"/>
 </classpath>

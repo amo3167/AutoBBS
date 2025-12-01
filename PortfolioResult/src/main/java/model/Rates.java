@@ -3,7 +3,6 @@ package model;
 import java.util.Date;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
-import lombok.AllArgsConstructor;
 
 /**
  * Represents market rate data (OHLCV - Open, High, Low, Close, Volume).
@@ -11,7 +10,6 @@ import lombok.AllArgsConstructor;
  */
 @EqualsAndHashCode
 @NoArgsConstructor
-@AllArgsConstructor
 public class Rates implements Comparable<Rates> {
 
 	/** The timestamp for this rate data */

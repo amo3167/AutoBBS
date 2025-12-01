@@ -20,6 +20,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import model.ModelDataService;
 import model.Statistics;
 import service.PortfolioOptimizer.OptimizationStrategy;
+import service.StatisticsService;
 
 /**
  * Unit tests for {@link PortfolioOptimizerImpl}.
