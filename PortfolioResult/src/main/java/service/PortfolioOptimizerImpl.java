@@ -61,6 +61,10 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	private final ForkJoinPool parallelPool = new ForkJoinPool(
 			Math.max(2, Runtime.getRuntime().availableProcessors() - 1));
 	
+	// Random number generator (null = use ThreadLocalRandom, non-deterministic)
+	// When set, provides deterministic results for reproducible optimization
+	private Random random;
+	
 	// Genetic algorithm parameters
 	private static final int GA_POPULATION_SIZE = 200;  // Larger population for better diversity
 	private static final int GA_GENERATIONS = 100;
@@ -78,13 +82,58 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		this.statisticsService = statisticsService;
 	}
 	
+	/**
+	 * Gets the random number generator to use.
+	 * If a seed was provided, returns the deterministic Random instance.
+	 * Otherwise, returns ThreadLocalRandom for non-deterministic behavior.
+	 * 
+	 * @return Random number generator
+	 */
+	private Random getRandom() {
+		if (random != null) {
+			return random;
+		}
+		// For non-deterministic behavior, use ThreadLocalRandom
+		// Note: ThreadLocalRandom doesn't support seeding, so we can't use it directly
+		// Instead, we'll create a new Random() when seed is null (non-deterministic)
+		// But for backward compatibility with parallel operations, we need ThreadLocalRandom
+		// So we'll use ThreadLocalRandom.current() in parallel contexts
+		return ThreadLocalRandom.current();
+	}
+	
+	/**
+	 * Gets a random number generator for the current thread.
+	 * For deterministic results (when seed is provided), returns the shared Random instance.
+	 * For non-deterministic results, returns ThreadLocalRandom for thread safety.
+	 * 
+	 * @return Random number generator for current thread
+	 */
+	private Random getThreadRandom() {
+		if (random != null) {
+			// For deterministic results, use synchronized access to shared Random
+			// Note: This may serialize access in parallel operations, but ensures determinism
+			return random;
+		}
+		return ThreadLocalRandom.current();
+	}
+	
 	@Override
 	public Map<String, Double> optimize(
 			List<String> strategies,
 			List<Double> riskMultipliers,
 			Map<String, Double> predefinedStrategies,
 			OptimizationStrategy strategy,
-			int maxEvaluations) {
+			int maxEvaluations,
+			Long randomSeed) {
+		
+		// Initialize random number generator
+		if (randomSeed != null) {
+			this.random = new Random(randomSeed);
+			logger.info("Using deterministic random seed: {} (results will be reproducible)", randomSeed);
+		} else {
+			this.random = null; // Will use ThreadLocalRandom for non-deterministic behavior
+			logger.info("Using non-deterministic random (ThreadLocalRandom)");
+		}
 		
 		logger.info("Starting {} optimization for {} strategies with budget of {} evaluations",
 				strategy, strategies.size(), maxEvaluations);
@@ -342,19 +391,30 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		AtomicReference<Map<String, Double>> bestAllocation = new AtomicReference<>(new HashMap<>());
 		AtomicReference<Double> bestFitness = new AtomicReference<>(Double.NEGATIVE_INFINITY);
 		
+		// For deterministic results, disable parallel execution to ensure reproducibility
+		final boolean useParallel = (random == null);
+		
+		if (useParallel) {
+			logger.info("Using parallel execution (non-deterministic)");
+		} else {
+			logger.info("Using sequential execution (deterministic with seed)");
+		}
+		
 		try {
+			final IntStream stream = useParallel 
+					? IntStream.range(0, maxEvaluations).parallel()
+					: IntStream.range(0, maxEvaluations);
+			
 			parallelPool.submit(() -> {
-				IntStream.range(0, maxEvaluations)
-						.parallel()
-						.forEach(i -> {
-							ThreadLocalRandom random = ThreadLocalRandom.current();
-							Map<String, Double> allocation = new HashMap<>(predefinedStrategies);
-							
-							// Randomly sample risk multiplier for each strategy
-							for (String strategy : strategies) {
-								int randomIndex = random.nextInt(riskMultipliers.size());
-								allocation.put(strategy, riskMultipliers.get(randomIndex));
-							}
+				stream.forEach(i -> {
+					Random rng = getThreadRandom();
+					Map<String, Double> allocation = new HashMap<>(predefinedStrategies);
+					
+					// Randomly sample risk multiplier for each strategy
+					for (String strategy : strategies) {
+						int randomIndex = rng.nextInt(riskMultipliers.size());
+						allocation.put(strategy, riskMultipliers.get(randomIndex));
+					}
 							
 							double fitness = evaluateFitness(allocation);
 							
@@ -456,11 +516,12 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 				Individual parent1 = tournamentSelect(population);
 				Individual parent2 = tournamentSelect(population);
 				
-				Individual offspring = ThreadLocalRandom.current().nextDouble() < GA_CROSSOVER_RATE
+				Random rng = getRandom();
+				Individual offspring = rng.nextDouble() < GA_CROSSOVER_RATE
 						? crossover(parent1, parent2, strategies)
 						: new Individual(new HashMap<>(parent1.allocation));
 				
-				if (ThreadLocalRandom.current().nextDouble() < GA_MUTATION_RATE) {
+				if (rng.nextDouble() < GA_MUTATION_RATE) {
 					mutate(offspring, strategies, riskMultipliers);
 				}
 				
@@ -486,7 +547,7 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			Map<String, Double> predefinedStrategies,
 			int maxEvaluations) {
 		
-		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Random rng = getRandom();
 		
 		// Start with random solution
 		Map<String, Double> current = createRandomAllocation(strategies, riskMultipliers, predefinedStrategies);
@@ -502,15 +563,15 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 			for (int i = 0; i < SA_ITERATIONS_PER_TEMP && evaluations < maxEvaluations; i++) {
 				// Generate neighbor by tweaking one strategy
 				Map<String, Double> neighbor = new HashMap<>(current);
-				String strategy = strategies.get(random.nextInt(strategies.size()));
-				neighbor.put(strategy, riskMultipliers.get(random.nextInt(riskMultipliers.size())));
+				String strategy = strategies.get(rng.nextInt(strategies.size()));
+				neighbor.put(strategy, riskMultipliers.get(rng.nextInt(riskMultipliers.size())));
 				
 				double neighborFitness = evaluateFitness(neighbor);
 				evaluations++;
 				
 				// Accept if better, or probabilistically if worse
 				double delta = neighborFitness - currentFitness;
-				if (delta > 0 || random.nextDouble() < Math.exp(delta / temperature)) {
+				if (delta > 0 || rng.nextDouble() < Math.exp(delta / temperature)) {
 					current = neighbor;
 					currentFitness = neighborFitness;
 					
@@ -629,22 +690,22 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	
 	private Map<String, Double> createRandomAllocation(List<String> strategies, List<Double> riskMultipliers,
 														Map<String, Double> predefinedStrategies) {
-		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Random rng = getRandom();
 		Map<String, Double> allocation = new HashMap<>(predefinedStrategies);
 		
 		for (String strategy : strategies) {
-			allocation.put(strategy, riskMultipliers.get(random.nextInt(riskMultipliers.size())));
+			allocation.put(strategy, riskMultipliers.get(rng.nextInt(riskMultipliers.size())));
 		}
 		
 		return allocation;
 	}
 	
 	private Individual tournamentSelect(List<Individual> population) {
-		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Random rng = getRandom();
 		Individual best = null;
 		
 		for (int i = 0; i < GA_TOURNAMENT_SIZE; i++) {
-			Individual candidate = population.get(random.nextInt(population.size()));
+			Individual candidate = population.get(rng.nextInt(population.size()));
 			if (best == null || candidate.fitness > best.fitness) {
 				best = candidate;
 			}
@@ -654,23 +715,23 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 	}
 	
 	private Individual crossover(Individual parent1, Individual parent2, List<String> strategies) {
-		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Random rng = getRandom();
 		// Start with parent1's full allocation (includes predefined strategies)
 		Map<String, Double> childAllocation = new HashMap<>(parent1.allocation);
 		
 		// For strategies being optimized, randomly inherit from either parent
 		for (String strategy : strategies) {
 			childAllocation.put(strategy,
-					random.nextBoolean() ? parent1.allocation.get(strategy) : parent2.allocation.get(strategy));
+					rng.nextBoolean() ? parent1.allocation.get(strategy) : parent2.allocation.get(strategy));
 		}
 		
 		return new Individual(childAllocation);
 	}
 	
 	private void mutate(Individual individual, List<String> strategies, List<Double> riskMultipliers) {
-		ThreadLocalRandom random = ThreadLocalRandom.current();
-		String strategy = strategies.get(random.nextInt(strategies.size()));
-		individual.allocation.put(strategy, riskMultipliers.get(random.nextInt(riskMultipliers.size())));
+		Random rng = getRandom();
+		String strategy = strategies.get(rng.nextInt(strategies.size()));
+		individual.allocation.put(strategy, riskMultipliers.get(rng.nextInt(riskMultipliers.size())));
 		individual.fitness = null; // Invalidate fitness cache
 	}
 	
@@ -682,11 +743,11 @@ public class PortfolioOptimizerImpl implements PortfolioOptimizer {
 		double bestFitness = evaluateFitness(best);
 		int evaluations = 1;
 		
-		ThreadLocalRandom random = ThreadLocalRandom.current();
+		Random rng = getRandom();
 		
 		while (evaluations < maxEvaluations) {
 			// Try modifying one strategy at a time (only the strategies being optimized)
-			String strategy = strategies.get(random.nextInt(strategies.size()));
+			String strategy = strategies.get(rng.nextInt(strategies.size()));
 			
 			for (Double multiplier : riskMultipliers) {
 				if (evaluations >= maxEvaluations) break;

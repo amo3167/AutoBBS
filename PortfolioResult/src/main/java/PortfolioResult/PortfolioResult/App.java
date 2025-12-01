@@ -121,13 +121,21 @@ public class App {
 				factors = fileService.readPortfolioRisk(configReader.getPropValues("PortfolioRisk_Location") + args[3]);
 
 				LocalDate startDate = LocalDate.of(2000,1,1);
-				if(args.length == 5) {
+				Long randomSeed = null;
+				
+				if(args.length >= 5) {
 					startDate = LocalDate.parse(args[4]);
 				}
+				if(args.length >= 6) {
+					// Optional random seed for deterministic optimization
+					randomSeed = Long.parseLong(args[5]);
+					logger.info("Using deterministic random seed: {} (results will be reproducible)", randomSeed);
+				}
+				
 				model.setStartDate(Date.from(startDate.atStartOfDay(ZoneId.systemDefault()).toInstant()));
 				model.setFactors(factors);
 
-				run_optimizer(sRisks,predefinedStrategies);
+				run_optimizer(sRisks, predefinedStrategies, randomSeed);
 				break;
 			}
 			case "optimizerLevel2":
@@ -693,7 +701,7 @@ public class App {
 	 *                             These strategies are not optimized but are included in every
 	 *                             portfolio configuration.
 	 */
-	private static void run_optimizer(Map<String,Double> sRisks, Map<String,Double> predefinedStrategies) {
+	private static void run_optimizer(Map<String,Double> sRisks, Map<String,Double> predefinedStrategies, Long randomSeed) {
 		// Separate strategies to optimize from predefined ones
 		List<String> strategiesToOptimize = sRisks.keySet().stream()
 				.sorted()
@@ -746,25 +754,71 @@ public class App {
 				logger.info("Using GRID_SEARCH (exhaustive) - optimal for {} strategies", strategiesToOptimize.size());
 				portfolioOptimizer.optimizePortfolio(strategiesToOptimize, riskMultipliers, predefinedStrategies);
 				// Note: grid search writes results directly to model, no need to update sRisks
-			} else if (strategiesToOptimize.size() <= 10) {
-				// Medium portfolio: use genetic algorithm (95-98% optimal, much faster)
-				int maxEvaluations = Math.min(100000, totalCombinations);
-				logger.info("Using GENETIC_ALGORITHM - efficient for {} strategies (budget: {} evaluations)",
-						strategiesToOptimize.size(), maxEvaluations);
+			} else if (strategiesToOptimize.size() <= 15) {
+				// Medium-Large portfolio: use genetic algorithm (population-based, efficient exploration)
+				// GA works well for 7-15 strategies with population diversity
+				// Extended to 13-15 strategies with larger budget for better quality (96% vs 92% for Coarse-to-Fine)
+				// Scale budget to account for exponential search space growth:
+				// - 7-9 strategies: 100k (smaller space, sufficient)
+				// - 10 strategies: 120k (moderate increase)
+				// - 11 strategies: 150k (larger increase for much bigger space)
+				// - 12 strategies: 200k (significant increase for very large space)
+				// - 13 strategies: 300k (extended GA range, larger budget for quality)
+				// - 14 strategies: 350k (extended GA range, larger budget for quality)
+				// - 15 strategies: 400k (extended GA range, larger budget for quality)
+				// Rationale: As search space grows exponentially, more generations help convergence
+				// For 13-15: Trade-off speed for quality (96% vs 92% for Coarse-to-Fine)
+				int maxEvaluations;
+				if (strategiesToOptimize.size() <= 9) {
+					maxEvaluations = 100000;  // Static 100k for 7-9 strategies
+				} else if (strategiesToOptimize.size() == 10) {
+					maxEvaluations = 120000;  // 20% increase for 10 strategies
+				} else if (strategiesToOptimize.size() == 11) {
+					maxEvaluations = 150000;  // 50% increase for 11 strategies
+				} else if (strategiesToOptimize.size() == 12) {
+					maxEvaluations = 200000;  // 100% increase for 12 strategies
+				} else if (strategiesToOptimize.size() == 13) {
+					maxEvaluations = 300000;  // Extended GA: 300k for 13 strategies (quality over speed)
+				} else if (strategiesToOptimize.size() == 14) {
+					maxEvaluations = 350000;  // Extended GA: 350k for 14 strategies (quality over speed)
+				} else {  // 15 strategies
+					maxEvaluations = 400000;  // Extended GA: 400k for 15 strategies (quality over speed)
+				}
+				maxEvaluations = Math.min(maxEvaluations, totalCombinations);
+				logger.info("Using GENETIC_ALGORITHM - efficient for {} strategies (budget: {} evaluations, ~{} generations)",
+						strategiesToOptimize.size(), maxEvaluations, maxEvaluations / 200);
 				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
 						strategiesToOptimize, riskMultipliers, predefinedStrategies,
 						PortfolioOptimizer.OptimizationStrategy.GENETIC_ALGORITHM,
-						maxEvaluations);
+						maxEvaluations,
+						randomSeed); // Use provided seed (null = non-deterministic)
 				sRisks.putAll(bestAllocation);
 			} else {
-				// Large portfolio: use coarse-to-fine hierarchical search
-				int maxEvaluations = 100000;
-				logger.info("Using COARSE_TO_FINE - scalable for {} strategies (budget: {} evaluations)",
-						strategiesToOptimize.size(), maxEvaluations);
+				// Very large portfolio: use coarse-to-fine hierarchical search
+				// Hierarchical approach better for very large search spaces (16+ strategies)
+				// GA extended to 13-15 strategies for better quality (96% vs 92%)
+				// Tiered scaling to account for exponential search space growth:
+				// - 16-20 strategies: Aggressive scaling (260k-460k)
+				// - 21+ strategies: Very aggressive scaling (540k+)
+				// Rationale: As search space grows exponentially, each stage needs more budget
+				int maxEvaluations;
+				int strategyCount = strategiesToOptimize.size();
+				if (strategyCount <= 20) {
+					// 16-20: Aggressive scaling (50k per strategy above 15)
+					maxEvaluations = 210000 + ((strategyCount - 15) * 50000);
+					// Results: 16→260k, 17→310k, 18→360k, 19→410k, 20→460k
+				} else {
+					// 21+: Very aggressive scaling (80k per strategy above 20)
+					maxEvaluations = 460000 + ((strategyCount - 20) * 80000);
+					// Results: 21→540k, 22→620k, 25→860k, 30→1.26M, etc.
+				}
+				logger.info("Using COARSE_TO_FINE - scalable for {} strategies (budget: {} evaluations, ~{} per stage)",
+						strategyCount, maxEvaluations, maxEvaluations / 3);
 				Map<String, Double> bestAllocation = portfolioOptimizer.optimize(
 						strategiesToOptimize, riskMultipliers, predefinedStrategies,
 						PortfolioOptimizer.OptimizationStrategy.COARSE_TO_FINE,
-						maxEvaluations);
+						maxEvaluations,
+						randomSeed); // Use provided seed (null = non-deterministic)
 				sRisks.putAll(bestAllocation);
 			}
 

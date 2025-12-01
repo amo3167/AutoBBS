@@ -42,6 +42,7 @@ public interface PortfolioOptimizer {
 	 * @param predefinedStrategies Strategies with fixed allocations
 	 * @param strategy Optimization algorithm to use
 	 * @param maxEvaluations Maximum portfolio configurations to evaluate (budget limit)
+	 * @param randomSeed Optional random seed for deterministic results (null for non-deterministic)
 	 * @return Best risk allocation found (strategy ID -> risk multiplier)
 	 */
 	Map<String, Double> optimize(
@@ -49,7 +50,8 @@ public interface PortfolioOptimizer {
 		List<Double> riskMultipliers,
 		Map<String, Double> predefinedStrategies,
 		OptimizationStrategy strategy,
-		int maxEvaluations
+		int maxEvaluations,
+		Long randomSeed
 	);
 	
 	/**
