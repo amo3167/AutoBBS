@@ -92,8 +92,9 @@ Add comprehensive unit tests for critical business logic. Current coverage <10%,
 - [x] Test portfolio construction logic
 - [x] Test date/time handling
 - [ ] Test optimization algorithm (pending - requires integration test setup)
-- [ ] Achieve 70%+ code coverage on service layer (in progress)
+- [ ] Achieve 70%+ code coverage on service layer (in progress - currently 28%)
 - [x] All tests pass in CI
+- [x] Code coverage measurement setup (JaCoCo configured)
 
 **Test Classes Created:**
 ```
@@ -137,6 +138,30 @@ src/test/java/
 - All tests passing with JUnit 5 and Mockito 5
 - Tests cover edge cases (null values, empty lists, all winning/losing trades)
 - Tests verify calculation correctness for key metrics
+- JaCoCo code coverage plugin configured
+
+**Code Coverage Status:**
+- **Overall Coverage: 24%** (2,440 of 9,939 instructions covered)
+- **Service Layer: 28%** (target: 70%, progress: 40% of target)
+- **Model Layer: 37%**
+- **App.java: 0%** (not yet tested - requires integration tests)
+
+**Coverage Breakdown:**
+- Instructions: 24% (2,440 covered / 9,939 total)
+- Branches: 19% (115 covered / 591 total)
+- Lines: 26% (469 covered / 1,835 total)
+- Methods: 35% (82 covered / 233 total)
+
+**Coverage Report:**
+- Generated at: `target/site/jacoco/index.html`
+- Run: `mvn clean test jacoco:report`
+- Check: `mvn jacoco:check` (fails until 70% reached)
+
+**Next Steps to Reach 70%:**
+1. Add integration tests for App.java (PortfolioResult.PortfolioResult package)
+2. Add tests for PortfolioOptimizer (optimization algorithms)
+3. Add tests for remaining FileService methods
+4. Add tests for RateAdjustmentService and MT4ConversionService
 
 ---
 
