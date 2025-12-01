@@ -257,5 +257,6 @@ When reporting issues, include:
 ---
 
 **Version**: 0.05  
-**Last Updated**: December 2024
+**Last Updated**: December 2024  
+**Changelog**: See [CHANGELOG.md](CHANGELOG.md)
 

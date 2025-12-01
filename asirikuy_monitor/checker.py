@@ -22,6 +22,7 @@ from include.platform_utils import (
     detect_platform, get_platform_name, get_platform_info,
     get_platform_error_message, is_windows, is_macos, is_linux
 )
+from include.version import get_version_string, get_full_version_info
 import datetime as dt
 import time
 import calendar
@@ -45,7 +46,9 @@ def version() -> None:
     Print version information and exit
     """
     platform_info = get_platform_info()
-    print("Asirikuy Monitor v0.05")
+    version_info = get_full_version_info()
+    print(get_version_string())
+    print(f"Version: {version_info['version']} ({version_info['version_date']})")
     print(f"Platform: {get_platform_name()} ({platform_info['system']} {platform_info['release']})")
 
 
