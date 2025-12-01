@@ -1,27 +1,26 @@
 
-import os, xml.dom.minidom
+import os
+import xml.dom.minidom
+from include.platform_utils import is_windows, is_unix
 
 def prettyXML(filePath):
 	xmlContent = xml.dom.minidom.parse(filePath) 
 	pretty_xml = xmlContent.toprettyxml()
-	f = open(filePath, "w")
-	f.write(pretty_xml)
-	f.close()
+	with open(filePath, "w", encoding='utf-8') as f:
+		f.write(pretty_xml)
 
 def insertLine(filePath, line, numberLine):
-	f = open(filePath, "r")
-	contents = f.readlines()
-	f.close()
+	with open(filePath, "r", encoding='utf-8') as f:
+		contents = f.readlines()
 	
 	contents.insert(numberLine, line)
 	
-	f = open(filePath, "w")
-	contents = "\n".join(contents)
-	f.write(contents)
-	f.close()
+	with open(filePath, "w", encoding='utf-8') as f:
+		f.write("\n".join(contents))
 
 def clearScreen():
-	if os.name == 'posix':
+	"""Clear the terminal screen (cross-platform)"""
+	if is_unix():
 		os.system('clear')
-	elif os.name == 'nt':
+	elif is_windows():
 		os.system('cls')
