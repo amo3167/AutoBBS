@@ -23,6 +23,14 @@ from include.platform_utils import (
     get_platform_error_message, is_windows, is_macos, is_linux
 )
 from include.version import get_version_string, get_full_version_info
+
+# Telegram notification support
+try:
+    from include.telegram_notifier import send_telegram_alert
+    TELEGRAM_AVAILABLE = True
+except ImportError:
+    TELEGRAM_AVAILABLE = False
+    send_telegram_alert = None  # Placeholder to avoid NameError
 import datetime as dt
 import time
 import calendar
@@ -105,18 +113,34 @@ def main() -> None:
     openHour =  int(config.get('general', 'weekOpenHour'))
     closeDay =  int(config.get('general', 'weekCloseDay'))
     closeHour = int(config.get('general', 'weekCloseHour'))
-    useEmail = int(config.get('general', 'useEmail'))
+    useEmail = int(config.get('general', 'useEmail', fallback='0'))
     
     # Get email credentials from environment variables first, fall back to config file
-    fromEmail = os.getenv('EMAIL_FROM', config.get('general', 'fromEmail'))
-    toEmail = os.getenv('EMAIL_TO', config.get('general', 'toEmail'))
-    emailLogin = os.getenv('EMAIL_LOGIN', config.get('general', 'emailLogin'))
-    emailPassword = os.getenv('EMAIL_PASSWORD', config.get('general', 'emailPassword'))
-    smtpServer = os.getenv('SMTP_SERVER', config.get('general', 'smtpServer'))
+    fromEmail = os.getenv('EMAIL_FROM', config.get('general', 'fromEmail', fallback=''))
+    toEmail = os.getenv('EMAIL_TO', config.get('general', 'toEmail', fallback=''))
+    emailLogin = os.getenv('EMAIL_LOGIN', config.get('general', 'emailLogin', fallback=''))
+    emailPassword = os.getenv('EMAIL_PASSWORD', config.get('general', 'emailPassword', fallback=''))
+    smtpServer = os.getenv('SMTP_SERVER', config.get('general', 'smtpServer', fallback=''))
     
     # Warn if using config file credentials (less secure)
-    if not os.getenv('EMAIL_PASSWORD'):
+    if not os.getenv('EMAIL_PASSWORD') and useEmail == 1:
         logger.warning("Using email password from config file. Consider using EMAIL_PASSWORD environment variable for better security.")
+    
+    # Get Telegram notification settings
+    useTelegram = int(config.get('general', 'useTelegram', fallback='0'))
+    telegramBotToken = os.getenv('TELEGRAM_BOT_TOKEN', config.get('general', 'telegramBotToken', fallback=''))
+    telegramChatId = os.getenv('TELEGRAM_CHAT_ID', config.get('general', 'telegramChatId', fallback=''))
+    
+    # Validate Telegram configuration if enabled
+    if useTelegram == 1 and TELEGRAM_AVAILABLE:
+        if not telegramBotToken or not telegramChatId:
+            logger.warning("Telegram notifications enabled but bot token or chat ID not configured. Disabling Telegram notifications.")
+            useTelegram = 0
+        else:
+            logger.info("Telegram notifications enabled")
+    elif useTelegram == 1 and not TELEGRAM_AVAILABLE:
+        logger.warning("Telegram notifications enabled but Telegram module not available. Install requests library: pip install requests")
+        useTelegram = 0
     
     # Get account sections
     account_sections: List[str] = [
@@ -260,22 +284,39 @@ def main() -> None:
                                     except Exception as e:
                                         logger.error(f"Error killing MT4 processes: {e}")
                                 
+                                # Send notifications (email and/or Telegram)
+                                alert_message = f"Heart-Beat problem for instance {files}, system not updating for more than {monitoringInterval*2.5} secs"
+                                
                                 if useEmail == 1:
                                     output = "Sending email message about heart beat..."
                                     print(output)
                                     logger.error(output)  
-                                    email_message = f"Heart-Beat problem for instance {files}, system not updating for more than {monitoringInterval*2.5} secs"
                                     try:
                                         retry_email_send(
                                             sendemail,
                                             fromEmail, toEmail, "", 
                                             f"{account_section} error message", 
-                                            email_message, 
+                                            alert_message, 
                                             emailLogin, emailPassword, smtpServer,
                                             max_attempts=3
                                         )
                                     except Exception as e:
                                         logger.error(f"Error sending email for heartbeat problem after retries: {e}")
+                                
+                                if useTelegram == 1 and TELEGRAM_AVAILABLE and send_telegram_alert:
+                                    output = "Sending Telegram notification about heart beat..."
+                                    print(output)
+                                    logger.error(output)
+                                    try:
+                                        send_telegram_alert(
+                                            bot_token=telegramBotToken,
+                                            chat_id=telegramChatId,
+                                            title=f"{account_section} - Heartbeat Alert",
+                                            message=f"⚠️ {alert_message}",
+                                            alert_type="CRITICAL"
+                                        )
+                                    except Exception as e:
+                                        logger.error(f"Error sending Telegram notification for heartbeat problem: {e}")
                                 break
                         except ValueError as e:
                             logger.error(f"Error parsing heartbeat file {files}: {e}")
@@ -355,21 +396,38 @@ def main() -> None:
                             except Exception as e:
                                 logger.error(f"Error killing MT4 processes: {e}")
                         
-                        if useEmail == 1 and last_error[account_index] != data[len(data)-1]:
-                            output = "Sending email message about error..."
-                            logger.error(output)
-                            last_error[account_index] = data[len(data)-1]
-                            try:
-                                retry_email_send(
-                                    sendemail,
-                                    fromEmail, toEmail, "", 
-                                    f"{account_section} error message", 
-                                    data[len(data)-1], 
-                                    emailLogin, emailPassword, smtpServer,
-                                    max_attempts=3
-                                )
-                            except Exception as e:
-                                logger.error(f"Error sending email for error detection after retries: {e}")
+                        if (useEmail == 1 or useTelegram == 1) and last_error[account_index] != data[len(data)-1]:
+                            error_message = data[len(data)-1]
+                            last_error[account_index] = error_message
+                            
+                            if useEmail == 1:
+                                output = "Sending email message about error..."
+                                logger.error(output)
+                                try:
+                                    retry_email_send(
+                                        sendemail,
+                                        fromEmail, toEmail, "", 
+                                        f"{account_section} error message", 
+                                        error_message, 
+                                        emailLogin, emailPassword, smtpServer,
+                                        max_attempts=3
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Error sending email for error detection after retries: {e}")
+                            
+                            if useTelegram == 1 and TELEGRAM_AVAILABLE and send_telegram_alert:
+                                output = "Sending Telegram notification about error..."
+                                logger.error(output)
+                                try:
+                                    send_telegram_alert(
+                                        bot_token=telegramBotToken,
+                                        chat_id=telegramChatId,
+                                        title=f"{account_section} - Error Detected",
+                                        message=f"❌ {error_message}",
+                                        alert_type="ERROR"
+                                    )
+                                except Exception as e:
+                                    logger.error(f"Error sending Telegram notification for error detection: {e}")
                         break
                 except Exception as e:
                     logger.error(f"Error processing log file for {account_section}: {e}")

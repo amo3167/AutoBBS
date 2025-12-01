@@ -9,6 +9,18 @@ toEmail = recipient@gmail.com
 emailLogin = your-email@gmail.com
 emailPassword = your-password
 smtpServer = smtp.gmail.com:587
+
+# Telegram Bot notifications (recommended - instant, free, no spam)
+# Set useTelegram = 1 to enable Telegram notifications
+useTelegram = 0
+# Telegram credentials can be set via environment variables (recommended):
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+# Or set them here:
+telegramBotToken = your-bot-token-here
+telegramChatId = your-chat-id-here
+# To get bot token: Message @BotFather on Telegram, create a bot with /newbot
+# To get chat ID: Message @userinfobot on Telegram, or send a message to your bot and visit:
+# https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
 weekOpenDay = 0
 weekOpenHour = 6
 weekCloseDay = 5
