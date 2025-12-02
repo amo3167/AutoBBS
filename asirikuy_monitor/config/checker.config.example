@@ -16,7 +16,7 @@ useTelegram = 0
 # Telegram credentials can be set via environment variables (recommended):
 # TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
 # Or set them here:
-telegramBotToken = 8278847564:AAHPuIR2VrpctlcKq-PpKD1Cf3fGc1Grt8o
+telegramBotToken = placeholder
 telegramChatId = @Amo3167_bot
 # To get bot token: Message @BotFather on Telegram, create a bot with /newbot
 # To get chat ID: Message @userinfobot on Telegram, or send a message to your bot and visit:
