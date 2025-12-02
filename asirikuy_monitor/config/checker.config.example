@@ -1,0 +1,44 @@
+[general]
+monitoringInterval = 60
+useEmail = 1
+# Email credentials can be set via environment variables (recommended):
+# EMAIL_FROM, EMAIL_TO, EMAIL_LOGIN, EMAIL_PASSWORD, SMTP_SERVER
+# Or set them here (less secure):
+fromEmail = your-email@gmail.com
+toEmail = recipient@gmail.com
+emailLogin = your-email@gmail.com
+emailPassword = your-password
+smtpServer = smtp.gmail.com:587
+
+# Telegram Bot notifications (recommended - instant, free, no spam)
+# Set useTelegram = 1 to enable Telegram notifications
+useTelegram = 0
+# Telegram credentials can be set via environment variables (recommended):
+# TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID
+# Or set them here:
+telegramBotToken = placeholder
+telegramChatId = @Amo3167_bot
+# To get bot token: Message @BotFather on Telegram, create a bot with /newbot
+# To get chat ID: Message @userinfobot on Telegram, or send a message to your bot and visit:
+# https://api.telegram.org/bot<YOUR_BOT_TOKEN>/getUpdates
+weekOpenDay = 0
+weekOpenHour = 6
+weekCloseDay = 5
+weekCloseHour = 7
+
+# Logging configuration (optional)
+# logLevel = INFO          # DEBUG, INFO, WARNING, ERROR, CRITICAL
+# logFile = ./log/monitor.log
+# logMaxBytes = 10485760   # 10 MB (default)
+# logBackupCount = 5       # Number of backup log files to keep
+# logConsole = false       # Enable console logging (true/false)
+# logConsoleLevel = WARNING # Console log level
+
+[accounts]
+accounts = account1
+
+[account1]
+accountNumber = 123456
+path = /path/to/mt4/data
+frontend = MT4
+

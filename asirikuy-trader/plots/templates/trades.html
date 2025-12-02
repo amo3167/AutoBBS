@@ -1,0 +1,78 @@
+<%!
+    import os
+%>
+<%inherit file="base.html" />
+
+<%block name="content">
+	<div class='graphblock'>
+		<table id='trades'>
+            <thead>
+                <tr>
+			        <th>ID</th>
+                    <th>Strategy</th>
+                    <th>Type</th>
+                    <th>Open Time</th>
+                    <th>Lots</th>
+                    <th>Symbol</th>
+                    <th>Price</th>
+                    <th>SL</th>
+                    <th>TP</th>
+                    <th>Profit</th>
+                    <th>WC</th>
+                </tr>
+            </thead>
+            <%
+                total_profit = total_profit_percent = 0
+            %>
+             % for trade in trades:
+                <%
+                    profit_class = 'green' if trade['profit'] >= 0 else 'red'
+                    profit_percent = trade['profit']/account.virtualBalance if account.virtualBalance !=0 else 0
+                    if os.path.exists(os.path.join(os.getcwd(), 'plots', '{}_WorstCaseTrack.png'.format(trade['strategy_id']))):
+                        wc_link = '<a title=\'WC strategy {}\' rel=\'lightbox\' href=\'/{}_WorstCaseTrack.png\'><img class=\'thumb\' src=\'/{}_WorstCaseTrack.png\' /></a>'.format(trade['strategy_name'],trade['strategy_id'],trade['strategy_id'])
+                    else:
+                        wc_link = 'N/A'
+                    total_profit += trade['profit']
+                    total_profit_percent += profit_percent
+                %>
+                <tr>
+                    <td>${int(float(trade['id']))}</td>
+                    <td>${trade['strategy_name']}</td>
+                    <td>${trade['direction']}</td>
+                    <td>${trade['open']}</td>
+                    <td>${'{:.5f}'.format(trade['lots'])}</td>
+                    <td>${trade['symbol']}</td>
+                    % if 'JPY' in trade['symbol']:
+                        <td class='right'>${'{:.3f}'.format(trade['price'])}</td>
+                        <td class='right'>${'{:.3f}'.format(trade['sl'])}</td>
+                        <td class='right'>${'{:.3f}'.format(trade['tp'])}</td>
+                    % else:
+                        <td class='right'>${'{:.5f}'.format(trade['price'])}</td>
+                        <td class='right'>${'{:.5f}'.format(trade['sl'])}</td>
+                        <td class='right'>${'{:.5f}'.format(trade['tp'])}</td>
+                    % endif
+                    <td class='${profit_class} right'>${'{:.2f} ({:.2%})'.format(trade['profit'],profit_percent)}</td>
+                    <td>${wc_link}</td>
+                </tr>
+            % endfor
+            <%
+                profit_class = 'green' if total_profit >= 0 else 'red'
+            %>
+            % if total_profit != 0:
+               <tr><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+                   <td class='${profit_class} right'>${'{:.2f} ({:.2%})'.format(total_profit,total_profit_percent)}
+                   </td><td></td>
+               </tr>
+            % endif
+		</table>
+	</div><br/>
+    <span class="accountb_title bold">Real Balance: </span>${"{:.2f}".format(account.accountInfo[1])} <span class="accountb_title bold">Real Equity: </span>${"{:.2f}".format(account.accountInfo[2])} <br />
+    <span class="accountb_title bold">Virtual Balance: </span>${"{:.2f}".format(account.virtualBalance)} <span class="accountb_title bold">Virtual Equity: </span>${"{:.2f}".format(account.virtualEquity)}
+    % for image in images:
+	<div class='graphblock'>
+		<a href="${image}">
+		    <img class='graph' src="${image}">
+		</a>
+	</div>
+    % endfor
+</%block>

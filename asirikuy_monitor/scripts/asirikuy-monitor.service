@@ -1,0 +1,23 @@
+[Unit]
+Description=Asirikuy Monitor - Trading Platform Monitoring Service
+After=network.target
+
+[Service]
+Type=simple
+User=%i
+WorkingDirectory=/opt/asirikuy_monitor
+Environment="PATH=/opt/asirikuy_monitor/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/asirikuy_monitor/venv/bin/python3 /opt/asirikuy_monitor/checker.py -c /opt/asirikuy_monitor/config/checker.config
+Restart=always
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=asirikuy-monitor
+
+# Security settings
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+

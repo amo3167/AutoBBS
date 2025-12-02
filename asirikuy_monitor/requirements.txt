@@ -1,0 +1,31 @@
+# Asirikuy Monitor - Python 3 Dependencies
+# Python 3.8+ required
+
+# Terminal colors (cross-platform)
+colorama>=0.4.6
+
+# Standard library modules used (no installation needed):
+# - logging
+# - argparse
+# - ctypes
+# - sys
+# - os
+# - datetime
+# - time
+# - calendar
+# - subprocess
+# - configparser
+# - smtplib
+# - xml.dom.minidom
+# - csv
+# - re
+
+# Environment variable management (.env files)
+python-dotenv>=1.0.0
+
+# Cross-platform process management (replaces Windows taskkill)
+psutil>=5.9.0
+
+# HTTP requests for Telegram Bot API
+requests>=2.31.0
+

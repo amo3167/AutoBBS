@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<AsirikuyConfig>
+<!-- Reduce this value to lower RAM usage. Increase it to improve speed -->
+<RatesBufferExtension>20</RatesBufferExtension>
+
+<!-- The folder to use for parameter set histories, instance states etc. -->
+<TempFileFolderPath>tmp</TempFileFolderPath>
+
+<ConfigPaths>
+  <!-- The folder containing all the configuration files -->
+  <ConfigFolderPath>config</ConfigFolderPath>
+  
+  <!-- The file containing broker timezone information -->
+  <BrokerTZFilename>broker-tz.csv</BrokerTZFilename>
+  
+  <!-- The filename extension for files containing parameter space information -->
+  <!-- These files should be named using the instance ID with this extension   -->
+  <ParamSpaceFilenameExtension>.set</ParamSpaceFilenameExtension>
+</ConfigPaths>
+
+<Logging>
+  <!-- Specify the location for log files to be stored -->
+  <Folder>log</Folder>
+  
+  <!-- AsirikuyFramework.log -->
+  <!-- Severity level Value  -->
+  <!-- Emergency      0      -->
+  <!-- Alert          1      -->
+  <!-- Critical       2      -->
+  <!-- Error          3      -->
+  <!-- Warning        4      -->
+  <!-- Notice         5      -->
+  <!-- Info           6      -->
+  <!-- Debug          7      -->
+  <!-- The selected severity level plus all lower levels will be logged -->
+  <MaxSeverity>4</MaxSeverity>
+  
+  <!-- Enable = 1, Disable = 0 -->
+  <EnableEquityLog>0</EnableEquityLog>
+  
+  <!-- Creates an extended log involving more than 40 different variables on each trade's open Enable = 1, Disable = 0 -->
+  <EnableEntryLog>0</EnableEntryLog>
+  
+  <!-- Information from how many bars to log from each entry signal. One means only the signal, two means the signal and the bar before, etc.-->
+  <barsToLog>1</barsToLog>
+  
+</Logging>
+
+<NTP>
+  <!-- Minimum number of seconds to wait before synchronizing time with NTP servers again -->
+  <UpdateInterval>300</UpdateInterval>
+  
+  <!-- Number of milliseconds to wait for a response from an NTP server -->
+  <Timeout>2000</Timeout>
+  
+  <!-- The number of NTP servers to use to validate the current time (min = 1, max = 10) -->
+  <TotalReferenceTimes>4</TotalReferenceTimes>
+</NTP>
+
+<!-- Set the trading week boundaries to ensure all data feeds are consistent -->
+<TradingWeekBoundaries>
+  <!-- The number of hours to crop after 00:00 Monday morning. -->
+  <CropMondayHours>4</CropMondayHours>
+  
+  <!-- The number of hours to crop before 23:00 Friday night. -->
+  <CropFridayHours>4</CropFridayHours>
+</TradingWeekBoundaries>
+</AsirikuyConfig>
