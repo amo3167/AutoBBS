@@ -824,21 +824,98 @@ This document outlines the implementation plan for the Local Web Server deployme
 - **DevOps Engineer**: 0.25 FTE (part-time)
 - **QA Engineer**: 0.5 FTE (part-time)
 
-### 7.2 Infrastructure
+### 7.2 Development Infrastructure
 
-- **Development Machine**: Windows 10/11, 16GB RAM, 100GB disk
-- **Database Server**: PostgreSQL (local)
-- **Testing Environment**: Separate test database
+**Development Machines** (Choose one):
+- **Option A: macOS (MacBook)** ✅ **Recommended for Development**
+  - macOS 10.15+ (Catalina or later)
+  - 16GB+ RAM
+  - 100GB+ disk space
+  - Homebrew for package management
+  - Can develop 90%+ of the system on macOS
+  - Final testing on Windows required
+
+- **Option B: Windows 10/11**
+  - Windows 10/11
+  - 16GB+ RAM
+  - 100GB+ disk space
+  - Full development and testing on Windows
+
+**Cross-Platform Development Strategy**:
+- ✅ **Backend Development**: macOS or Windows (Python, FastAPI are cross-platform)
+- ✅ **Frontend Development**: macOS or Windows (React/Vue.js, Node.js are cross-platform)
+- ✅ **Database**: macOS or Windows (PostgreSQL works on both)
+- ⚠️ **C Library Testing**: Windows only (CTesterFrameworkAPI)
+- ⚠️ **MT4/5 Integration**: Windows only (final testing required)
+
+**Testing Environment**:
+- **Development**: macOS (for most development)
+- **Integration Testing**: Windows (for C Library and MT4/5 integration)
+- **Production**: Windows (required for MetaTrader)
 
 ---
 
-## 8. Next Steps
+## 8. Development Environment Setup
+
+### 8.1 macOS Development Setup (Recommended)
+
+**Why macOS for Development**:
+- ✅ Better development experience (Unix-based)
+- ✅ Excellent tooling (Homebrew, native terminal)
+- ✅ Can develop 90%+ of the system
+- ✅ Faster iteration (no Windows overhead)
+- ✅ Cross-platform Python/Node.js work perfectly
+
+**Setup Steps**:
+1. Install Homebrew: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+2. Install PostgreSQL: `brew install postgresql@14`
+3. Install Python: `brew install python@3.11` or use `pyenv`
+4. Install Node.js: `brew install node` or use `nvm`
+5. Clone repository
+6. Set up virtual environment
+7. Install dependencies
+8. Run development servers
+
+**What Works on macOS**:
+- ✅ Backend API development (FastAPI)
+- ✅ Frontend development (React/Vue.js)
+- ✅ Database development (PostgreSQL)
+- ✅ API testing
+- ✅ Unit tests
+- ✅ Integration tests (except C Library)
+- ✅ WebSocket development
+- ✅ AI/LLM integration
+
+**What Requires Windows**:
+- ⚠️ C Library integration (CTesterFrameworkAPI)
+- ⚠️ MT4/5 file access testing
+- ⚠️ Final integration testing
+- ⚠️ Production deployment
+
+**Testing Strategy**:
+- Develop on macOS (90% of work)
+- Test C Library integration on Windows (VM or separate machine)
+- Final integration testing on Windows
+- Deploy to Windows production
+
+### 8.2 Windows Testing Setup
+
+**Options**:
+1. **Windows VM** (Parallels, VMware, VirtualBox)
+2. **Dual Boot** (Boot Camp)
+3. **Separate Windows Machine**
+4. **Cloud Windows Instance** (AWS, Azure)
+
+**Recommended**: Windows VM for testing, separate Windows machine for final testing
+
+## 9. Next Steps
 
 1. **Review & Approval**: Review specification and plan
 2. **Team Setup**: Assemble development team
-3. **Environment Setup**: Set up development environment
-4. **Kickoff**: Project kickoff meeting
-5. **Phase 1 Start**: Begin foundation work
+3. **Environment Setup**: Set up development environment (macOS recommended)
+4. **Windows Testing Setup**: Set up Windows VM or machine for testing
+5. **Kickoff**: Project kickoff meeting
+6. **Phase 1 Start**: Begin foundation work
 
 ---
 

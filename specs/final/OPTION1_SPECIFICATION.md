@@ -642,18 +642,70 @@ This document specifies the **Local Web Server** deployment option for the Tradi
 
 ## 8. Deployment
 
-### 8.1 Prerequisites
+### 8.1 Development Environment
 
-- Windows 10/11
+**Development Platform**: macOS (MacBook) or Windows
+- ✅ **macOS Development**: Fully supported for development
+  - Python 3.8+ (works on macOS)
+  - PostgreSQL 14+ (works on macOS via Homebrew)
+  - Node.js 18+ (works on macOS)
+  - FastAPI, React/Vue.js (cross-platform)
+  - All development tools work on macOS
+- ✅ **Windows Development**: Also supported
+- ⚠️ **C Library Testing**: Requires Windows for final testing (CTesterFrameworkAPI)
+
+**Development Setup (macOS)**:
+```bash
+# Install PostgreSQL
+brew install postgresql@14
+
+# Install Python dependencies
+pip install -r requirements.txt
+
+# Install Node.js (via Homebrew or nvm)
+brew install node
+
+# Run development server
+python -m uvicorn backend.main:app --reload
+
+# Run frontend dev server
+cd frontend && npm run dev
+```
+
+### 8.2 Production Environment
+
+**Production Platform**: Windows 10/11 (required)
+- Windows 10/11 (required for MetaTrader 4/5)
 - Python 3.8+
-- PostgreSQL 14+
+- PostgreSQL 14+ (local installation)
 - Node.js 18+ (for frontend build)
 - 8GB+ RAM
 - 50GB+ disk space
 
-### 8.2 Installation Steps
+**Why Windows for Production**:
+- MetaTrader 4/5 runs only on Windows
+- Direct file access to MT4/5 directories
+- C Library (CTesterFrameworkAPI) compiled for Windows
+- Trading platform integration requires Windows
 
-1. Install PostgreSQL
+### 8.3 Cross-Platform Development Strategy
+
+**Development Workflow**:
+1. **Develop on macOS**: Write code, test API, test frontend
+2. **Test on Windows**: Final testing with MT4/5 integration
+3. **Deploy on Windows**: Production deployment
+
+**Compatibility**:
+- ✅ Backend API: Cross-platform (Python, FastAPI)
+- ✅ Frontend: Cross-platform (React/Vue.js, Node.js)
+- ✅ Database: Cross-platform (PostgreSQL)
+- ⚠️ C Library: Windows only (test on Windows)
+- ⚠️ File paths: Use pathlib for cross-platform compatibility
+- ⚠️ MT4/5 Integration: Windows only (test on Windows)
+
+### 8.4 Installation Steps (Production - Windows)
+
+1. Install PostgreSQL on Windows
 2. Create database
 3. Install Python dependencies
 4. Run database migrations
@@ -662,7 +714,56 @@ This document specifies the **Local Web Server** deployment option for the Tradi
 7. Start services
 8. Access dashboard
 
-### 8.3 Configuration
+### 8.5 Development Setup (macOS)
+
+**Prerequisites**:
+- macOS 10.15+ (Catalina or later)
+- Homebrew (package manager)
+- Python 3.8+ (via Homebrew or pyenv)
+- Node.js 18+ (via Homebrew or nvm)
+
+**Installation Steps**:
+```bash
+# 1. Install PostgreSQL
+brew install postgresql@14
+brew services start postgresql@14
+
+# 2. Create database
+createdb management
+
+# 3. Install Python dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# 4. Run database migrations
+alembic upgrade head
+
+# 5. Install Node.js dependencies
+cd frontend
+npm install
+
+# 6. Configure environment variables
+cp .env.example .env
+# Edit .env with your settings
+
+# 7. Start development servers
+# Terminal 1: Backend
+python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+**Development Notes**:
+- ✅ All backend development can be done on macOS
+- ✅ All frontend development can be done on macOS
+- ✅ API testing works on macOS
+- ⚠️ C Library integration testing requires Windows
+- ⚠️ MT4/5 file access testing requires Windows
+- ✅ Use Docker or VM for Windows testing if needed
+
+### 8.6 Configuration
 
 **Environment Variables**:
 ```bash
