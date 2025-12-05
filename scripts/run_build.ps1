@@ -64,8 +64,8 @@ if (-not $premakePath) {
     Write-Warn "Skipping premake run. You can place premake4.exe in the repo root and re-run this script."
 } else {
     Write-Info "Using premake: $premakePath"
-    Write-Info "Running: $premakePath $Action"
-    & $premakePath $Action
+    Write-Info "Running: $premakePath --file=premake4-minimal.lua $Action"
+    & $premakePath --file=premake4-minimal.lua $Action
     if ($LASTEXITCODE -ne 0) { Write-ErrorAndExit "premake failed with exit code $LASTEXITCODE" }
 }
 

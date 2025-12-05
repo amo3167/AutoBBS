@@ -94,8 +94,9 @@ else
 	  libdirs{"bin/" .. _ACTION .. "/x64/Release/lib"}
 	
 	-- Vendor projects (must be built before core projects that depend on them)
-	include "vendor/TALib"
-	include "vendor/Gaul"
+	-- Conditionally include vendors only if they exist
+	if os.isdir("vendor/TALib") then include "vendor/TALib" end
+	if os.isdir("vendor/Gaul") then include "vendor/Gaul" end
 	
 	-- Core projects
 	include "core/AsirikuyCommon"
