@@ -23,6 +23,7 @@
  * StopLossManagement.c. The duplicate static function has been removed.
  */
 
+#include "Precompiled.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>

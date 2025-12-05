@@ -63,8 +63,13 @@
 #include <boost/scoped_ptr.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/thread/mutex.hpp>
+// Note: boost/thread.hpp is excluded from Windows builds due to compatibility issues 
+// with modern Windows SDK and MSVC (xtime redefinition, noexcept keyword issues)
+// For Windows, we use CRITICAL_SECTION from Windows.h instead
+#if !defined _WIN32 && !defined _WIN64
+  #include <boost/thread.hpp>
+  #include <boost/thread/mutex.hpp>
+#endif
 #include <boost/bind.hpp>
 #include <boost/date_time/local_time/local_time.hpp>
 #include <boost/date_time/posix_time/posix_time.hpp>

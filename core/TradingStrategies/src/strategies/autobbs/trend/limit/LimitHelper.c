@@ -13,6 +13,7 @@
  * - Risk adjustments are applied based on day of week and market conditions
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>

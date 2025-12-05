@@ -21,7 +21,10 @@
  * Source: Based on SwingStrategy.refactor.c (refactor branch)
  */
 
+#include "Precompiled.h"
 #include "EasyTradeCWrapper.hpp"
+#include <math.h>
+#include <string.h>
 #include "strategies/autobbs/base/Base.h"
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
@@ -31,8 +34,6 @@
 #include "strategies/autobbs/swing/multipleday/MultipleDayHelpers.h"
 #include "strategies/autobbs/swing/multipleday/MultipleDayOrderManagement.h"
 #include "strategies/autobbs/swing/daytrading/DayTradingHelpers.h"
-#include <math.h>
-#include <string.h>
 
 /* Bollinger Bands constants */
 #define BBANDS_PERIOD 50      /* Bollinger Bands period */

@@ -13,8 +13,12 @@
 #include "CriticalSection.h"
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
-#include <unistd.h>
+/* #include <chrono> is C++ only - use C standard time.h instead */
+#ifdef _WIN32
+  #include <windows.h>
+#else
+  #include <unistd.h>
+#endif
 
 // Pantheios removed - using AsirikuyLogger for logging
 // const PAN_CHAR_T PANTHEIOS_FE_PROCESS_IDENTITY[] = PANTHEIOS_LITERAL_STRING("AsirikuyCTester");

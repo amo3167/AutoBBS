@@ -14,7 +14,7 @@ project "AsirikuyFrameworkAPI"
     "src",
     "../../../vendor/MiniXML"  -- MiniXML headers (mxml-private.h)
   }
-  links{ "NTPClient" }
+  -- NTPClient link moved to platform-specific configurations below
   configuration{"windows"}
     links{ 
 	  "MiniXML", 
@@ -24,13 +24,15 @@ project "AsirikuyFrameworkAPI"
 	  "SymbolAnalyzer", 
 	  "AsirikuyTechnicalAnalysis", 
 	  "OrderManager", 
-	  "TradingStrategies",
-	  "AsirikuyEasyTrade",
-	  "curl",
+	  "AsirikuyEasyTrade", -- Stub implementation for Windows
+	  -- "curl", -- Not available on Windows
 	  "TALib_common", 
 	  "TALib_abstract", 
 	  "TALib_func"
     }
+  configuration{"windows", "x64"}
+    -- Link TradingStrategies explicitly from bin directory
+    linkoptions{"../../../bin/" .. _ACTION .. "/x64/Release/trading_strategies.lib"}
   boostdir = os.getenv("BOOST_ROOT")
   requiredBoostLibs = "--with-system --with-chrono --with-thread --with-date_time --with-regex --with-filesystem --with-serialization --with-test"  
   os.chdir("../..")
@@ -97,20 +99,24 @@ project "AsirikuyFrameworkAPI"
   configuration{"linux"}
 	links{"rt"}
   -- Windows
+  configuration{"windows"}
+    -- Windows builds should look in bin directory for dependencies
+    libdirs{
+      "../../../bin/" .. _ACTION .. "/x64/Release",
+      "../../../bin/" .. _ACTION .. "/x64/Debug"
+    }
   configuration{"windows", "x32", "Debug"}
-    targetdir("bin/" .. _ACTION .. "/x32/Debug")
-    prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x32/Debug variant=debug link=static threading=multi runtime-link=static address-model=32 architecture=x86 stage 2>nul 1>nul"}
+    targetdir("../../../bin/" .. _ACTION .. "/x32/Debug")
+    libdirs{"../../../bin/" .. _ACTION .. "/x32/Debug"}
+  configuration{"windows", "x64", "Debug"}
+    targetdir("../../../bin/" .. _ACTION .. "/x64/Debug")
+    libdirs{"../../../bin/" .. _ACTION .. "/x64/Debug"}
   configuration{"windows", "x32", "Release"}
-    targetdir("bin/" .. _ACTION .. "/x32/Release")
-    prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x32/Release variant=release link=static threading=multi runtime-link=static address-model=32 architecture=x86 stage 2>nul 1>nul"}
-	configuration{"windows", "x64", "Debug"}
-		targetdir("bin/" .. _ACTION .. "/x64/Debug")
-		-- Updated Boost build invocation: remove deprecated implicit architecture, explicitly set architecture=x86 for 64-bit
-		prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Debug variant=debug link=static threading=multi runtime-link=static address-model=64 architecture=x86 stage 2>nul 1>nul"}
-	configuration{"windows", "x64", "Release"}
-		targetdir("bin/" .. _ACTION .. "/x64/Release")
-		-- Fix erroneous architecture=ia64 (Itanium) to architecture=x86 for standard 64-bit builds
-		prelinkcommands{"cd " .. boostdir, "b2.exe " .. requiredBoostLibs .. " --abbreviate-paths --build-dir=" .. cwd .. "/tmp --stagedir=" .. cwd .. "/bin/" .. _ACTION .. "/x64/Release variant=release link=static threading=multi runtime-link=static address-model=64 architecture=x86 stage 2>nul 1>nul"}
+    targetdir("../../../bin/" .. _ACTION .. "/x32/Release")
+    libdirs{"../../../bin/" .. _ACTION .. "/x32/Release"}
+  configuration{"windows", "x64", "Release"}
+    targetdir("../../../bin/" .. _ACTION .. "/x64/Release")
+    libdirs{"../../../bin/" .. _ACTION .. "/x64/Release"}
   -- Not Windows
   configuration{"not windows", "x32", "Debug"}
     targetdir("bin/" .. _ACTION .. "/x32/Debug")

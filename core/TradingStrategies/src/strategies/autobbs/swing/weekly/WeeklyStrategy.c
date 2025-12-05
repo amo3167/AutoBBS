@@ -5,6 +5,7 @@
  * Includes Weekly Swing and Weekly ATR Prediction strategies.
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include "EasyTradeCWrapper.hpp"
 #include "strategies/autobbs/base/Base.h"

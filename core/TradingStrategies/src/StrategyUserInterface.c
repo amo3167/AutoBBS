@@ -41,7 +41,9 @@
 #include "EasyTradeCWrapper.hpp"
 #include "AsirikuyTime.h"
 #include <stdio.h>
+#if !defined _WIN32 && !defined _WIN64
 #include <curl/curl.h> /* added for curl_getdate prototype (fix C4013) */
+#endif
 
 #include "Logging.h"
 #include "AsirikuyLogger.h"

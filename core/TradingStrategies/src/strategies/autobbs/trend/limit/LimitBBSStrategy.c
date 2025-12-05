@@ -4,6 +4,7 @@
  * Provides Limit BBS strategy execution functions.
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>

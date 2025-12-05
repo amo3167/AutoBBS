@@ -15,9 +15,11 @@
 #include <string.h>
 #include <stdarg.h>
 #include <time.h>
-#include <sys/time.h>
-#include <unistd.h>
+/* #include <chrono> is C++ only - use C standard time.h instead */
 #include <errno.h>
+#ifdef _WIN32
+  #include <windows.h>
+#endif
 
 // Maximum number of log files (support multiple loggers)
 #define MAX_LOG_FILES 4

@@ -9,6 +9,7 @@
  * @author AutoBBS Team
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include "OrderManagement.h"
 #include "EasyTradeCWrapper.hpp"

@@ -45,11 +45,15 @@
 
 #if !defined _WIN32 && !defined _WIN64
 typedef unsigned int __time32_t;
-#if !defined max && !defined min
-  #define max fmax
-  #define min fmin
+/* Note: min/max must be defined BEFORE including any math functions */
+#ifndef min
+  #define min(a, b) fmin(a, b)
+#endif
+#ifndef max
+  #define max(a, b) fmax(a, b)
 #endif
 #endif
+/* Windows gets __time32_t from system headers */
 
 typedef struct instanceState_t
 {

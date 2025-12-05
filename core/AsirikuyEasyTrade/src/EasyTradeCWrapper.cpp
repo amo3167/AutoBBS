@@ -43,7 +43,20 @@
 
 namespace
 {
+#if defined _WIN32 || defined _WIN64
+  // Windows: simple global static pointer (single-threaded for MT4)
+  // MT4 doesn't support multi-threaded access to DLLs anyway
+  EasyTrade* easyTradePtr = NULL;
+  
+  void delete_easyTrade(EasyTrade* ptr) 
+  { 
+    delete ptr; 
+    easyTradePtr = NULL;
+  }
+#else
+  // Unix/Linux: use boost::thread_specific_ptr for thread safety
   boost::thread_specific_ptr<EasyTrade> easyTradePtr;
+#endif
 }
 
 StrategyParams* getParams()
@@ -118,7 +131,12 @@ int barsCount(int ratesArrayIndex)
 
 AsirikuyReturnCode initEasyTradeLibrary(StrategyParams* pInputParams)
 {
+#if defined _WIN32 || defined _WIN64
+  if (easyTradePtr != NULL) delete easyTradePtr;
+  easyTradePtr = new EasyTrade();
+#else
   easyTradePtr.reset(new EasyTrade());
+#endif
   return easyTradePtr->initEasyTradeLibrary(pInputParams);
 }
 

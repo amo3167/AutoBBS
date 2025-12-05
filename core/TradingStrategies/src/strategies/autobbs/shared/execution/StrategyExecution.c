@@ -11,6 +11,7 @@
  * for account risk limits and side restrictions.
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <string.h>
 #include "AsirikuyDefines.h"

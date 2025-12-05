@@ -1,6 +1,11 @@
 project "TradingStrategies"
   location("../../build/" .. _ACTION .. "/projects")
-  kind "SharedLib"
+  -- Build as static lib on Windows (for linking into DLLs), shared lib on Unix
+  configuration{"windows"}
+    kind "StaticLib"
+  configuration{"not windows"}
+    kind "SharedLib"
+  configuration{}
   language "C"
   targetname "trading_strategies"
   files{
@@ -35,13 +40,17 @@ project "TradingStrategies"
     "Log",
     "OrderManager",
     "AsirikuyTechnicalAnalysis",
-    "AsirikuyEasyTrade",
-    "NTPClient",
     "TALib_common",
     "TALib_abstract",
     "TALib_func",
-    "SymbolAnalyzer"
+    "SymbolAnalyzer",
+    "AsirikuyEasyTrade"
   }
+  -- Platform-specific library dependencies
+  configuration{"not windows"}
+    links{
+      "NTPClient"
+    }
   
   -- Platform-specific configurations
   configuration{"windows"}
@@ -66,6 +75,14 @@ project "TradingStrategies"
     
   -- Target directory configurations (all libraries go to root bin/ directory)
   -- Use relative path from premake4.lua location (core/TradingStrategies/) to workspace root: ../../
+  configuration{"windows", "x32", "Debug"}
+    targetdir("../../bin/" .. _ACTION .. "/x32/Debug")
+  configuration{"windows", "x64", "Debug"}
+    targetdir("../../bin/" .. _ACTION .. "/x64/Debug")
+  configuration{"windows", "x32", "Release"}
+    targetdir("../../bin/" .. _ACTION .. "/x32/Release")
+  configuration{"windows", "x64", "Release"}
+    targetdir("../../bin/" .. _ACTION .. "/x64/Release")
   configuration{"macosx", "x32", "Debug"}
     targetdir("../../bin/" .. _ACTION .. "/x32/Debug/lib")
   configuration{"macosx", "x64", "Debug"}

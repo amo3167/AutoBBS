@@ -5,6 +5,7 @@
  * Includes XAUUSD, GBPJPY, and ExecutionOnly strategies.
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <stdlib.h>
 #include "EasyTradeCWrapper.hpp"

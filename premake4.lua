@@ -69,6 +69,9 @@ else
 	
     -- Global build settings
 	flags{"StaticRuntime", "Unsafe"}
+    -- Windows-specific settings for v143 toolset compatibility
+	configuration{"windows"}
+	  buildoptions{"/Zc:noexceptTypes-"} -- Disable noexcept type checking
     -- Build type specific settings
     configuration{"Debug"}
       flags{"Symbols"}
@@ -97,16 +100,24 @@ else
 	-- Conditionally include vendors only if they exist
 	if os.isdir("vendor/TALib") then include "vendor/TALib" end
 	if os.isdir("vendor/Gaul") then include "vendor/Gaul" end
+	if os.isdir("vendor/MiniXML") then include "vendor/MiniXML" end
 	
 	-- Core projects
 	include "core/AsirikuyCommon"
 	include "core/Log"
 	include "core/SymbolAnalyzer"
-	include "core/AsirikuyEasyTrade"
+	-- AsirikuyEasyTrade excluded from Windows builds (requires curl library)
+	if os.get() ~= "windows" then
+		include "core/AsirikuyEasyTrade"
+	end
 	include "core/AsirikuyTechnicalAnalysis"
 	include "core/OrderManager"
+	include "core/AsirikuyEasyTrade"
 	include "core/TradingStrategies"
-	include "core/NTPClient"
+	-- NTPClient excluded from Windows builds (requires modern Boost ASIO APIs not in 1.49.0)
+	if os.get() ~= "windows" then
+		include "core/NTPClient"
+	end
 	include "core/AsirikuyFrameworkAPI"
 	include "core/CTesterFrameworkAPI"
 	include "core/UnitTests"

@@ -27,6 +27,7 @@
  * AUDNZD, and default (EURUSD).
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <string.h>
 #include <stdio.h>

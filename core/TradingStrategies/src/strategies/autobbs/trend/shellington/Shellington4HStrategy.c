@@ -19,6 +19,7 @@
  * TP Mode: 3 (daily ATR)
  */
 
+#include "Precompiled.h"
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
@@ -29,14 +30,6 @@
 #include "AsirikuyLogger.h"
 #include "InstanceStates.h"
 #include "strategies/autobbs/trend/shellington/Shellington4HStrategy.h"
-
-// Define min/max macros for compatibility (if not already defined)
-#ifndef min
-#define min(a, b) fmin(a, b)
-#endif
-#ifndef max
-#define max(a, b) fmax(a, b)
-#endif
 
 /**
  * @brief Symbol-specific configuration structure for Shellington 4H strategy.

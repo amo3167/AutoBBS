@@ -42,8 +42,13 @@
 
 #if defined _WIN32 || defined _WIN64
   #pragma warning(disable: 4996) /* Warning about not using some Microsoft secure versions of c functions */
+  #define NOMINMAX /* Prevent Windows.h from defining min/max macros */
+  #undef min
+  #undef max
   #define WIN32_LEAN_AND_MEAN
   #include <Windows.h>
+  #undef min
+  #undef max
 #elif defined __APPLE__ || defined __linux__
   #include <dlfcn.h>
 #else

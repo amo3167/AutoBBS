@@ -15,6 +15,7 @@
  * controlled by the AUTOBBS_TREND_MODE parameter.
  */
 
+#include "Precompiled.h"
 #include <string.h>
 #include <math.h>
 #include "OrderManagement.h"

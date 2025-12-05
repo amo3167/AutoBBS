@@ -15,6 +15,7 @@
  * - Various strategy-specific splitters (BBS, MACD, Ichimoku, etc.)
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include "strategies/autobbs/base/Base.h"
 #include "EasyTradeCWrapper.hpp"

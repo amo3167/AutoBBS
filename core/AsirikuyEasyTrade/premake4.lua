@@ -1,15 +1,29 @@
 project "AsirikuyEasyTrade"
   location("../../build/" .. _ACTION .. "/projects")
   kind "StaticLib"
-  language "C++"
-  files{
-    "**.hpp", 
-	"**.cpp"
-  }
-  includedirs{
-    "src",
-    "../AsirikuyCommon/include"
-  }
+  
+  -- Windows: Build stub implementation in C
+  configuration{"windows"}
+    language "C"
+    files{
+      "src/WindowsStubs.c"
+    }
+    includedirs{
+      "include",
+      "../AsirikuyCommon/include"
+    }
+  
+  -- Linux/Mac: Build full implementation in C++
+  configuration{"not windows"}
+    language "C++"
+    files{
+      "**.hpp", 
+      "**.cpp"
+    }
+    includedirs{
+      "src",
+      "../AsirikuyCommon/include"
+    }
   -- Add Boost include directory (for Precompiled.hpp)
   configuration{"not windows"}
     includedirs{
@@ -24,8 +38,9 @@ project "AsirikuyEasyTrade"
       "/usr/lib"
     }
     links{"curl"}
-  -- Enable C++11 for Boost compatibility
-  buildoptions{"-std=c++11"}
+  -- Enable C++11 for Boost compatibility (Unix/Linux only)
+  configuration{"not windows"}
+    buildoptions{"-std=c++11"}
   
   -- Target directory configurations (all libraries go to root bin/ directory)
   -- Use relative path from premake4.lua location (core/AsirikuyEasyTrade/) to workspace root: ../../

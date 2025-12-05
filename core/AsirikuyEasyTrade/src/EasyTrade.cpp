@@ -54,7 +54,9 @@
 #include "OrderSignals.h"
 #include "AsirikuyTechnicalAnalysis.h"
 #include "TradingWeekBoundaries.h"
+#if !defined _WIN32 && !defined _WIN64
 #include "curl/curl.h"
+#endif
 #include "TimeZoneOffsets.h"
 #include "Broker-tz.h"
 

@@ -26,6 +26,7 @@
  * - Stop orders for breakout trades
  */
 
+#include "Precompiled.h"
 #include <math.h>
 #include <string.h>
 #include <stdlib.h>

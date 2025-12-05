@@ -4,6 +4,7 @@
  * Provides Ichimoko Daily strategy execution functions.
  */
 
+#include "Precompiled.h"
 #include <string.h>
 #include <math.h>
 #include "EasyTradeCWrapper.hpp"
@@ -11,14 +12,7 @@
 #include "strategies/autobbs/shared/ComLib.h"
 #include "AsirikuyTime.h"
 #include "AsirikuyLogger.h"
-
-// Define min/max macros for compatibility
-#ifndef min
-#define min(a, b) fmin(a, b)
-#endif
-#ifndef max
-#define max(a, b) fmax(a, b)
-#endif
+#include "InstanceStates.h"
 #include "strategies/autobbs/trend/ichimoko/IchimokoDailyStrategy.h"
 
 AsirikuyReturnCode workoutExecutionTrend_Ichimoko_Daily_Index(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
