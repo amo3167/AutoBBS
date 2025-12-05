@@ -88,15 +88,28 @@ else
       buildoptions{"-march=i686"}
     configuration{"linux", "x64"}
       buildoptions{"-fPIC", "-O2", "-march=native"}
-    -- Individual builds
+	-- Individual builds
+	-- Windows target directories (all architectures and configurations)
+	configuration{"windows", "x32", "Debug"}
+	  targetdir("bin/" .. _ACTION .. "/x32/Debug/lib")
+	  libdirs{"bin/" .. _ACTION .. "/x32/Debug/lib"}
+	configuration{"windows", "x32", "Release"}
+	  targetdir("bin/" .. _ACTION .. "/x32/Release/lib")
+	  libdirs{"bin/" .. _ACTION .. "/x32/Release/lib"}
+	configuration{"windows", "x64", "Debug"}
+	  targetdir("bin/" .. _ACTION .. "/x64/Debug/lib")
+	  libdirs{"bin/" .. _ACTION .. "/x64/Debug/lib"}
+	configuration{"windows", "x64", "Release"}
+	  targetdir("bin/" .. _ACTION .. "/x64/Release/lib")
+	  libdirs{"bin/" .. _ACTION .. "/x64/Release/lib"}
+	
+	-- macOS target directories
 	configuration{"macosx", "x64", "Debug"}
 	  targetdir("bin/" .. _ACTION .. "/x64/Debug/lib")
 	  libdirs{"bin/" .. _ACTION .. "/x64/Debug/lib"}
 	configuration{"macosx", "x64", "Release"}
 	  targetdir("bin/" .. _ACTION .. "/x64/Release/lib")
-	  libdirs{"bin/" .. _ACTION .. "/x64/Release/lib"}
-	
-	-- Vendor projects (must be built before core projects that depend on them)
+	  libdirs{"bin/" .. _ACTION .. "/x64/Release/lib"}	-- Vendor projects (must be built before core projects that depend on them)
 	-- Conditionally include vendors only if they exist
 	if os.isdir("vendor/TALib") then include "vendor/TALib" end
 	if os.isdir("vendor/Gaul") then include "vendor/Gaul" end

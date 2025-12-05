@@ -1,0 +1,13 @@
+{
+    "Architecture":  "x64",
+    "Artifacts":  {
+                      "Headers":  123,
+                      "Libraries":  1,
+                      "DLLs":  1,
+                      "Documentation":  0
+                  },
+    "BuildType":  "Release",
+    "Release":  "AsirikuyFramework-20251206-082332",
+    "Generated":  "2025-12-06 08:23:32",
+    "Platform":  "Windows"
+}
