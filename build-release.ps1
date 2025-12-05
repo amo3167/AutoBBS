@@ -59,6 +59,7 @@ param(
     [string]$Platform = "all",
     
     [switch]$Clean,
+    [switch]$CleanAfter,
     [switch]$Release,
     [string]$OutputDir = "./releases",
     [switch]$NoVendor,
@@ -208,6 +209,50 @@ function Get-BuildConfigurations {
     }
     
     return $configs
+}
+
+function Verify-Outputs {
+    param(
+        [string]$BinDir
+    )
+    
+    if (-not (Test-Path $BinDir)) {
+        return @()
+    }
+    
+    $artifacts = @()
+    $artifacts += @(Get-ChildItem -Recurse -ErrorAction SilentlyContinue -Path $BinDir -File -Include *.dll)
+    $artifacts += @(Get-ChildItem -Recurse -ErrorAction SilentlyContinue -Path $BinDir -File -Include *.lib)
+    $artifacts += @(Get-ChildItem -Recurse -ErrorAction SilentlyContinue -Path $BinDir -File -Include *.exe)
+    
+    return $artifacts
+}
+
+function Remove-BuildArtifacts {
+    param(
+        [string]$RepoRoot,
+        [string]$ItemType = "tmp"  # "tmp" for object files, "all" for everything
+    )
+    
+    Write-Status "Cleaning build artifacts..."
+    
+    $dirToClean = @()
+    if ($ItemType -eq "tmp") {
+        $dirToClean = @("build\vs2010\tmp", "tmp\vs2010")
+    } elseif ($ItemType -eq "all") {
+        $dirToClean = @("build\vs2010\tmp", "tmp\vs2010", "build\vs2010\bin", "build\bin")
+    }
+    
+    foreach ($dir in $dirToClean) {
+        $path = Join-Path $RepoRoot $dir
+        if (Test-Path $path) {
+            $size = [math]::Round((Get-ChildItem -Recurse -Path $path -File | Measure-Object -Property Length -Sum).Sum / 1MB, 2)
+            Write-Status "Removing: $dir ($size MB)"
+            Remove-Item -LiteralPath $path -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+    
+    Write-Success "Cleanup completed"
 }
 
 function Verify-Outputs {
@@ -418,7 +463,16 @@ $artifacts | ForEach-Object {
     Write-Host "  📦 $($_.Name) ($size bytes)" -ForegroundColor Cyan
 }
 
-# Step 6: Create release package
+# Step 6: Cleanup if requested
+if ($CleanAfter) {
+    Write-Status ""
+    Write-Status "========================================================================="
+    Write-Status "Post-Build Cleanup"
+    Write-Status "========================================================================="
+    Remove-BuildArtifacts -RepoRoot $repoRoot -ItemType "tmp"
+}
+
+# Step 7: Create release package
 if ($Release) {
     Write-Status ""
     Write-Status "========================================================================="
@@ -430,7 +484,7 @@ if ($Release) {
     Write-Success "Release package created: $releaseDir"
 }
 
-# Step 7: Create build report
+# Step 8: Create build report
 Write-Status ""
 Write-Status "Creating build report..."
 $reportPath = Join-Path $repoRoot "build-report.md"
@@ -444,6 +498,12 @@ Write-Status "==================================================================
 Write-Success "Successful builds: $successCount"
 Write-Warn "Failed builds: $failCount"
 Write-Status "Report: $reportPath"
+
+if ($CleanAfter) {
+    Write-Status "Cleanup: Enabled (object files removed)"
+} else {
+    Write-Status "Cleanup: Disabled (use -CleanAfter to remove object files)"
+}
 
 if ($failCount -gt 0) {
     exit 1

@@ -22,6 +22,8 @@ Configurations to include (default: all found)
 param(
     [string]$SourceDir = "./bin/vs2010",
     [string]$OutputDir = "./releases",
+    [int]$KeepReleases = 0,  # 0 = keep all, N = keep last N releases
+    [switch]$CleanOldReleases,
     [switch]$Verbose,
     [switch]$Help
 )
@@ -40,6 +42,45 @@ $TIMESTAMP = Get-Date -Format "yyyyMMdd-HHmmss"
 function Write-Info($msg) { Write-Host "$(Get-Date -Format 'HH:mm:ss') [INFO]  $msg" -ForegroundColor Cyan }
 function Write-Success($msg) { Write-Host "$(Get-Date -Format 'HH:mm:ss') [OK]    $msg" -ForegroundColor Green }
 function Write-Warn($msg) { Write-Host "$(Get-Date -Format 'HH:mm:ss') [WARN]  $msg" -ForegroundColor Yellow }
+function Write-Error($msg) { Write-Host "$(Get-Date -Format 'HH:mm:ss') [ERROR] $msg" -ForegroundColor Red }
+
+function Cleanup-OldReleases {
+    param(
+        [string]$ReleaseDir,
+        [int]$KeepCount = 3
+    )
+    
+    if (-not (Test-Path $ReleaseDir)) {
+        return
+    }
+    
+    Write-Info "Cleaning old releases (keeping last $KeepCount)..."
+    
+    $releases = Get-ChildItem -Path $ReleaseDir -Directory | 
+        Where-Object { $_.Name -match 'AsirikuyFramework-\d{8}-\d{6}' } |
+        Sort-Object LastWriteTime -Descending
+    
+    if ($releases.Count -le $KeepCount) {
+        Write-Info "Found $($releases.Count) releases, keeping all (threshold: $KeepCount)"
+        return
+    }
+    
+    $toRemove = $releases | Select-Object -Skip $KeepCount
+    foreach ($old in $toRemove) {
+        Write-Info "Removing old release: $($old.Name)"
+        Remove-Item -Path $old.FullName -Recurse -Force
+        
+        # Also remove ZIP if exists
+        $zipPath = Join-Path $ReleaseDir "$($old.Name).zip"
+        if (Test-Path $zipPath) {
+            Remove-Item -Path $zipPath -Force
+            Write-Info "Removed old archive: $($old.Name).zip"
+        }
+    }
+    
+    Write-Success "Cleanup completed"
+}
+
 function Write-Error($msg) { Write-Host "$(Get-Date -Format 'HH:mm:ss') [ERROR] $msg" -ForegroundColor Red }
 
 Write-Info "========================================================================="
@@ -253,6 +294,18 @@ Write-Success "DLLs: $dllCount"
 Write-Success "Libraries: $libCount"
 Write-Success "Headers: $headerCount header files"
 Write-Success "Docs: $docCount markdown files"
+
+# Cleanup old releases if requested
+$OutputPath = Join-Path $REPO_ROOT $OutputDir
+if ($CleanOldReleases -or $KeepReleases -gt 0) {
+    Write-Info ""
+    if ($KeepReleases -gt 0) {
+        Cleanup-OldReleases -ReleaseDir $OutputPath -KeepCount $KeepReleases
+    } elseif ($CleanOldReleases) {
+        Cleanup-OldReleases -ReleaseDir $OutputPath -KeepCount 1
+    }
+}
+
 Write-Info ""
 Write-Success "Release package created successfully!"
 Write-Info "Package is ready for distribution."
