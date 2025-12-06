@@ -32,7 +32,7 @@ project "AsirikuyFrameworkAPI"
     }
   configuration{"windows", "x64"}
     -- Link TradingStrategies explicitly from bin directory
-    linkoptions{"../../../bin/" .. _ACTION .. "/x64/Release/trading_strategies.lib"}
+    linkoptions{"../../../bin/" .. _ACTION .. "/x64/Release/TradingStrategies.lib"}
   boostdir = os.getenv("BOOST_ROOT")
   requiredBoostLibs = "--with-system --with-chrono --with-thread --with-date_time --with-regex --with-filesystem --with-serialization --with-test"  
   os.chdir("../..")

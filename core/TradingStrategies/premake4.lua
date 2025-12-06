@@ -7,7 +7,7 @@ project "TradingStrategies"
     kind "SharedLib"
   configuration{}
   language "C"
-  targetname "trading_strategies"
+  targetname "TradingStrategies"
   files{
     "**.h", 
 	"**.c", 
@@ -32,7 +32,6 @@ project "TradingStrategies"
     "../AsirikuyTechnicalAnalysis/include",
     "../AsirikuyEasyTrade/include"
   }
-  defines{"FANN_NO_DLL"}
   
   -- Dependencies (premake4 uses links instead of uses)
   links{

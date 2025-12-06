@@ -3,6 +3,9 @@
 # Ignore backup folder that contains large historical source copies
 /backup/
 
+# Vendor backup (created by remove-unused-vendors.ps1)
+/vendor_backup/
+
 # Common build and IDE files
 /bin/
 /build/
@@ -13,8 +16,11 @@
 .vs/
 .idea/
 
+# Release packages
+/releases/
+
 # Vendor dependencies (kept in vendor/ but often should be tracked) - uncomment if you vendor libs and don't want them in repo
-/vendor/
+# /vendor/
 
 # Temporary files
 /tmp/
@@ -40,6 +46,10 @@ __pycache__/
 *.ilk
 *.idb
 *.pyd
+*.lib
+*.exp
+*.obj
+*.res
 
 # Platform-specific shared libraries (use build output instead)
 *.so
