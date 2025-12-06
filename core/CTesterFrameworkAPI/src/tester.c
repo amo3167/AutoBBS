@@ -1057,12 +1057,10 @@ void calculate_trade_by_trade_statistics(StatisticItem *statistics,
 			maxDDDepth = maxDDDepthTemp ;
 		}
 
-		if(maxDDLengthTemp > maxDDLength){
-			maxDDLength = maxDDLengthTemp ;
-		}
+	if(maxDDLengthTemp > maxDDLength){
+		maxDDLength = (int)maxDDLengthTemp ;
 	}
-
-	linearRegressionSlope = (sumBalanceTime) / timeSqrSum ;
+}	linearRegressionSlope = (sumBalanceTime) / timeSqrSum ;
 	linearRegressionIntercept = statistics[0].balance;
     
 	yPs = 0;

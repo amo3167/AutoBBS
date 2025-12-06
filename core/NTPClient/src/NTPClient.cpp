@@ -199,7 +199,7 @@ char* NTPClient::generateServerName(char serverName[TIME_SERVER_NAME_LENGTH])
   const char* serverNameExt = ".pool.ntp.org";
   unsigned int number;
 
-  srand (time(NULL));
+  srand ((unsigned int)time(NULL));
 
   memset(serverName, '\0', TIME_SERVER_NAME_LENGTH);
   snprintf(serverName, sizeof(int), "%d", rand_r(&number) % 4);

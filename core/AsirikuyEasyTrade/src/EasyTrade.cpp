@@ -3153,7 +3153,6 @@ int EasyTrade::getLastestOrderIndexExcept(int rateIndex, int exceptIndexs[])
 
 int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double points)
 {	
-	struct tm timeInfo1;
 	int index1, index2, index3, index4;
 	int	exceptIndexs[3] = {};
 
@@ -3218,7 +3217,6 @@ int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double poin
 int EasyTrade::getSameSideWonTradesInCurrentTrend(int rateIndex, OrderType type)
 {
 	int sameSideTimes = 0;
-	struct tm timeInfo1;
 	int index1, index2, index3, index4, index5, index6, index7, index8;
 	int	exceptIndexs[7] = {};
 		
@@ -3350,7 +3348,6 @@ int EasyTrade::getSameSideWonTradesInCurrentTrend(int rateIndex, OrderType type)
 int EasyTrade::getSameSideTradesInCurrentTrend(int rateIndex, OrderType type)
 {		
 	int sameSideTimes = 0;	
-	struct tm timeInfo1;
 	int index1,index2, index3,index4;		
 	int	exceptIndexs[3] = {};
 
@@ -3541,7 +3538,7 @@ int EasyTrade::getOrderCountForCurrentWeek(time_t currentTime)
 		{
 			safe_gmtime(&timeInfo2, pParams->orderInfo[i].openTime);
 
-			days = difftime(currentTime, pParams->orderInfo[i].openTime) / 60 / 60 / 24;
+			days = (int)(difftime(currentTime, pParams->orderInfo[i].openTime) / 60 / 60 / 24);
 
 			if (days <= timeInfo1.tm_wday)
 			{
