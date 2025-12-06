@@ -3,6 +3,8 @@
 **Last Updated:** December 6, 2025  
 **Status:** Comprehensive build system with multi-configuration support
 
+⚠️ **IMPORTANT**: For current build instructions, see `scripts/README.md`. The build scripts below reference legacy scripts that no longer exist. Use `scripts/build-parallel-simple.bat` or `scripts/build-sequential.bat` instead.
+
 ---
 
 ## 📋 Overview
@@ -99,16 +101,21 @@ releases/
 ### 1. Windows Build (PowerShell)
 
 #### Quick Start
-```powershell
-# Release build (x64)
-.\build-release.ps1 -Config release64
 
-# Release with package
-.\build-release.ps1 -Config release64 -Release -OutputDir D:\artifacts
+For builds, use the build scripts in the `scripts/` folder:
 
-# Full build matrix (all platforms)
-.\build-release.ps1 -BuildType All -Platform all -Release
+```batch
+REM Release build - fast incremental
+.\scripts\build-parallel-simple.bat
+
+REM Full clean rebuild
+.\scripts\build-parallel-simple.bat clean
 ```
+
+Build outputs appear in `bin/vs2010/x64/Release/`:
+- `AsirikuyFrameworkAPI.dll` - Main DLL
+- `.lib` files - Static/import libraries
+- `.idb`, `.pdb` files - Debug info
 
 #### Parameters
 | Parameter | Type | Default | Description |
