@@ -50,7 +50,7 @@ AsirikuyReturnCode workoutExecutionTrend_XAUUSD_DayTrading(StrategyParams* pPara
 	time_t currentTime;
 	struct tm timeInfo1;
 	double intradayClose = iClose(B_PRIMARY_RATES, 0), intradayHigh, intradayLow, primary_close_pre1 = iClose(B_PRIMARY_RATES, 1),secondary_close_pre1 = iClose(B_SECONDARY_RATES,1);
-	double ATR0, Range, ATR0_EURO = 10, Range_Limit;
+	double ATR0, Range, ATR0_EURO = 10;
 	double close_prev1 = iClose(B_DAILY_RATES, 1);
 	double openOrderHigh, openOrderLow;
 
@@ -494,14 +494,11 @@ AsirikuyReturnCode workoutExecutionTrend_GBPJPY_DayTrading(StrategyParams* pPara
 	char       timeString[MAX_TIME_STRING_SIZE] = "";
 	OrderType side;
 
-	Order_Info orderInfo;
-
 	double entryPrice;
 
 	int latestOrderIndex = 0, orderCountToday = 0;
 
 	BOOL isBreakEvent = FALSE;
-	int euro_index_rate;
 	double ATREuroPeriod = 0.0;
 	int executionTrend;
 

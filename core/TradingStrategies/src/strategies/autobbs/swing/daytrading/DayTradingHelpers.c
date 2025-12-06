@@ -184,11 +184,9 @@ void XAUUSD_DayTrading_Entry(StrategyParams* pParams, Indicators* pIndicators, B
 BOOL GBPJPY_DayTrading_Allow_Trade(StrategyParams* pParams, Indicators* pIndicators, Base_Indicators * pBase_Indicators)
 {
 	int    shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
-	int count, asia_index_rate, euro_index_rate, execution_tf;
+	int count, asia_index_rate, execution_tf;
 	time_t currentTime;
-	struct tm timeInfo1, timeInfoClose;
-	double preHigh, preLow, preClose;
-	double pivot, S3, R3;
+	struct tm timeInfo1;
 	char       timeString[MAX_TIME_STRING_SIZE] = "";
 	double close_prev1 = iClose(B_DAILY_RATES, 1), close_prev2 = iClose(B_DAILY_RATES, 2);	
 	//int startTradingTime = 8;

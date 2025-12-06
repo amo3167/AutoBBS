@@ -151,7 +151,7 @@ void traceLatestOpenStopLoss(StrategyParams* pParams, Indicators* pIndicators, B
 		safe_gmtime(&timeInfo2, openTime);
 
 		minGap = (int)((double)(timeInfo1.tm_min - timeInfo2.tm_min) / execution_tf + 0.5);
-		hourGap = (timeInfo1.tm_hour - timeInfo2.tm_hour) * (60.0 / execution_tf);
+		hourGap = (int)((timeInfo1.tm_hour - timeInfo2.tm_hour) * (60.0 / execution_tf));
 		count = hourGap + minGap;
 
 		if (count > 1 && getHighLowEasy(B_PRIMARY_RATES, shift1Index, count, &high, &low) == SUCCESS)
@@ -249,7 +249,6 @@ BOOL isNextdayMACDPostiveBar2(StrategyParams* pParams, int orderIndex,int startS
 BOOL isNextdayMACDPostiveBar(int startShift)
 {
 	BOOL result = TRUE;
-	trend trend, trend1;
 	//double atr = iAtr(B_DAILY_RATES, 1, startShift), atr1 = iAtr(B_DAILY_RATES, 1, startShift+1);
 	double preDayOpen, preDayOpen1, preDayClose, preDayClose1,preDayRange,preDayRange1;
 	preDayOpen = iOpen(B_DAILY_RATES, startShift);

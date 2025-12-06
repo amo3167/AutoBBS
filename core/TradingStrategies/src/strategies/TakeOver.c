@@ -217,7 +217,7 @@ static AsirikuyReturnCode setUIValues(StrategyParams* pParams, Indicators* pIndi
 
 static AsirikuyReturnCode modifyOrders(StrategyParams* pParams, Indicators* pIndicators, OrderType orderType)
 {	
-	double stopLoss, takeProfit;	
+	double stopLoss;	
 
 	if (pParams == NULL)
 	{

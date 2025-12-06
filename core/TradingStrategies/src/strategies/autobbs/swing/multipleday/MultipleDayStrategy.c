@@ -61,22 +61,17 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 	int    shift0Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 1, shift1Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 	int    shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
-	time_t currentTime, openTime;
+	time_t currentTime;
 	struct tm timeInfo1, timeInfo2;
 	double ATR0;
-	double openOrderHigh, openOrderLow;
-	int count, isOpen;
+	int count;
 	double adjust = 0.1;
 	char       timeString[MAX_TIME_STRING_SIZE] = "";
 	OrderType side;
-	Order_Info orderInfo;
-	double entryPrice;
 	int maxTradeTime = 1, latestOrderIndex = 0, orderCountToday = 0,oldestOpenOrderIndex = 0;
-	double upperBBand, lowerBBand;
 
 	double intradayClose = iClose(B_PRIMARY_RATES, 0), intradayHigh, intradayLow, intradayCloseHigh, intradayCloseLow;
 	double close_prev1 = iClose(B_DAILY_RATES, 1), high_prev1 = iHigh(B_DAILY_RATES, 1), low_prev1 = iLow(B_DAILY_RATES, 1), close_prev2 = iClose(B_DAILY_RATES, 2);
-	double range;
 	double floatingTP;
 	double daily_baseline = 0.0, dailyHigh = 0.0, dailyLow = 0.0, preDailyClose;
 	int executionTrend;
@@ -106,8 +101,6 @@ AsirikuyReturnCode workoutExecutionTrend_MultipleDay(StrategyParams* pParams, In
 
 	double ATR20 = iAtr(B_DAILY_RATES, 20, 1);
 	double pMaxATR = max(pBase_Indicators->pDailyATR, ATR20);
-
-	double addPositionBaseLine;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
 	safe_gmtime(&timeInfo1, currentTime);

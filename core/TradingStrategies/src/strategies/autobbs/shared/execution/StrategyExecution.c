@@ -315,7 +315,6 @@ XAUUSD 15M
 */
 AsirikuyReturnCode workoutExecutionTrend_XAUUSD_Daily_Swing(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 {
-double closestR;
 int shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 int shift0Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 1, shift1Index_secondary = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 time_t currentTime;
@@ -448,7 +447,6 @@ return SUCCESS;
 // PrimaryRate is 1H
 AsirikuyReturnCode workoutExecutionTrend_WeeklyPivot(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 {
-double closestR;
 int shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 time_t currentTime;
 struct tm timeInfo1;
@@ -517,7 +515,6 @@ if (pIndicators->executionTrend == -1)
 // Weekly retreat strategy, only for EUR, AUD, crossing currencies
 AsirikuyReturnCode workoutExecutionTrend_WeeklyRetreat(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 {
-double closestR;
 int shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1, shift1Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 time_t currentTime;
 struct tm timeInfo1;
@@ -558,7 +555,6 @@ return SUCCESS;
 
 AsirikuyReturnCode workoutExecutionTrend_Weekly_BEGINNING_PHASE(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators, BOOL ignored)
 {
-double closestR;
 int shift0Index_Primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 // int    shift1Index = pParams->ratesBuffers->rates[B_HOURLY_RATES].info.arraySize - 2;
 int shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
@@ -607,7 +603,6 @@ return SUCCESS;
 
 AsirikuyReturnCode workoutExecutionTrend_Weekly_MIDDLE_PHASE(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators, BOOL ignored)
 {
-double closestR;
 int shift0Index_Primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 int shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 time_t currentTime;
@@ -660,7 +655,6 @@ return SUCCESS;
 
 AsirikuyReturnCode workoutExecutionTrend_Weekly_MIDDLE_RETREAT_PHASE(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators, BOOL ignored)
 {
-double closestR;
 int shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 int shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize - 2;
 time_t currentTime;
@@ -709,13 +703,12 @@ return SUCCESS;
 
 AsirikuyReturnCode workoutExecutionTrend_ManualBBS(StrategyParams * pParams, Indicators * pIndicators, Base_Indicators * pBase_Indicators)
 {
-double closestR, movement = 0;
+double movement = 0;
 int shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 int shift1Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 2;
 int dailyTrend;
 time_t currentTime;
 struct tm timeInfo1;
-int bbsTrend, bbsIndex;
 
 currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];
 safe_gmtime(&timeInfo1, currentTime);

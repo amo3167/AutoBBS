@@ -20,7 +20,6 @@ AsirikuyReturnCode modifyOrders(StrategyParams *pParams, Indicators *pIndicators
 	int tpMode = 0;
 	int shift0Index;
 	time_t currentTime;
-	double stopLoss2;
 
 	shift0Index = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index];

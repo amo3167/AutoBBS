@@ -62,13 +62,10 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI(StrategyParams* pParams, Ind
 	struct tm timeInfo1, timeInfo2, timeInfoPreBar;
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
 	int orderIndex;
-	int index1, index2, index3;
 	double level = 0, histLevel = 0, maxLevel = 0;
-	double preClose1, preClose2, preClose3, preClose4, preClose5;
 	double preHist1, preHist2, preHist3, preHist4, preHist5;
 	double fast1, fast2, fast3, fast4, fast5, fastMin, fastMax;
 	double slow1, slow2, slow3, slow4, slow5;
-	double dailyBaseLine;
 	double shortDailyHigh = 0.0, shortDailyLow = 0.0, dailyHigh = 0.0, dailyLow = 0.0;
 	double dailyRangHigh = 0.0, dailyRangeLow = 0.0;
 	double daily_baseline = 0.0, daily_baseline_short = 0.0;
@@ -80,7 +77,7 @@ AsirikuyReturnCode workoutExecutionTrend_MACD_BEILI(StrategyParams* pParams, Ind
 	int startShift = 1;
 	double macdLimit = 0.0;
 	BOOL isDailyOnly = TRUE;
-	double takeProfitPrice, takeProfit;
+	double takeProfit;
 
 	double maxRisk = 1;
 
