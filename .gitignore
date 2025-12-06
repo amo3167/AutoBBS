@@ -5,7 +5,6 @@
 
 # Vendor backup (created by remove-unused-vendors.ps1)
 /vendor_backup/
-/vendor/
 
 # Common build and IDE files
 /bin/
