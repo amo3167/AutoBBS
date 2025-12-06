@@ -62,12 +62,12 @@
 #define SELECT_ALL_TRADES			      -1
 #define DAILY_RATES                 1 // TODO: iterate to find the daily rates index instead of assuming its on index 1.
 
-/* Helper functions for min/max operations */
-inline double max(double a, double b) {
+/* Helper functions for min/max operations (avoids std::min/max conflicts) */
+static inline double dmax(double a, double b) {
     return (a > b) ? a : b;
 }
 
-inline double min(double a, double b) {
+static inline double dmin(double a, double b) {
     return (a < b) ? a : b;
 }
 
@@ -843,7 +843,7 @@ AsirikuyReturnCode EasyTrade::openSingleLongEasy(double takeProfit, double stopL
 
   if(lotSize == 0 )
   {
-	  pParams->results[resultIndex].lots = max(calculateOrderSize(pParams, BUY, pParams->results[resultIndex].entryPrice, stopLoss) * risk, 0.01);
+	  pParams->results[resultIndex].lots = dmax(calculateOrderSize(pParams, BUY, pParams->results[resultIndex].entryPrice, stopLoss) * risk, 0.01);
   }
 
   pParams->results[resultIndex].brokerSL   = stopLoss;
@@ -1790,8 +1790,8 @@ double EasyTrade::iAtrSafeShiftZero(int period)
 
   for (i=0; i<period-1; i++)
   {
-    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
-    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
+    double inner_max = dmax(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = dmax(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
@@ -1888,8 +1888,8 @@ double EasyTrade::iAtrDailyByHourInterval(int period, int firstHour, int lastHou
 
   for (i=0; i<period-1; i++)
   {
-    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
-    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
+    double inner_max = dmax(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = dmax(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
@@ -1939,8 +1939,8 @@ double EasyTrade::iAtrSafeShiftZeroWholeDays(int period)
 
   for (i=0; i<period-1; i++)
   {
-    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
-    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
+    double inner_max = dmax(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = dmax(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
