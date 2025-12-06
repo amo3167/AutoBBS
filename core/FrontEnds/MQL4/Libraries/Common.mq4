@@ -883,10 +883,25 @@ bool c_validateSystemSettings(int strategyIndex,
     }
   }
 
+  // Check if conversion symbols are needed (account currency not in trade symbol)
   if(StringFind(CharArrayToString(strategyStrings[strategyIndex][IDX_TRADE_SYMBOL].a), CharArrayToString(strategyStrings[strategyIndex][IDX_ACCOUNT_CURRENCY].a)) == -1)
   {
-    if(  iOpen(CharArrayToString(strategyStrings[strategyIndex][IDX_BASE_CONVERSION_SYMBOL].a), ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0)  <= 0
-      && iOpen(CharArrayToString(strategyStrings[strategyIndex][IDX_QUOTE_CONVERSION_SYMBOL].a), ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) <= 0)
+    // Conversion symbols are needed - check if they are available
+    string baseConv = CharArrayToString(strategyStrings[strategyIndex][IDX_BASE_CONVERSION_SYMBOL].a);
+    string quoteConv = CharArrayToString(strategyStrings[strategyIndex][IDX_QUOTE_CONVERSION_SYMBOL].a);
+    
+    // If both conversion symbols are empty, no conversion is needed (framework returned empty strings)
+    if(StringLen(baseConv) == 0 && StringLen(quoteConv) == 0)
+    {
+      // No conversion needed - this is valid (e.g., BTCUSD with USD account)
+      return(true);
+    }
+    
+    // Check if at least one valid conversion symbol exists
+    bool hasValidBaseConv = (StringLen(baseConv) > 0 && iOpen(baseConv, ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) > 0);
+    bool hasValidQuoteConv = (StringLen(quoteConv) > 0 && iOpen(quoteConv, ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) > 0);
+    
+    if(!hasValidBaseConv && !hasValidQuoteConv)
     {
       ui_setErrorInfo(c_getErrorDescription(ERROR_NO_CONVERSION_SYMBOL), systemSettings[strategyIndex][IDX_UI_X_COORDINATE], systemSettings[strategyIndex][IDX_UI_Y_COORDINATE], strategySettings[strategyIndex][IDX_OPERATIONAL_MODE]);
       Alert("Setup error: ", c_getErrorDescription(ERROR_NO_CONVERSION_SYMBOL));

@@ -37,7 +37,7 @@
  * @copyright In no event shall Asirikuy or any contributors to the Asirikuy Framework be liable for any damages (including, without limitation, lost profits, business interruption, or lost information) rising out of 'Authorized Users' use of or inability to use the Asirikuy Framework, even if Asirikuy has been advised of the possibility of such damages. In no event will Asirikuy or any contributors to the Asirikuy Framework be liable for loss of data or for indirect, special, incidental, consequential (including lost profit), or other damages based in contract, tort or otherwise. Asirikuy and contributors to the Asirikuy Framework shall have no liability with respect to the content of the Asirikuy Framework or any part thereof, including but not limited to errors or omissions contained therein, libel, infringements of rights of publicity, privacy, trademark rights, business interruption, personal injury, loss of privacy, moral rights or the disclosure of confidential information.
  */
 
-#property copyright "Copyright © 2012, Asirikuy Community"
+#property copyright "Copyright ï¿½ 2012, Asirikuy Community"
 #property link      "http://www.asirikuy.com"
 #property library
 
@@ -909,10 +909,25 @@ bool c_validateSystemSettings(int strategyIndex,
     }
   }
 
+  // Check if conversion symbols are needed (account currency not in trade symbol)
   if(StringFind(CharArrayToString(strategyStrings[strategyIndex][IDX_TRADE_SYMBOL].a), CharArrayToString(strategyStrings[strategyIndex][IDX_ACCOUNT_CURRENCY].a)) == -1)
   {
-    if(  iOpen(CharArrayToString(strategyStrings[strategyIndex][IDX_BASE_CONVERSION_SYMBOL].a), ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0)  <= 0
-      && iOpen(CharArrayToString(strategyStrings[strategyIndex][IDX_QUOTE_CONVERSION_SYMBOL].a), ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) <= 0)
+    // Conversion symbols are needed - check if they are available
+    string baseConv = CharArrayToString(strategyStrings[strategyIndex][IDX_BASE_CONVERSION_SYMBOL].a);
+    string quoteConv = CharArrayToString(strategyStrings[strategyIndex][IDX_QUOTE_CONVERSION_SYMBOL].a);
+    
+    // If both conversion symbols are empty, no conversion is needed (framework returned empty strings)
+    if(StringLen(baseConv) == 0 && StringLen(quoteConv) == 0)
+    {
+      // No conversion needed - this is valid (e.g., BTCUSD with USD account)
+      return(true);
+    }
+    
+    // Check if at least one valid conversion symbol exists
+    bool hasValidBaseConv = (StringLen(baseConv) > 0 && iOpen(baseConv, ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) > 0);
+    bool hasValidQuoteConv = (StringLen(quoteConv) > 0 && iOpen(quoteConv, ratesInformation[strategyIndex][0][IDX_ACTUAL_TIMEFRAME], 0) > 0);
+    
+    if(!hasValidBaseConv && !hasValidQuoteConv)
     {
       ui_setErrorInfo(c_getErrorDescription(ERROR_NO_CONVERSION_SYMBOL), systemSettings[strategyIndex][IDX_UI_X_COORDINATE], systemSettings[strategyIndex][IDX_UI_Y_COORDINATE], strategySettings[strategyIndex][IDX_OPERATIONAL_MODE]);
       Alert("Setup error: ", c_getErrorDescription(ERROR_NO_CONVERSION_SYMBOL));
