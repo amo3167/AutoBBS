@@ -39,7 +39,14 @@ project "AsirikuyFrameworkAPI"
   configuration{"windows", "x64"}
     -- Link TradingStrategies explicitly from bin directory
     linkoptions{"../../../bin/" .. _ACTION .. "/x64/Release/TradingStrategies.lib"}
-  boostdir = os.getenv("BOOST_ROOT")
+  -- Determine boost directory for non-Windows prebuild commands
+  if os.isdir("../../vendor/boost_1_84_0") then
+    boostdir = "../../vendor/boost_1_84_0"
+  elseif os.isdir("../../vendor/boost_1_49_0") then
+    boostdir = "../../vendor/boost_1_49_0"
+  else
+    boostdir = os.getenv("BOOST_ROOT") or "/usr/local"
+  end
   requiredBoostLibs = "--with-system --with-chrono --with-thread --with-date_time --with-regex --with-filesystem --with-serialization --with-test"  
   os.chdir("../..")
   cwd = os.getcwd()

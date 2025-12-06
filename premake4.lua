@@ -12,19 +12,17 @@ elseif _ACTION == "doc" then
 elseif _ACTION == nil then
   -- No action was provided
 else
-  -- Check if BOOST_ROOT is set
-  boostdir = os.getenv("BOOST_ROOT")
-
-  if boostdir == nil then
-      -- Try vendor Boost directory
-      if os.isdir("vendor/boost_1_84_0") then
-        boostdir = "vendor/boost_1_84_0"
-      elseif os.isdir("vendor/boost_1_49_0") then
-        boostdir = "vendor/boost_1_49_0"
-      else
-        printf("Set the environment variable BOOST_ROOT or place Boost in vendor/boost_1_84_0!")
-        return
-      end
+  -- Check for Boost: prioritize vendor directory over BOOST_ROOT
+  if os.isdir("vendor/boost_1_84_0") then
+    boostdir = "vendor/boost_1_84_0"
+  elseif os.isdir("vendor/boost_1_49_0") then
+    boostdir = "vendor/boost_1_49_0"
+  else
+    boostdir = os.getenv("BOOST_ROOT")
+    if boostdir == nil then
+      printf("Set the environment variable BOOST_ROOT or place Boost in vendor/boost_1_84_0!")
+      return
+    end
   end
   
   -- Skip boost bootstrap in Docker or if directory doesn't exist
