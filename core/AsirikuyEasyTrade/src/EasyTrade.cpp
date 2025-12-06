@@ -62,6 +62,15 @@
 #define SELECT_ALL_TRADES			      -1
 #define DAILY_RATES                 1 // TODO: iterate to find the daily rates index instead of assuming its on index 1.
 
+/* Helper functions for min/max operations */
+inline double max(double a, double b) {
+    return (a > b) ? a : b;
+}
+
+inline double min(double a, double b) {
+    return (a < b) ? a : b;
+}
+
 
 int countLinesInCSV(char* fileName)
 {
@@ -834,7 +843,7 @@ AsirikuyReturnCode EasyTrade::openSingleLongEasy(double takeProfit, double stopL
 
   if(lotSize == 0 )
   {
-	  pParams->results[resultIndex].lots = max( calculateOrderSize(pParams, BUY, pParams->results[resultIndex].entryPrice, stopLoss) * risk,0.01);
+	  pParams->results[resultIndex].lots = max(calculateOrderSize(pParams, BUY, pParams->results[resultIndex].entryPrice, stopLoss) * risk, 0.01);
   }
 
   pParams->results[resultIndex].brokerSL   = stopLoss;
@@ -1781,7 +1790,8 @@ double EasyTrade::iAtrSafeShiftZero(int period)
 
   for (i=0; i<period-1; i++)
   {
-    trueRange = max(highDaily[i]-lowDaily[i], max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]))) ;
+    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
@@ -1878,7 +1888,8 @@ double EasyTrade::iAtrDailyByHourInterval(int period, int firstHour, int lastHou
 
   for (i=0; i<period-1; i++)
   {
-    trueRange = max(highDaily[i]-lowDaily[i], max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]))) ;
+    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
@@ -1928,7 +1939,8 @@ double EasyTrade::iAtrSafeShiftZeroWholeDays(int period)
 
   for (i=0; i<period-1; i++)
   {
-    trueRange = max(highDaily[i]-lowDaily[i], max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]))) ;
+    double inner_max = max(fabs(highDaily[i]-closeDaily[i+1]), fabs(lowDaily[i]-closeDaily[i+1]));
+    trueRange = max(highDaily[i]-lowDaily[i], inner_max) ;
 
     average += trueRange/period;
   }
@@ -3150,7 +3162,7 @@ int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double poin
 	{
 		//big win
 		if (pParams->orderInfo[index1].type == type
-			&& pParams->orderInfo[index1].profit > 0 && abs(pParams->orderInfo[index1].closePrice - pParams->orderInfo[index1].openPrice) > points)
+			&& pParams->orderInfo[index1].profit > 0 && fabs(pParams->orderInfo[index1].closePrice - pParams->orderInfo[index1].openPrice) > points)
 			return TRUE;
 		else
 			return FALSE;
@@ -3164,7 +3176,7 @@ int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double poin
 	if (index2 >= 0)
 	{
 		if (pParams->orderInfo[index2].type == type
-			&& pParams->orderInfo[index2].profit > 0 && abs(pParams->orderInfo[index2].closePrice - pParams->orderInfo[index2].openPrice) > points)
+			&& pParams->orderInfo[index2].profit > 0 && fabs(pParams->orderInfo[index2].closePrice - pParams->orderInfo[index2].openPrice) > points)
 			return TRUE;
 		else
 			return FALSE;
@@ -3178,7 +3190,7 @@ int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double poin
 	if (index3 >= 0)
 	{
 		if (pParams->orderInfo[index3].type == type
-			&& pParams->orderInfo[index3].profit > 0 && abs(pParams->orderInfo[index3].closePrice - pParams->orderInfo[index3].openPrice) > points)
+			&& pParams->orderInfo[index3].profit > 0 && fabs(pParams->orderInfo[index3].closePrice - pParams->orderInfo[index3].openPrice) > points)
 			return TRUE;
 		else
 			return FALSE;
@@ -3192,7 +3204,7 @@ int EasyTrade::hasBigWinInCurrentTrend(int rateIndex, OrderType type,double poin
 	if (index4 >= 0)
 	{
 		if (pParams->orderInfo[index4].type == type
-			&& pParams->orderInfo[index4].profit > 0 && abs(pParams->orderInfo[index4].closePrice - pParams->orderInfo[index4].openPrice) > points)
+			&& pParams->orderInfo[index4].profit > 0 && fabs(pParams->orderInfo[index4].closePrice - pParams->orderInfo[index4].openPrice) > points)
 			return TRUE;
 		else
 			return FALSE;
