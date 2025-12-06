@@ -39,6 +39,179 @@ int C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char* pBaseCon
 
 static void (*globalSignalUpdate)(TradeSignal signal);
 
+// =============================================================================
+// Platform-specific config file discovery functions
+// =============================================================================
+
+#if !defined(_WIN32) && !defined(_WIN64)
+/**
+ * Find config file by pattern using POSIX directory API (Linux/macOS)
+ * @param symbolName Symbol to search for (e.g., "EURUSD")
+ * @param isOptimization 1 if optimization mode, 0 for backtest
+ * @param outConfigPath Output buffer for found config path
+ * @param pathSize Size of output buffer
+ * @return 1 if found, 0 if not found
+ */
+static int findConfigByPattern_posix(const char* symbolName, int isOptimization, char* outConfigPath, size_t pathSize)
+{
+	DIR* dir = opendir("./tmp");
+	if (dir == NULL) {
+		fprintf(stderr, "[INIT] ✗ Cannot open ./tmp directory\n");
+		fflush(stderr);
+		return 0;
+	}
+	
+	struct dirent* entry;
+	char searchPattern[256];
+	int found = 0;
+	
+	snprintf(searchPattern, sizeof(searchPattern), "%s_", symbolName);
+	
+	while ((entry = readdir(dir)) != NULL) {
+		// Check if directory name starts with symbol pattern
+		if (entry->d_type == DT_DIR && strncmp(entry->d_name, searchPattern, strlen(searchPattern)) == 0) {
+			// Skip "." and ".."
+			if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
+				continue;
+			}
+			
+			// For optimization, check if it ends with "_optimize"
+			if (isOptimization) {
+				if (strstr(entry->d_name, "_optimize") == NULL) {
+					continue;
+				}
+			} else {
+				// For backtest, must have underscore but not "_optimize"
+				if (strstr(entry->d_name, "_optimize") != NULL) {
+					continue;
+				}
+			}
+			
+			// Build full config path
+			char candidatePath[MAX_FILE_PATH_CHARS];
+			snprintf(candidatePath, sizeof(candidatePath), "./tmp/%s/AsirikuyConfig.xml", entry->d_name);
+			
+			// Check if config file exists
+			FILE* testFile = fopen(candidatePath, "r");
+			if (testFile != NULL) {
+				fclose(testFile);
+				strncpy(outConfigPath, candidatePath, pathSize - 1);
+				outConfigPath[pathSize - 1] = '\0';
+				found = 1;
+				fprintf(stderr, "[INIT] ✓ Found config by pattern: %s\n", candidatePath);
+				fflush(stderr);
+				break;
+			}
+		}
+	}
+	
+	closedir(dir);
+	
+	if (!found) {
+		fprintf(stderr, "[INIT] ✗ No config found by pattern\n");
+		fflush(stderr);
+	}
+	
+	return found;
+}
+#else
+/**
+ * Find config file by pattern using Windows API (Win32)
+ * @param symbolName Symbol to search for (e.g., "EURUSD")
+ * @param isOptimization 1 if optimization mode, 0 for backtest
+ * @param outConfigPath Output buffer for found config path
+ * @param pathSize Size of output buffer
+ * @return 1 if found, 0 if not found
+ */
+static int findConfigByPattern_windows(const char* symbolName, int isOptimization, char* outConfigPath, size_t pathSize)
+{
+	WIN32_FIND_DATAA findData;
+	char searchPath[MAX_PATH];
+	char searchPattern[256];
+	int found = 0;
+	
+	// Windows wildcard pattern for FindFirstFile
+	snprintf(searchPath, sizeof(searchPath), "./tmp/%s_*", symbolName);
+	snprintf(searchPattern, sizeof(searchPattern), "%s_", symbolName);
+	
+	HANDLE hFind = FindFirstFileA(searchPath, &findData);
+	if (hFind == INVALID_HANDLE_VALUE) {
+		fprintf(stderr, "[INIT] ✗ Cannot scan ./tmp directory (error %lu)\n", GetLastError());
+		fflush(stderr);
+		return 0;
+	}
+	
+	do {
+		// Check if it's a directory (not a file)
+		if (findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			// Skip "." and ".."
+			if (strcmp(findData.cFileName, ".") == 0 || strcmp(findData.cFileName, "..") == 0) {
+				continue;
+			}
+			
+			// Verify starts with symbol pattern
+			if (strncmp(findData.cFileName, searchPattern, strlen(searchPattern)) != 0) {
+				continue;
+			}
+			
+			// For optimization, check if it contains "_optimize"
+			if (isOptimization) {
+				if (strstr(findData.cFileName, "_optimize") == NULL) {
+					continue;
+				}
+			} else {
+				// For backtest, must have underscore but not "_optimize"
+				if (strstr(findData.cFileName, "_optimize") != NULL) {
+					continue;
+				}
+			}
+			
+			// Build full config path
+			char candidatePath[MAX_FILE_PATH_CHARS];
+			snprintf(candidatePath, sizeof(candidatePath), "./tmp/%s/AsirikuyConfig.xml", findData.cFileName);
+			
+			// Check if config file exists
+			FILE* testFile = fopen(candidatePath, "r");
+			if (testFile != NULL) {
+				fclose(testFile);
+				strncpy(outConfigPath, candidatePath, pathSize - 1);
+				outConfigPath[pathSize - 1] = '\0';
+				found = 1;
+				fprintf(stderr, "[INIT] ✓ Found config by pattern: %s\n", candidatePath);
+				fflush(stderr);
+				break;
+			}
+		}
+	} while (FindNextFileA(hFind, &findData));
+	
+	FindClose(hFind);
+	
+	if (!found) {
+		fprintf(stderr, "[INIT] ✗ No config found by pattern\n");
+		fflush(stderr);
+	}
+	
+	return found;
+}
+#endif
+
+/**
+ * Platform-agnostic wrapper for finding config by pattern
+ * Automatically dispatches to correct platform implementation
+ */
+static int findConfigByPattern(const char* symbolName, int isOptimization, char* outConfigPath, size_t pathSize)
+{
+#if !defined(_WIN32) && !defined(_WIN64)
+	return findConfigByPattern_posix(symbolName, isOptimization, outConfigPath, pathSize);
+#else
+	return findConfigByPattern_windows(symbolName, isOptimization, outConfigPath, pathSize);
+#endif
+}
+
+// =============================================================================
+// End of config discovery functions
+// =============================================================================
+
 // Timing helper functions for performance measurement
 static double getCurrentTimeMs(void)
 {
@@ -1213,74 +1386,16 @@ TestResult __stdcall runPortfolioTest (
 			fprintf(stderr, "[INIT] ✗ Instance-specific config not found at: %s, searching by pattern...\n", instanceConfigPath);
 			fflush(stderr);
 			
-			// Instance ID from settings might be wrong (test/iteration ID), try to find by pattern
 			// Try to find instance-specific config by scanning tmp directory
-#if !defined(_WIN32) && !defined(_WIN64)
-			// POSIX directory scanning (Linux/macOS only)
-			DIR* dir = opendir("./tmp");
-			if(dir != NULL) {
-				struct dirent* entry;
-				char searchPattern[256];
-				char foundConfigPath[MAX_FILE_PATH_CHARS] = "";
-				int found = 0;
-				
-				// Build search pattern: {SYMBOL}_*_optimize (for optimization) or {SYMBOL}_* (for backtest)
-				sprintf(searchPattern, "%s_", pInTradeSymbol[j]);
-				
-				while((entry = readdir(dir)) != NULL) {
-					// Check if directory name starts with symbol pattern
-					if(entry->d_type == DT_DIR && strncmp(entry->d_name, searchPattern, strlen(searchPattern)) == 0) {
-						// For optimization, check if it ends with "_optimize"
-						if(is_optimization) {
-							if(strstr(entry->d_name, "_optimize") != NULL) {
-								sprintf(foundConfigPath, "./tmp/%s/AsirikuyConfig.xml", entry->d_name);
-							} else {
-								continue;
-							}
-						} else {
-							// For backtest, just check if it starts with symbol and has an underscore
-							if(strstr(entry->d_name, "_") != NULL && strstr(entry->d_name, "_optimize") == NULL) {
-								sprintf(foundConfigPath, "./tmp/%s/AsirikuyConfig.xml", entry->d_name);
-							} else {
-								continue;
-							}
-						}
-						
-						// Check if config file exists in this directory
-						FILE* foundConfig = fopen(foundConfigPath, "r");
-						if(foundConfig != NULL) {
-							fclose(foundConfig);
-							// Copy to a static buffer that persists
-							static char staticConfigPath[MAX_FILE_PATH_CHARS];
-							strcpy(staticConfigPath, foundConfigPath);
-							configPathToUse = staticConfigPath;
-							found = 1;
-							fprintf(stderr, "[INIT] ✓ Found instance-specific config by pattern: %s\n", configPathToUse);
-							fflush(stderr);
-							logInfo("Found instance-specific config by pattern: %s\n", configPathToUse);
-							break;
-						}
-					}
-				}
-				closedir(dir);
-				
-				if(!found) {
-					fprintf(stderr, "[INIT] ✗ No instance-specific config found by pattern, using default: %s\n", configPathToUse);
-					fflush(stderr);
-					logInfo("Instance-specific config not found, using default: %s\n", configPathToUse);
-				}
+			static char foundConfigPath[MAX_FILE_PATH_CHARS];
+			if(findConfigByPattern(pInTradeSymbol[j], is_optimization, foundConfigPath, sizeof(foundConfigPath))) {
+				configPathToUse = foundConfigPath;
+				logInfo("Found instance-specific config by pattern: %s\n", configPathToUse);
 			} else {
-				// opendir failed on Linux/macOS
-				fprintf(stderr, "[INIT] ✗ Cannot open ./tmp directory, using default: %s\n", configPathToUse);
+				fprintf(stderr, "[INIT] ✗ No instance-specific config found by pattern, using default: %s\n", configPathToUse);
 				fflush(stderr);
-				logInfo("Cannot open tmp directory, using default: %s\n", configPathToUse);
+				logInfo("Instance-specific config not found, using default: %s\n", configPathToUse);
 			}
-#else
-			// Windows: Skip directory scanning, just use default config
-			fprintf(stderr, "[INIT] ✗ Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
-			fflush(stderr);
-			logInfo("Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
-#endif
 		}
 	} else {
 		fprintf(stderr, "[INIT] Instance ID is 0 or invalid, using default config: %s\n", configPathToUse);
