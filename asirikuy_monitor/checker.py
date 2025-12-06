@@ -108,6 +108,23 @@ def main() -> None:
         print(f"Error reading config file: {e}")
         sys.exit(1)    
 
+    # Set up enhanced logging first (before using logger)
+    try:
+        from include.logging_config import configure_logging_from_config
+        logger = configure_logging_from_config(config)
+        logger.info("Monitor starting with enhanced logging")
+    except ImportError:
+        # Fallback to basic logging if enhanced logging not available
+        logging.basicConfig(
+            filename=DEFAULT_LOG_FILE,
+            filemode='a',
+            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
+            datefmt='%H:%M:%S',
+            level=logging.ERROR
+        )
+        logger = logging.getLogger('Monitor')
+        logger.info("Monitor starting with basic logging")
+
     monitoringInterval = float(config.get('general', 'monitoringInterval'))
     openDay =   int(config.get('general', 'weekOpenDay'))
     openHour =  int(config.get('general', 'weekOpenHour'))
@@ -146,23 +163,6 @@ def main() -> None:
     account_sections: List[str] = [
         s.strip() for s in config.get('accounts', 'accounts').split(',')
     ]
-    
-    # Set up enhanced logging
-    try:
-        from include.logging_config import configure_logging_from_config
-        logger = configure_logging_from_config(config)
-        logger.info("Monitor starting with enhanced logging")
-    except ImportError:
-        # Fallback to basic logging if enhanced logging not available
-        logging.basicConfig(
-            filename=DEFAULT_LOG_FILE,
-            filemode='a',
-            format='%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s',
-            datefmt='%H:%M:%S',
-            level=logging.ERROR
-        )
-        logger = logging.getLogger('Monitor')
-        logger.info("Monitor starting with basic logging")
 
 
     # Initialize error tracking
@@ -207,7 +207,6 @@ def main() -> None:
                     continue
 
                 #check the heartbeat
-                import os
                 original_dir = os.getcwd()
                 
                 try:
@@ -341,14 +340,16 @@ def main() -> None:
                     else:
                         fname = path_obj / 'log' / f'{account_number}AsirikuyFramework.log'
                     
+                    logger.info(f"Checking log file: {fname}")
+                    
                     if not fname.exists():
-                        logger.debug(f"Log file does not exist: {fname}")
+                        logger.warning(f"Log file does not exist: {fname}")
                         continue
                     
                     try:
                         # Use retry mechanism for file operations
                         def read_log_file():
-                            with open(str(fname), 'r', encoding='utf-8') as file:
+                            with open(str(fname), 'r', encoding='utf-8', errors='replace') as file:
                                 return file.readlines()
                         
                         data = retry_file_operation(
@@ -378,6 +379,7 @@ def main() -> None:
                         #print line
 
                     line = data[len(data) -1]
+                    logger.info(f"Checking last line from {fname}: {line[:100]}...")  # Log first 100 chars
                     #print line
                     #if tdelta.total_seconds() < 5 and ( "Error" in line  or "Emergency" in line or "Critical" in line ):
                     if "Error" in line or "Emergency" in line or "Critical" in line:
