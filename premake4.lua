@@ -16,22 +16,27 @@ else
   boostdir = os.getenv("BOOST_ROOT")
 
   if boostdir == nil then
-      printf("Set the environment variable BOOST_ROOT first!")
-      return
-  else
-    -- Skip boost bootstrap in Docker or if directory doesn't exist
-    if os.isdir(boostdir) then
-      cwd = os.getcwd()
-      os.chdir(boostdir)
-      if os.get() == "windows" and not os.isfile("b2.exe") then
-        if os.execute then
-          os.execute("bootstrap.bat")
-        end
-      elseif os.get() ~= "windows" and not os.isfile("./b2") then
-        -- Skip bootstrap in Docker - boost should already be built
+      -- Try vendor Boost directory
+      if os.isdir("vendor/boost_1_49_0") then
+        boostdir = "vendor/boost_1_49_0"
+      else
+        printf("Set the environment variable BOOST_ROOT or place Boost in vendor/boost_1_49_0!")
+        return
       end
-      os.chdir(cwd)
+  end
+  
+  -- Skip boost bootstrap in Docker or if directory doesn't exist
+  if os.isdir(boostdir) then
+    cwd = os.getcwd()
+    os.chdir(boostdir)
+    if os.get() == "windows" and not os.isfile("b2.exe") then
+      if os.execute then
+        os.execute("bootstrap.bat")
+      end
+    elseif os.get() ~= "windows" and not os.isfile("./b2") then
+      -- Skip bootstrap in Docker - boost should already be built
     end
+    os.chdir(cwd)
   end
   
   -- The main definition of the solution starts here

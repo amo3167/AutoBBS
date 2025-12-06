@@ -9,8 +9,15 @@ project "AsirikuyEasyTrade"
   includedirs{
     "src",
     "include",
-    "../AsirikuyCommon/include"
+    "../AsirikuyCommon/include",
+    "../../vendor/boost_1_49_0"
   }
+  -- Only link Boost libraries on non-Windows platforms
+  configuration{"not windows"}
+    libdirs{
+      "../../vendor/boost_1_49_0/stage/lib"
+    }
+  
   -- Add Boost include directory (for Precompiled.hpp)
   configuration{"not windows"}
     includedirs{
