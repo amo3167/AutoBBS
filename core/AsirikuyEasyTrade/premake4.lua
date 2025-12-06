@@ -1,29 +1,16 @@
 project "AsirikuyEasyTrade"
   location("../../build/" .. _ACTION .. "/projects")
   kind "StaticLib"
-  
-  -- Windows: Build stub implementation in C
-  configuration{"windows"}
-    language "C"
-    files{
-      "src/WindowsStubs.c"
-    }
-    includedirs{
-      "include",
-      "../AsirikuyCommon/include"
-    }
-  
-  -- Linux/Mac: Build full implementation in C++
-  configuration{"not windows"}
-    language "C++"
-    files{
-      "**.hpp", 
-      "**.cpp"
-    }
-    includedirs{
-      "src",
-      "../AsirikuyCommon/include"
-    }
+  language "C++"
+  files{
+    "**.hpp", 
+    "**.cpp"
+  }
+  includedirs{
+    "src",
+    "include",
+    "../AsirikuyCommon/include"
+  }
   -- Add Boost include directory (for Precompiled.hpp)
   configuration{"not windows"}
     includedirs{
