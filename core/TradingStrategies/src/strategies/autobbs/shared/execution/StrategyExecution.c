@@ -613,8 +613,6 @@ int shift1Index = pParams->ratesBuffers->rates[B_SECONDARY_RATES].info.arraySize
 time_t currentTime;
 struct tm timeInfo1;
 
-double stopLoss;
-
 double preHigh = iHigh(B_SECONDARY_RATES, 1);
 double preLow = iLow(B_SECONDARY_RATES, 1);
 double preClose = iClose(B_SECONDARY_RATES, 1);
