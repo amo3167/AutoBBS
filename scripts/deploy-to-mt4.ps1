@@ -5,6 +5,7 @@
 param(
     [string]$MT4Path = "",
     [string]$ReleasePath = "",
+    [string]$ConfigFile = "",
     [switch]$DryRun = $false
 )
 
@@ -48,6 +49,60 @@ function Get-DefaultMT4Path {
             Write-Success "Found MT4 at: $($found.FullName)"
             return $found.FullName
         }
+    }
+    
+    return $null
+}
+
+function Get-MT4PathFromConfig {
+    param([string]$ConfigPath)
+    
+    if (-not (Test-Path $ConfigPath)) {
+        Write-Warning "Config file not found: $ConfigPath"
+        return $null
+    }
+    
+    Write-Info "Reading MT4 path from config: $ConfigPath"
+    
+    try {
+        $content = Get-Content $ConfigPath -Raw
+        
+        # Parse INI-style config to find [accounts] section and get account list
+        if ($content -match '\[accounts\]\s*accounts\s*=\s*([^\r\n]+)') {
+            $accountNames = $matches[1].Trim() -split ',' | ForEach-Object { $_.Trim() }
+            Write-Info "Found accounts: $($accountNames -join ', ')"
+            
+            # Try each account name
+            foreach ($accountName in $accountNames) {
+                if ($content -match "\[$accountName\][^\[]*path\s*=\s*([^\r\n]+)") {
+                    $mt4Path = $matches[1].Trim()
+                    $librariesPath = Join-Path $mt4Path "MQL4\Libraries"
+                    
+                    if (Test-Path $librariesPath) {
+                        Write-Success "MT4 path from config [$accountName]: $librariesPath"
+                        return $librariesPath
+                    }
+                    else {
+                        Write-Warning "MQL4\Libraries not found at: $librariesPath"
+                    }
+                }
+            }
+        }
+        
+        # If no accounts match, try to find any section with a path that looks like MT4
+        if ($content -match '\[([^\]]+)\][^\[]*path\s*=\s*([^\r\n]+)[^\[]*frontend\s*=\s*MT4') {
+            $accountName = $matches[1].Trim()
+            $mt4Path = $matches[2].Trim()
+            $librariesPath = Join-Path $mt4Path "MQL4\Libraries"
+            
+            if (Test-Path $librariesPath) {
+                Write-Success "MT4 path from config [$accountName]: $librariesPath"
+                return $librariesPath
+            }
+        }
+    }
+    catch {
+        Write-Warning "Error parsing config file: $_"
     }
     
     return $null
@@ -123,7 +178,15 @@ Write-Success "Using release: $(Split-Path -Leaf $ReleasePath)"
 
 # Get MT4 path
 if ($MT4Path -eq "") {
-    $MT4Path = Get-DefaultMT4Path
+    # Try config file first if specified
+    if ($ConfigFile -ne "") {
+        $MT4Path = Get-MT4PathFromConfig $ConfigFile
+    }
+    
+    # Fall back to auto-detection if config didn't work
+    if ($null -eq $MT4Path) {
+        $MT4Path = Get-DefaultMT4Path
+    }
     
     if ($null -eq $MT4Path) {
         Write-Warning "MT4 not found automatically"
