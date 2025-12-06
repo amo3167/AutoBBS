@@ -9,7 +9,9 @@
 #ifdef LOG_DEBUG
 #undef LOG_DEBUG
 #endif
+#if !defined(_WIN32) && !defined(_WIN64)
 #include "gaul.h"  // From vendor/Gaul/src/gaul.h
+#endif
 #include "AsirikuyLogger.h"  // Restore our logging macros
 #include <stdlib.h>
 #include <stdio.h>
@@ -49,6 +51,9 @@ void				(*globalOptimizationUpdate)(TestResult testResult, double* settings, int
 int					currentIteration = 0, globalNumSymbols;
 double				generationDifferences[5] = {-1};				
 
+#if !defined(_WIN32) && !defined(_WIN64)
+// GAUL-dependent code for genetic algorithm optimization
+// Not available on Windows without GAUL library
 
 static boolean generationHook(int generation, population *pop)
 {
@@ -111,16 +116,6 @@ static boolean generationHook(int generation, population *pop)
 	fprintf(stderr, "[OPT] Generation %d started\n", generation +1);
 	fflush(stderr);
 	return TRUE;	/* TRUE indicates that evolution should continue. */
-}
-
-//Calculates total number of combinations for given optimization parameters
-int getParameterSetsNumber (int startIndex, int numOptimizedParams, OptimizationParam *optimizationParams){
-	int i, numSteps = 1;
-
-	for(i=0; i<numOptimizedParams; i++){
-		numSteps = numSteps * ((int)((optimizationParams[i].stop - optimizationParams[i].start) / optimizationParams[i].step) + 1);
-	}
-	return numSteps;
 }
 
 //Maps an optimization value to a valid value from the 1-100 scale
@@ -317,6 +312,17 @@ boolean testFitnessMultipleSymbols(population *pop, entity *entity)
 	return TRUE;
 }
 
+#endif // !defined(_WIN32) && !defined(_WIN64) - End of GAUL-dependent code
+
+//Calculates total number of combinations for given optimization parameters
+int getParameterSetsNumber (int startIndex, int numOptimizedParams, OptimizationParam *optimizationParams){
+	int i, numSteps = 1;
+
+	for(i=0; i<numOptimizedParams; i++){
+		numSteps = numSteps * ((int)((optimizationParams[i].stop - optimizationParams[i].start) / optimizationParams[i].step) + 1);
+	}
+	return numSteps;
+}
 
 void __stdcall stopOptimization(){
 	stopOpti = 1;
@@ -397,10 +403,12 @@ int __stdcall runOptimizationMultipleSymbols(
 	TestResult testResult;
 	double *currentSet;
 
-	//Genetic variables
+#if !defined(_WIN32) && !defined(_WIN64)
+	//Genetic variables (GAUL-dependent)
 	population *pop = NULL;
 	void (*crossoverFunction)(population *pop, entity *mother, entity *father, entity *daughter, entity *son);
 	void (*mutateFunction)(population *pop, entity *mother, entity *daughter);
+#endif
 
 	int myId = 0, numProcs = 1;
 
@@ -1178,6 +1186,7 @@ int __stdcall runOptimizationMultipleSymbols(
 		return true;
 	}
 	else if(optimizationType == OPTI_GENETIC){
+#if !defined(_WIN32) && !defined(_WIN64)
 		random_seed((int)(time(NULL)));
 		log_init(LOG_NONE, NULL, NULL, FALSE);
 
@@ -1364,6 +1373,15 @@ int __stdcall runOptimizationMultipleSymbols(
 			if(globalExecUnderMPI) ga_detach_mpi_slaves();
 		}
 		return true;
+#else // Windows - GAUL library not available
+		sprintf(error_t, "GAUL genetic algorithm optimization not available on Windows. Please use OPTI_BRUTE_FORCE optimization type instead, or provide GAUL library (see docs/WINDOWS_GAUL_OPTIONS.md)");
+		*error = (char*)malloc(strlen(error_t) + 1);
+		strcpy(*error, error_t);
+		fprintf(stderr, "[OPT] ERROR: %s\n", error_t);
+		fflush(stderr);
+		if(optimizationFinished != NULL) optimizationFinished();
+		return false;
+#endif // !defined(_WIN32) && !defined(_WIN64)
 
 	}
 	else{

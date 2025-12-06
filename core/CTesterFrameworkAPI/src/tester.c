@@ -15,9 +15,11 @@
 #include "AsirikuyTime.h"
 #include "AsirikuyDefines.h"
 #include <stdio.h>
+#if !defined(_WIN32) && !defined(_WIN64)
 #include <unistd.h>
-#include <math.h>
 #include <dirent.h>
+#endif
+#include <math.h>
 #include <string.h>
 #ifdef _OPENMP
 #include <omp.h>
@@ -1213,6 +1215,8 @@ TestResult __stdcall runPortfolioTest (
 			
 			// Instance ID from settings might be wrong (test/iteration ID), try to find by pattern
 			// Try to find instance-specific config by scanning tmp directory
+#if !defined(_WIN32) && !defined(_WIN64)
+			// POSIX directory scanning (Linux/macOS only)
 			DIR* dir = opendir("./tmp");
 			if(dir != NULL) {
 				struct dirent* entry;
@@ -1266,6 +1270,12 @@ TestResult __stdcall runPortfolioTest (
 					logInfo("Instance-specific config not found, using default: %s\n", configPathToUse);
 				}
 			} else {
+#else
+			// Windows: Skip directory scanning, just use default config
+			{
+				fprintf(stderr, "[INIT] ✗ Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
+				fflush(stderr);
+#endif
 				fprintf(stderr, "[INIT] ✗ Cannot open ./tmp directory, using default: %s\n", configPathToUse);
 				fflush(stderr);
 				logInfo("Cannot open tmp directory, using default: %s\n", configPathToUse);

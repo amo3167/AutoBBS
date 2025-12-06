@@ -10,6 +10,8 @@ EXPORTS
   mql5_runStrategy
   jf_runStrategy
   c_runStrategy
+  
+  C_getConversionSymbols
 
   mql4_parseSymbol
   mql4_normalizeSymbol

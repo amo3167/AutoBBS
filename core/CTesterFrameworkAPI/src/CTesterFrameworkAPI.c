@@ -17,7 +17,9 @@
 #ifdef _WIN32
   #include <windows.h>
 #else
+#if !defined(_WIN32) && !defined(_WIN64)
   #include <unistd.h>
+#endif
 #endif
 
 // Pantheios removed - using AsirikuyLogger for logging

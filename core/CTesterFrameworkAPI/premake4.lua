@@ -10,12 +10,11 @@ project "CTesterFrameworkAPI"
   includedirs{
     "src",
     "include",
-    "../../../vendor/Gaul/src",  -- Gaul headers (gaul.h)
+    "../../../vendor/Gaul/src",  -- Gaul headers (gaul.h) - only for Linux/macOS
     "../../../vendor/Gaul/util/gaul"  -- Gaul utility headers (gaul_util.h)
   }
   links{
 	"AsirikuyFrameworkAPI",
-	"Gaul",
 	-- Pantheios removed - using standard fprintf for logging
 	-- "Pantheios_core", 
 	-- "Pantheios_utils", 
@@ -24,6 +23,10 @@ project "CTesterFrameworkAPI"
 	"AsirikuyCommon", 
 	"Log"
   }
+  -- Gaul library only on Linux/macOS (not available on Windows)
+  configuration{"not windows"}
+    links{"Gaul"}
+  configuration{}
   libdirs{
 	"../../bin/**",
 	"../../../bin/" .. _ACTION .. "/x64/Debug/lib",  -- Gaul library location
@@ -57,7 +60,8 @@ project "CTesterFrameworkAPI"
     }
   configuration{"windows"}
     linkoptions{"/DEF:../../../core/CTesterFrameworkAPI/src/CTesterFrameworkAPI.def"}
-    links{"mpi"}
+    -- MPI not available on Windows by default
+    -- links{"mpi"}
     buildoptions{"/openmp"}
     defines{"_OPENMP"}
   configuration{"macosx", "x64"}
