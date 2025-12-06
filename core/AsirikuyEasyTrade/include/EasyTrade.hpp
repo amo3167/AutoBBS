@@ -152,57 +152,6 @@ public:
   *	returns SUCCESS if the rate index has been populated properly
   * 
   */
-  AsirikuyReturnCode addNewDailyRates(char* ratesName, time_t intFromDate, int ratesIndex);
-
-    /**
-  * This functions adds a new daily rates array from the Quandl financial
-  * data repository. You specify the dataset and ticker of the instrument you want
-  * to get, as well as the rateIndex you want to populate and the date
-  * from where you want to add data. Rates are added up to currentBrokerTime.
-  *
-  * @param char* dataset
-  *   Quandl dataset where the instrument is located (AUTONOMY, NYSEARCA, etc)
-  *
-  * @param char* ratesName
-  *   Ticket of the instrument to add. For example OIL for oil prices.
-  *
-  * @param time_t intFromDate
-  *   Time from which you want to add daily rates. 
-  *
-  * @param int ratesIndex
-  *   Index of the rates array you want to modify. It is normally > 2. 
-  *
-  * @return AsirikuyReturnCode
-  *	returns SUCCESS if the rate index has been populated properly
-  * 
-  */
-  AsirikuyReturnCode addNewDailyRatesQuandl(char* token, char* dataset, char* ratesName, time_t intFromDate, int ratesIndex);
-
-    /**
-  * This functions adds a new daily rates array from the Quandl financial
-  * data repository. You specify the dataset and ticker of the instrument you want
-  * to get, as well as the rateIndex you want to populate and the date
-  * from where you want to add data. Rates are added up to currentBrokerTime. Note that you 
-  * this function only populates the open value of the rates array (useful when getting data with only 1 value
-  * for example interest or employment rates, which lack OHLCV).
-  *
-  * @param char* dataset
-  *   Quandl dataset where the instrument is located (AUTONOMY, NYSEARCA, etc)
-  *
-  * @param char* ratesName
-  *   Ticket of the instrument to add. For example OIL for oil prices.
-  *
-  * @param time_t intFromDate
-  *   Time from which you want to add daily rates. 
-  *
-  * @param int ratesIndex
-  *   Index of the rates array you want to modify. It is normally > 2. 
-  *
-  * @return AsirikuyReturnCode
-  *	returns SUCCESS if the rate index has been populated properly
-  * 
-  */
-  AsirikuyReturnCode addNewDailyRatesQuandlOpenOnly(char* token, char* dataset, char* ratesName, time_t intFromDate, int ratesIndex);
 
   /**
   * This functions returns the average true range of the past daily periods, 

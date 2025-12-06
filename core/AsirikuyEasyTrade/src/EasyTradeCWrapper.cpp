@@ -145,21 +145,6 @@ double parameter(int parameterIndex)
   return easyTradePtr->parameter(parameterIndex);
 }
 
-AsirikuyReturnCode addNewDailyRates(char* ratesName, time_t intFromDate, int ratesIndex)
-{
-  return easyTradePtr->addNewDailyRates(ratesName,intFromDate,ratesIndex);
-}
-
-AsirikuyReturnCode addNewDailyRatesQuandl(char* token, char* dataset, char* ratesName, time_t intFromDate, int ratesIndex)
-{
-  return easyTradePtr->addNewDailyRatesQuandl(token, dataset, ratesName,intFromDate,ratesIndex);
-}
-	
-AsirikuyReturnCode addNewDailyRatesQuandlOpenOnly(char* token, char* dataset, char* ratesName, time_t intFromDate, int ratesIndex)
-{
-  return easyTradePtr->addNewDailyRatesQuandlOpenOnly(token, dataset, ratesName,intFromDate,ratesIndex);
-}
-
 AsirikuyReturnCode addDistortedArray(int sourceRateIndex, int ratesIndex, double maxDistorsion)
 {
   return easyTradePtr->addDistortedArray(sourceRateIndex, ratesIndex, maxDistorsion);
