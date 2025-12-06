@@ -28,7 +28,13 @@ project "AsirikuyFrameworkAPI"
 	  -- "curl", -- Not available on Windows
 	  "TALib_common", 
 	  "TALib_abstract", 
-	  "TALib_func"
+	  "TALib_func",
+	  "libboost_system-vc143-mt-x64-1_84",
+	  "libboost_thread-vc143-mt-x64-1_84",
+	  "libboost_chrono-vc143-mt-x64-1_84"
+    }
+    libdirs{
+      "../../vendor/boost_1_84_0/stage/lib"
     }
   configuration{"windows", "x64"}
     -- Link TradingStrategies explicitly from bin directory
