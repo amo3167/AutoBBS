@@ -1,6 +1,19 @@
 #!/usr/bin/env pwsh
 # Asirikuy MT4 Deployment Script
 # Deploys AsirikuyFrameworkAPI.dll and CTesterFrameworkAPI.dll from latest release to MT4
+#
+# Features:
+# - Auto-detects latest release from releases/ folder
+# - Reads MT4 path from monitor config file (checker.config)
+# - Auto-discovers MT4 installation in common paths
+# - Backs up existing DLLs before deployment
+# - Supports dry-run mode for testing
+#
+# Usage:
+#   .\deploy-to-mt4.ps1                                                  # Auto-detect everything
+#   .\deploy-to-mt4.ps1 -ConfigFile asirikuy_monitor\config\checker.config  # Use monitor config
+#   .\deploy-to-mt4.ps1 -MT4Path "C:\...\MQL4\Libraries"                # Specify MT4 path
+#   .\deploy-to-mt4.ps1 -DryRun                                         # Preview without deploying
 
 param(
     [string]$MT4Path = "",
@@ -129,34 +142,71 @@ function Copy-DLLs {
         exit 1
     }
     
+    # Create backup folder with timestamp
+    $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
+    $backupFolder = Join-Path $DestPath "backup_$timestamp"
+    
     Write-Host "`nDLLs to deploy:"
+    $hasExistingFiles = $false
     foreach ($dll in $dlls) {
         $destFile = Join-Path $DestPath $dll.Name
         $size = "{0:N2} KB" -f ($dll.Length / 1KB)
         Write-Info "  $($dll.Name) - $size"
         
         if (Test-Path $destFile) {
-            Write-Warning "    Existing file will be overwritten"
+            $hasExistingFiles = $true
+            Write-Warning "    Existing file will be backed up"
         }
     }
     
     if ($IsDryRun) {
+        if ($hasExistingFiles) {
+            Write-Info "`n[DRY RUN] Would create backup folder: $backupFolder"
+        }
         Write-Warning "`n[DRY RUN] No files were copied"
         return
     }
     
+    # Create backup folder and backup existing DLLs
+    if ($hasExistingFiles) {
+        try {
+            New-Item -Path $backupFolder -ItemType Directory -Force | Out-Null
+            Write-Success "`nCreated backup folder: $backupFolder"
+            
+            foreach ($dll in $dlls) {
+                $destFile = Join-Path $DestPath $dll.Name
+                if (Test-Path $destFile) {
+                    $backupFile = Join-Path $backupFolder $dll.Name
+                    Copy-Item -Path $destFile -Destination $backupFile -Force
+                    Write-Success "Backed up: $($dll.Name)"
+                }
+            }
+        }
+        catch {
+            Write-Error "Failed to create backup: $_"
+            exit 1
+        }
+    }
+    
+    # Deploy new DLLs
     Write-Host ""
     foreach ($dll in $dlls) {
         $destFile = Join-Path $DestPath $dll.Name
         
         try {
             Copy-Item -Path $dll.FullName -Destination $destFile -Force
-            Write-Success "Copied: $($dll.Name)"
+            Write-Success "Deployed: $($dll.Name)"
         }
         catch {
-            Write-Error "Failed to copy $($dll.Name): $_"
+            Write-Error "Failed to deploy $($dll.Name): $_"
+            Write-Warning "You can restore from backup: $backupFolder"
             exit 1
         }
+    }
+    
+    if ($hasExistingFiles) {
+        Write-Host ""
+        Write-Info "Backup location: $backupFolder"
     }
 }
 
