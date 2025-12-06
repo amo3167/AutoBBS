@@ -437,8 +437,8 @@ static AsirikuyReturnCode convertCurrentMqlBar(MQLVersion mqlVersion, StrategyPa
   const int TIME_FRAME_IN_SECONDS = SECONDS_PER_MINUTE * pParams->ratesBuffers->rates[ratesIndex].info.timeframe;
 
   AsirikuyReturnCode returnCode;
-  char   timeString[MAX_TIME_STRING_SIZE];
-  char   timeString2[MAX_TIME_STRING_SIZE], timeString3[MAX_TIME_STRING_SIZE];
+  // char   timeString[MAX_TIME_STRING_SIZE]; // Unused - for debug logging only
+  // char   timeString2[MAX_TIME_STRING_SIZE], timeString3[MAX_TIME_STRING_SIZE]; // Unused
   int    mqlShift0Index = (int)pMqlRatesInfo->ratesArraySize - 1;
   int    mqlShift1Index = (int)pMqlRatesInfo->ratesArraySize - 2;
   int    convertedShift0Index = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
@@ -470,6 +470,7 @@ static AsirikuyReturnCode convertCurrentMqlBar(MQLVersion mqlVersion, StrategyPa
 
   if (!isValidTradingTime(pParams,mqlTime0))
   {
+    char timeString[MAX_TIME_STRING_SIZE];
 	logWarning("convertCurrentMqlBar() Discarding unusable bar. Bar time = %s\n", safe_timeString(timeString, mqlTime0));
     return SUCCESS;
   }

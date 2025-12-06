@@ -73,7 +73,7 @@ int __stdcall  readHistoricFile(char *historicPath, Rates **result, char **error
 		volume = malloc(sizeof(double));
 		dateT  = malloc(sizeof(time_t));
 
-        sscanf(line, "%[^,],%[^,],%lf,%lf,%lf,%lf,%d", date, &time, open, high, low, close, volume);
+        sscanf(line, "%[^,],%[^,],%lf,%lf,%lf,%lf,%lf", date, &time, open, high, low, close, volume);
         sprintf(dateS, "%s,%s", date, time);
 		*dateT = parseDate(date);
 		rates[i].open    = open;

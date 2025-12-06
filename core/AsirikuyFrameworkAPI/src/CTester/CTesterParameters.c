@@ -133,10 +133,10 @@ static AsirikuyReturnCode copyBarC(const CRates* pSource, Rates* pDest, int dest
     pDest->time[destIndex] = getAdjustedBrokerTime(pSource->time, tzOffsets);
     // Debug logging - uncomment if needed
     // if(1)
-    {
-      char timeString[MAX_TIME_STRING_SIZE];
-      // logDebug(""copyBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
-    }
+    // {
+    //   char timeString[MAX_TIME_STRING_SIZE];
+    //   logDebug(""copyBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
+    // }
   }
 
   if(pDest->open)
@@ -213,10 +213,10 @@ static AsirikuyReturnCode mergeBar(int instanceId, int ratesIndex, const CRates*
 
     // Debug logging - uncomment if needed
     // if(1)
-    {
-      char timeString[MAX_TIME_STRING_SIZE];
-      // logDebug(""mergeBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
-    }
+    // {
+    //   char timeString[MAX_TIME_STRING_SIZE];
+    //   logDebug(""mergeBar() time[%d] = %s\n\n", destIndex, safe_timeString(timeString, pDest->time[destIndex]));
+    // }
   }
 
   if(pDest->open)
@@ -329,7 +329,7 @@ static AsirikuyReturnCode convertCurrentCBar(StrategyParams* pParams, TZOffsets*
   const int TIME_FRAME_IN_SECONDS = SECONDS_PER_MINUTE * pParams->ratesBuffers->rates[ratesIndex].info.timeframe;
 
   AsirikuyReturnCode returnCode;
-  char   timeString[MAX_TIME_STRING_SIZE];
+  // char   timeString[MAX_TIME_STRING_SIZE]; // Unused - for debug logging only
   int    CShift0Index = (int)pCRatesInfo->ratesArraySize - 1;
   int    CShift1Index = (int)pCRatesInfo->ratesArraySize - 2;
   int    convertedShift0Index = pParams->ratesBuffers->rates[ratesIndex].info.arraySize - 1;
