@@ -8,7 +8,9 @@ Tasks to complete Windows native build of AsirikuyFrameworkAPI.dll and CTesterFr
 **Branch:** `window-build`  
 **Status:** ✅ **COMPLETED - 2025-12-06**  
 **Build System:** ✅ Automated via `build-parallel-simple.bat`  
-**Release System:** ✅ Automated via `create-release.ps1`
+**Release System:** ✅ Automated via `create-release.ps1`  
+**Python Integration:** ✅ Python 3 migration completed for Windows
+**Bash Script Support:** ✅ Git Bash configured with PowerShell alias
 
 ---
 
@@ -915,14 +917,54 @@ powershell -ExecutionPolicy Bypass -File scripts\create-release.ps1
 #   - README.txt
 ```
 
+## Python 3 Integration for Windows
+
+### COMPLETED: Python 3 Migration (2025-12-06)
+
+**Changes Made:**
+- ✅ Fixed library loading to include `.dll` extension on Windows
+- ✅ Added VS2010 build paths to library search locations
+- ✅ Fixed pip to use `python3 -m pip` instead of `pip` to target correct Python 3 environment
+- ✅ Added pandas to required dependencies
+- ✅ Fixed fastcsv installation (skip pip install, use local module)
+- ✅ Updated module detection to use `__import__` instead of pkgutil for better reliability
+
+**Files Modified:**
+- `ctester/asirikuy_strategy_tester.py` - Added .dll extension, pandas dependency
+- `ctester/include/asirikuy.py` - Added VS2010 paths to library search
+- `ctester/include/auto_installer.py` - Fixed pip usage and module detection
+
+### Running Bash Scripts on Windows
+
+**Git Bash Setup:**
+```powershell
+# Git Bash is available via PowerShell alias
+gitbash ./script.sh
+
+# Example: Run backtest
+cd E:\AutoBBS\ctester\scripts
+gitbash ./run_btcusd_macd_860013.sh
+```
+
+**PowerShell Profile Configuration:**
+- Alias `gitbash` → `C:\Program Files\Git\bin\bash.exe`
+- ExecutionPolicy set to RemoteSigned for current user
+- Works in all new PowerShell windows
+
+**Alternative: WSL bash**
+- WSL bash is available via `bash` command
+- Provides full Linux environment (better for complex scripts)
+- Access Windows files via `/mnt/e/AutoBBS/`
+
 ## Git Repository Status
 
 **Branch:** window-build  
-**Total Commits:** 22  
+**Total Commits:** 23+  
 **Ready for:** Merge to master (pending integration tests)
 
 **Recent Commits:**
 ```
+df0848f Fix Python 3 migration issues for Windows: library loading, pip installation, and dependencies
 7e9eeec Update build script to build and release CTesterFrameworkAPI.dll
 0eecbf6 Add comprehensive documentation for Windows directory scanning
 0cd1974 Implement Windows directory scanning for config auto-discovery
@@ -930,6 +972,6 @@ powershell -ExecutionPolicy Bypass -File scripts\create-release.ps1
 5c41750 Disable GAUL and MPI on Windows, enable CTesterFrameworkAPI build
 ```
 
-**Files Modified:** 10+  
+**Files Modified:** 13+  
 **Lines Changed:** 1500+  
 **Documentation:** 3 comprehensive guides (1400+ lines total)
