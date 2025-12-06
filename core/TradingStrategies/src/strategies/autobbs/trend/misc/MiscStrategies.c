@@ -1176,6 +1176,10 @@ AsirikuyReturnCode workoutExecutionTrend_Auto_Extended(StrategyParams* pParams, 
 
 		realTakePrice = fabs(pParams->orderInfo[orderIndex].stopLoss - pParams->orderInfo[orderIndex].openPrice) / stopLossLevel;
 
+		// Initialize price tracking variables
+		lowPrice = iLow(B_PRIMARY_RATES, 0);
+		highPrice = iHigh(B_PRIMARY_RATES, 0);
+
 		if (pParams->orderInfo[orderIndex].type == BUY)
 		{
 			pIndicators->entryPrice = pParams->bidAsk.ask[0];

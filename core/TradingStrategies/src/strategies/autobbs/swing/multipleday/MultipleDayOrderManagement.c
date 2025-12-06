@@ -772,11 +772,10 @@ void splitBuyOrders_MultiDays_Swing(StrategyParams* pParams, Indicators* pIndica
 	double pATR = pBase_Indicators->pDailyATR;
 	double pHigh = pBase_Indicators->pDailyHigh;
 	double pLow = pBase_Indicators->pDailyLow;
-	double lots, lots_singal, lots_standard;
+	double lots;
 	double gap = pHigh - pIndicators->entryPrice;
 	time_t currentTime;
 	int    shift0Index_primary = pParams->ratesBuffers->rates[B_PRIMARY_RATES].info.arraySize - 1;
-	int lostDays;
 	double total_pre_lost = 0;
 
 	currentTime = pParams->ratesBuffers->rates[B_PRIMARY_RATES].time[shift0Index_primary];
