@@ -1041,6 +1041,138 @@ python3 -m pytest tests/ -v
 
 ---
 
+### TASK-7.2: Test asirikuy_monitor in Live Production Mode
+**Status:** 🔲 NOT STARTED  
+**Effort:** 2-3 hours  
+**Priority:** HIGH  
+**Blocking:** Production deployment
+
+**Description:**
+Test asirikuy_monitor in live production environment with actual MT4/MT5 instances, including the new Telegram alert feature.
+
+**Location:** `asirikuy_monitor/`
+
+**Prerequisites:**
+- asirikuy_monitor Windows Python 3 migration completed (TASK-7.1) ✅
+- MT4/MT5 platform instances running with heartbeat files
+- Email configuration (SMTP credentials)
+- Telegram bot setup (bot token and chat ID)
+
+**New Features to Test:**
+1. **Telegram Alert Integration**
+   - Bot token and chat ID configuration via environment variables or config file
+   - Alert notifications sent to Telegram on heartbeat failures
+   - Alert notifications sent to Telegram on log errors/critical messages
+   - Fallback handling when Telegram is unavailable
+   - Rate limiting and message formatting
+
+2. **Enhanced Email Security**
+   - Email validation and sanitization
+   - Rate limiting for email notifications
+   - Secure credential handling via environment variables
+
+**Configuration:**
+```ini
+# config/checker.config additions
+[general]
+useTelegram = 1
+telegramBotToken = <from env: TELEGRAM_BOT_TOKEN>
+telegramChatId = <from env: TELEGRAM_CHAT_ID>
+
+# Environment variables (recommended)
+TELEGRAM_BOT_TOKEN=<your-bot-token>
+TELEGRAM_CHAT_ID=<your-chat-id>
+EMAIL_FROM=<your-email>
+EMAIL_TO=<alert-email>
+EMAIL_PASSWORD=<app-password>
+SMTP_SERVER=smtp.gmail.com:587
+```
+
+**Testing Steps:**
+```powershell
+cd E:\AutoBBS\asirikuy_monitor
+
+# 1. Set up environment variables
+$env:TELEGRAM_BOT_TOKEN = "<your-bot-token>"
+$env:TELEGRAM_CHAT_ID = "<your-chat-id>"
+$env:EMAIL_FROM = "<your-email>"
+$env:EMAIL_TO = "<alert-email>"
+$env:EMAIL_PASSWORD = "<app-password>"
+$env:SMTP_SERVER = "smtp.gmail.com:587"
+
+# 2. Update checker.config with test account paths
+# Edit config/checker.config
+
+# 3. Start monitor in test mode
+python3 checker.py -c config/checker.config
+
+# 4. Test scenarios:
+# - Normal operation: Verify heartbeat monitoring
+# - Heartbeat failure: Stop MT4, verify Telegram + email alerts
+# - Log error: Inject error into AsirikuyFramework.log, verify alerts
+# - Trading hours: Verify week open/close logic
+# - Telegram fallback: Disable Telegram, verify email-only mode
+```
+
+**Test Scenarios:**
+
+1. **Normal Heartbeat Monitoring**
+   - Start MT4/MT5 with Asirikuy EA
+   - Verify heartbeat files are checked every monitoring interval
+   - Confirm no false alarms
+
+2. **Heartbeat Failure Detection**
+   - Stop MT4/MT5 process or pause EA
+   - Wait for monitoring interval × 2.5
+   - Verify Telegram alert received with "⚠️ Heart-Beat problem" message
+   - Verify email alert received (if enabled)
+   - Confirm MT4 process is killed (Windows)
+
+3. **Log Error Detection**
+   - Add "Error:" or "Critical:" line to AsirikuyFramework.log
+   - Wait for next monitoring cycle
+   - Verify Telegram alert received with "❌ Error Detected" message
+   - Verify email alert received (if enabled)
+   - Confirm MT4 process is killed on error
+
+4. **Trading Hours Logic**
+   - Test during trading hours (Mon open to Fri close)
+   - Test outside trading hours (weekend)
+   - Verify monitoring only runs during configured trading hours
+
+5. **Telegram Fallback Handling**
+   - Test with invalid bot token → verify graceful degradation
+   - Test with network issues → verify email fallback
+   - Test with missing requests library → verify warning logged
+
+**Acceptance Criteria:**
+- [ ] Monitor runs continuously without crashes
+- [ ] Heartbeat failures trigger Telegram alerts within 60 seconds
+- [ ] Log errors trigger Telegram alerts within monitoring interval
+- [ ] Telegram messages are properly formatted with emojis
+- [ ] Email fallback works when Telegram unavailable
+- [ ] MT4 processes are killed on critical failures (Windows)
+- [ ] Trading hours logic correctly enables/disables monitoring
+- [ ] Environment variables are read correctly
+- [ ] Config file validation catches errors
+- [ ] No sensitive credentials in logs
+
+**Deliverables:**
+- [ ] Live monitoring test log (24-hour run minimum)
+- [ ] Screenshots of Telegram alerts
+- [ ] Email alert samples
+- [ ] Performance metrics (CPU, memory usage)
+- [ ] Documentation of any issues found
+- [ ] Production deployment guide
+
+**Known Issues to Watch:**
+- File locking on Windows when reading heartbeat/log files
+- Time zone differences between broker and local time
+- Long-running process stability on Windows
+- Telegram API rate limits
+
+---
+
 ## Git Repository Status
 
 **Branch:** window-build  
