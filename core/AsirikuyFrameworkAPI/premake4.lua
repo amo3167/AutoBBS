@@ -78,23 +78,25 @@ project "AsirikuyFrameworkAPI"
     }
     -- Add library paths for both Linux and macOS
     -- Note: These paths will be used at build time, not premake4 generation time
+    boostlib = (os.getenv("BOOST_ROOT") or "/usr/local") .. "/lib"
     libdirs{
-      os.getenv("BOOST_ROOT") .. "/lib",
+      boostlib,
       "/Users/andym/homebrew/opt/curl/lib",
       "/usr/local/lib",
       "/usr/lib",
       "../../../vendor/MiniXML"  -- MiniXML library path
     }
     linkoptions{
-      "-L" .. os.getenv("BOOST_ROOT") .. "/lib",
+      "-L" .. boostlib,
       "-L/Users/andym/homebrew/opt/curl/lib",
       "-L/usr/local/lib",
       "-L../../../vendor/MiniXML"  -- MiniXML library path
     }
   configuration{"macosx"}
     -- Additional macOS-specific paths if needed
+    boostlib = (os.getenv("BOOST_ROOT") or "/usr/local") .. "/lib"
     libdirs{
-      os.getenv("BOOST_ROOT") .. "/lib",
+      boostlib,
       "/Users/andym/homebrew/opt/curl/lib",
       "/usr/local/lib",
       "/usr/lib"

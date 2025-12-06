@@ -59,14 +59,15 @@ project "TradingStrategies"
   configuration{"not windows"}
     -- Linux/macOS shared library configuration
     -- Add library paths for both Linux and macOS
+    boostlib = (os.getenv("BOOST_ROOT") or "/usr/local") .. "/lib"
     libdirs{
-      os.getenv("BOOST_ROOT") .. "/lib",
+      boostlib,
       "/Users/andym/homebrew/opt/curl/lib",
       "/usr/local/lib",
       "/usr/lib"
     }
     linkoptions{
-      "-L" .. os.getenv("BOOST_ROOT") .. "/lib",
+      "-L" .. boostlib,
       "-L/Users/andym/homebrew/opt/curl/lib",
       "-L/usr/local/lib"
     }

@@ -35,11 +35,12 @@ project "UnitTests"
   configuration{"windows", "Release"}
     linkoptions{"/OPT:REF,ICF"}
   configuration{"not windows"}
+    boostlib = (os.getenv("BOOST_ROOT") or "/usr/local") .. "/lib"
     libdirs{
-      os.getenv("BOOST_ROOT") .. "/lib"
+      boostlib
     }
     linkoptions{
-      "-L" .. os.getenv("BOOST_ROOT") .. "/lib"
+      "-L" .. boostlib
     }
     links{
       "boost_serialization",
