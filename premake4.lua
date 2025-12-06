@@ -132,10 +132,8 @@ else
 	include "core/OrderManager"
 	include "core/AsirikuyEasyTrade"
 	include "core/TradingStrategies"
-	-- NTPClient excluded from Windows builds (requires modern Boost ASIO APIs not in 1.49.0)
-	if os.get() ~= "windows" then
-		include "core/NTPClient"
-	end
+	-- NTPClient now enabled on Windows with Boost 1.84.0 (updated for modern C++11 APIs)
+	include "core/NTPClient"
 	include "core/AsirikuyFrameworkAPI"
 	include "core/CTesterFrameworkAPI"
 	include "core/UnitTests"

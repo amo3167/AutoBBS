@@ -77,7 +77,7 @@ NTPClient* NTPClient::getInstance()
 
 time_t NTPClient::queryRandomNTPServer()
 {
-  boost::mutex::scoped_lock l(randomMutex_);
+  std::lock_guard<std::mutex> l(randomMutex_);
 
   time_t reference_times[MAX_REFERENCE_TIMES];
 
@@ -109,7 +109,7 @@ time_t NTPClient::queryRandomNTPServer()
 
 time_t NTPClient::queryNTPServer(const char* ntpServer)
 {
-  boost::mutex::scoped_lock l(queryMutex_);
+  std::lock_guard<std::mutex> l(queryMutex_);
 
   const int  NTP_PACKET_SIZE  = 48;
   const int  XMIT_TS_INDEX    = 40;
@@ -144,7 +144,7 @@ time_t NTPClient::queryNTPServer(const char* ntpServer)
     socket_.send_to(boost::asio::buffer(data), receiver);
 
     // Set a timeout for the async_receive_from operation.
-    deadline_.expires_after(std::chrono::milliseconds(ntpTimeout_));
+    deadline_.expires_from_now(boost::posix_time::milliseconds(ntpTimeout_));
     deadline_.async_wait(boost::bind(&NTPClient::handleTimeout, this));
 
     // Listen for a response from the server.
@@ -183,8 +183,6 @@ NTPClient::NTPClient() : io_context_(),
   socket_(io_context_),
   resolver_(io_context_),
   deadline_(io_context_),
-  randomMutex_(),
-  queryMutex_(),
   updateTime_(0),
   localTimeOffset_(0),
   lastLocalTime_(0),
@@ -220,7 +218,7 @@ void NTPClient::handleTimeout()
 void NTPClient::done()
 {
   deadline_.cancel();
-  deadline_.expires_at(std::chrono::steady_clock::time_point::max());
+  deadline_.expires_at(boost::posix_time::pos_infin);
   io_context_.stop();
 }
 

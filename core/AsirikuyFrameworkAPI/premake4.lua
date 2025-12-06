@@ -25,6 +25,7 @@ project "AsirikuyFrameworkAPI"
 	  "AsirikuyTechnicalAnalysis", 
 	  "OrderManager", 
 	  "AsirikuyEasyTrade", -- Stub implementation for Windows
+	  "NTPClient", -- Now available on Windows with Boost 1.84.0
 	  -- "curl", -- Not available on Windows
 	  "TALib_common", 
 	  "TALib_abstract", 

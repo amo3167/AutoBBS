@@ -131,8 +131,8 @@ private:
   boost::asio::ip::udp::resolver resolver_;
   boost::asio::deadline_timer    deadline_;
   
-  boost::mutex                   randomMutex_;
-  boost::mutex                   queryMutex_;
+  std::mutex                     randomMutex_;
+  std::mutex                     queryMutex_;
 
   time_t                         updateTime_;
   time_t                         localTimeOffset_;
