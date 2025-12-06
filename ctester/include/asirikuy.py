@@ -22,9 +22,13 @@ def loadLibrary(library):
             library,
             os.path.join(project_root, "bin", "gmake", "x64", "Debug", library),
             os.path.join(project_root, "bin", "gmake", "x64", "Release", library),
+            os.path.join(project_root, "bin", "vs2010", "x64", "Debug", library),
+            os.path.join(project_root, "bin", "vs2010", "x64", "Release", library),
             os.path.join(ctester_dir, library),
             f"../bin/gmake/x64/Debug/{library}",
             f"../bin/gmake/x64/Release/{library}",
+            f"../bin/vs2010/x64/Debug/{library}",
+            f"../bin/vs2010/x64/Release/{library}",
         ]
         for path in possible_paths:
             abs_path = os.path.abspath(path)
@@ -50,15 +54,22 @@ def loadLibrary(library):
             os.path.join(project_root, "bin", "gmake", "x64", "Debug", "lib", library),
             os.path.join(project_root, "bin", "gmake", "x64", "Release", library),
             os.path.join(project_root, "bin", "gmake", "x64", "Release", "lib", library),
+            # Add VS2010 build paths for Windows
+            os.path.join(project_root, "bin", "vs2010", "x64", "Debug", library),
+            os.path.join(project_root, "bin", "vs2010", "x64", "Release", library),
             os.path.join(ctester_dir, library),
             f"../bin/gmake/x64/Debug/{library}",
             f"../bin/gmake/x64/Debug/lib/{library}",
             f"../bin/gmake/x64/Release/{library}",
             f"../bin/gmake/x64/Release/lib/{library}",
+            f"../bin/vs2010/x64/Debug/{library}",
+            f"../bin/vs2010/x64/Release/{library}",
             f"./bin/gmake/x64/Debug/{library}",
             f"./bin/gmake/x64/Debug/lib/{library}",
             f"./bin/gmake/x64/Release/{library}",
             f"./bin/gmake/x64/Release/lib/{library}",
+            f"./bin/vs2010/x64/Debug/{library}",
+            f"./bin/vs2010/x64/Release/{library}",
         ]
         for path in possible_paths:
             abs_path = os.path.abspath(path)

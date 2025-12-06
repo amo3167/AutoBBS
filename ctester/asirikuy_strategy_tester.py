@@ -5,6 +5,7 @@ from include.auto_installer import *
 installIfNeeded('requests')
 installIfNeeded('colorama')
 installIfNeeded('numpy')
+installIfNeeded('pandas')
 installIfNeeded('matplotlib')
 installIfNeeded('fastcsv')
 
@@ -68,7 +69,7 @@ def main():
     print("[DEBUG] Loading library...")
     system = platform.system()
     if (system == "Windows"):
-        astdll = loadLibrary('CTesterFrameworkAPI')
+        astdll = loadLibrary('CTesterFrameworkAPI.dll')
     elif (system == "Linux"):
         astdll = loadLibrary('libCTesterFrameworkAPI.so')
     elif (system == "Darwin"):
@@ -973,8 +974,8 @@ def main():
 def version():
     system = platform.system()
     if (system == "Windows"):
-        asfdll = loadLibrary('AsirikuyFrameworkAPI')
-        astdll = loadLibrary('CTesterFrameworkAPI')
+        asfdll = loadLibrary('AsirikuyFrameworkAPI.dll')
+        astdll = loadLibrary('CTesterFrameworkAPI.dll')
     elif (system == "Linux"):
         asfdll = loadLibrary('libAsirikuyFrameworkAPI.so')
         astdll = loadLibrary('libCTesterFrameworkAPI.so')
