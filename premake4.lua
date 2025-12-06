@@ -17,10 +17,12 @@ else
 
   if boostdir == nil then
       -- Try vendor Boost directory
-      if os.isdir("vendor/boost_1_49_0") then
+      if os.isdir("vendor/boost_1_84_0") then
+        boostdir = "vendor/boost_1_84_0"
+      elseif os.isdir("vendor/boost_1_49_0") then
         boostdir = "vendor/boost_1_49_0"
       else
-        printf("Set the environment variable BOOST_ROOT or place Boost in vendor/boost_1_49_0!")
+        printf("Set the environment variable BOOST_ROOT or place Boost in vendor/boost_1_84_0!")
         return
       end
   end

@@ -10,10 +10,10 @@ project "AsirikuyEasyTrade"
     "src",
     "include",
     "../AsirikuyCommon/include",
-    "../../vendor/boost_1_49_0"
+    "../../vendor/boost_1_84_0"
   }
   libdirs{
-    "../../vendor/boost_1_49_0/stage/lib"
+    "../../vendor/boost_1_84_0/stage/lib"
   }
   -- Add Boost include directory (for Precompiled.hpp)
   configuration{"not windows"}
