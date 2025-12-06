@@ -29,6 +29,7 @@ project "AsirikuyFrameworkAPI"
 	  "TALib_common", 
 	  "TALib_abstract", 
 	  "TALib_func",
+	  -- Boost 1.84 libraries (only what we built: system, thread, chrono)
 	  "libboost_system-vc143-mt-x64-1_84",
 	  "libboost_thread-vc143-mt-x64-1_84",
 	  "libboost_chrono-vc143-mt-x64-1_84"
