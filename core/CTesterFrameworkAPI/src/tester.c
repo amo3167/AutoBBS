@@ -1270,16 +1270,17 @@ TestResult __stdcall runPortfolioTest (
 					logInfo("Instance-specific config not found, using default: %s\n", configPathToUse);
 				}
 			} else {
-#else
-			// Windows: Skip directory scanning, just use default config
-			{
-				fprintf(stderr, "[INIT] ✗ Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
-				fflush(stderr);
-#endif
+				// opendir failed on Linux/macOS
 				fprintf(stderr, "[INIT] ✗ Cannot open ./tmp directory, using default: %s\n", configPathToUse);
 				fflush(stderr);
 				logInfo("Cannot open tmp directory, using default: %s\n", configPathToUse);
 			}
+#else
+			// Windows: Skip directory scanning, just use default config
+			fprintf(stderr, "[INIT] ✗ Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
+			fflush(stderr);
+			logInfo("Instance-specific config pattern search not available on Windows, using default: %s\n", configPathToUse);
+#endif
 		}
 	} else {
 		fprintf(stderr, "[INIT] Instance ID is 0 or invalid, using default config: %s\n", configPathToUse);
