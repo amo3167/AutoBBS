@@ -172,8 +172,41 @@ OandaSymbolReverse  = {
 				}
 
 def loadLibrary(library):
+	"""Load a shared library, checking multiple possible locations."""
 	if os.name == 'nt':
-		return windll.LoadLibrary(library)
+		# Get the script's directory to resolve absolute paths
+		script_dir = os.path.dirname(os.path.abspath(__file__))
+		monitor_dir = os.path.dirname(script_dir)  # Go up from include/ to asirikuy_monitor/
+		project_root = os.path.dirname(monitor_dir)  # Go up from asirikuy_monitor/ to project root
+		
+		# Windows: try current directory and build directories
+		possible_paths = [
+			library,
+			os.path.join(project_root, "bin", "vs2010", "x64", "Release", library),
+			os.path.join(project_root, "bin", "vs2010", "x64", "Debug", library),
+			os.path.join(project_root, "bin", "gmake", "x64", "Release", library),
+			os.path.join(project_root, "bin", "gmake", "x64", "Debug", library),
+			os.path.join(monitor_dir, library),
+		]
+		
+		for path in possible_paths:
+			abs_path = os.path.abspath(path)
+			if os.path.exists(abs_path):
+				logger.info(f"Loading library from: {abs_path}")
+				return windll.LoadLibrary(abs_path)
+		
+		# Fallback to system search
+		try:
+			return windll.LoadLibrary(library)
+		except OSError as e:
+			logger.error(f"Failed to load library '{library}'")
+			logger.error(f"Tried the following paths:")
+			for path in possible_paths:
+				abs_path = os.path.abspath(path)
+				exists = "✓" if os.path.exists(abs_path) else "✗"
+				logger.error(f"  {exists} {abs_path}")
+			logger.error(f"System search also failed: {e}")
+			raise
 	else:
 		return None
 def readConfigFile(file):
