@@ -554,15 +554,13 @@ static AsirikuyReturnCode iTrend3Rules_LookBack_Screening(StrategyParams* pParam
 		if (i - 1 >= 0 && trend[i - 1] == UP && trend[i] == RANGE)
 			trend[i] = RANGE;
 
-		if (i - 1 >= 0 && trend[i - 1] == DOWN && trend[i] == RANGE)
-			trend[i] = RANGE;
+	if (i - 1 >= 0 && trend[i - 1] == DOWN && trend[i] == RANGE)
+		trend[i] = RANGE;
 
-		*pTrend = trend[i];
-	}	
+	*pTrend = (int)trend[i];
+}	
 
-	return SUCCESS;
-	
-}
+return SUCCESS;}
 
 // iTrend3Rules is declared in base.h, but Screening.c has its own implementation with different signature
 // Renaming to avoid conflict

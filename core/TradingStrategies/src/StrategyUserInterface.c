@@ -489,7 +489,7 @@ AsirikuyReturnCode saveTradingInfo(int instanceID, Order_Info * pOrderInfo)
 	fprintf(fp, "%f\n", pOrderInfo->openPrice);
 	fprintf(fp, "%f\n", pOrderInfo->stopLossPrice);
 	fprintf(fp, "%f\n", pOrderInfo->takeProfitPrice);
-	fprintf(fp, "%d\n", pOrderInfo->timeStamp);
+	fprintf(fp, "%lld\n", (long long)pOrderInfo->timeStamp);
 	
 
 	fclose(fp);
@@ -633,7 +633,7 @@ AsirikuyReturnCode saveVirutalOrdergInfo(int instanceID, OrderInfo orderInfo)
 	fprintf(fp, "%f\n", orderInfo.openPrice);
 	fprintf(fp, "%f\n", orderInfo.stopLoss);
 	fprintf(fp, "%f\n", orderInfo.takeProfit);
-	fprintf(fp, "%d\n", orderInfo.openTime);
+	fprintf(fp, "%lld\n", (long long)orderInfo.openTime);
 
 
 	fclose(fp);
@@ -673,11 +673,11 @@ int readVirtualOrderInfo(int instanceID, OrderInfo *pOrderInfo)
 	fgets(line, 1024, fp);
 	pOrderInfo->isOpen = atoi(line);
 	fgets(line, 1024, fp);
-	pOrderInfo->openPrice = atof(line);
+	pOrderInfo->openPrice = (float)atof(line);
 	fgets(line, 1024, fp);
-	pOrderInfo->stopLoss = atof(line);
+	pOrderInfo->stopLoss = (float)atof(line);
 	fgets(line, 1024, fp);
-	pOrderInfo->takeProfit = atof(line);
+	pOrderInfo->takeProfit = (float)atof(line);
 	fgets(line, 1024, fp);
 	pOrderInfo->openTime = atoi(line);
 
