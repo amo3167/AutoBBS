@@ -30,7 +30,9 @@ project "CTesterFrameworkAPI"
   libdirs{
 	"../../bin/**",
 	"../../../bin/" .. _ACTION .. "/x64/Debug/lib",  -- Gaul library location
-	"../../../bin/" .. _ACTION .. "/x32/Debug/lib"
+	"../../../bin/" .. _ACTION .. "/x32/Debug/lib",
+	"../../../bin/" .. _ACTION .. "/x64/Release",    -- AsirikuyFrameworkAPI.lib for x64 Release
+	"../../../bin/" .. _ACTION .. "/x32/Release"     -- AsirikuyFrameworkAPI.lib for x32 Release
   }
   configuration{"macosx"}
     libdirs{

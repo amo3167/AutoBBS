@@ -14,4 +14,8 @@ project "MiniXML"
 	["Header Files"] = "**.h", 
 	["Source Files"] = "**.c"
   }
+  
+  -- Windows-specific defines
+  configuration{"windows"}
+    defines{"WIN32", "_CRT_SECURE_NO_WARNINGS"}
 

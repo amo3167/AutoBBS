@@ -47,7 +47,7 @@ static const int cMinStringLengthNameLoc = 254;*/
 extern "C" {
 #endif
 
-int __stdcall C_parseSymbol(char* pSymbol, char* pPrefix, char* pBaseCurrency, char* pSeparator, char* pQuoteCurrency, char* pSuffix)
+int C_parseSymbol(char* pSymbol, char* pPrefix, char* pBaseCurrency, char* pSeparator, char* pQuoteCurrency, char* pSuffix)
 {
 	/*if(pPrefix->length < cMinStringLength
 	|| pBaseCurrency->length < cMinStringLength
@@ -59,17 +59,17 @@ int __stdcall C_parseSymbol(char* pSymbol, char* pPrefix, char* pBaseCurrency, c
 	return parseSymbol(pSymbol, pPrefix, pBaseCurrency, pSeparator, pQuoteCurrency, pSuffix);
 }
 
-int __stdcall C_normalizeSymbol(char* pSymbol)
+int C_normalizeSymbol(char* pSymbol)
 {
   return normalizeSymbol(pSymbol);
 }
 
-int __stdcall C_normalizeCurrency(char* pCurrency)
+int C_normalizeCurrency(char* pCurrency)
 {
   return normalizeCurrency(pCurrency);
 }
 
-int __stdcall C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char* pBaseConversionSymbol, char* pQuoteConversionSymbol)
+int C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char* pBaseConversionSymbol, char* pQuoteConversionSymbol)
 {
 	/*if(pBaseConversionSymbol->length < cMinStringLength || pQuoteConversionSymbol->length < cMinStringLength)
 	return 0;*/
@@ -77,7 +77,7 @@ int __stdcall C_getConversionSymbols(char* pSymbol, char* pAccountCurrency, char
 	return getConversionSymbols(pSymbol, pAccountCurrency, pBaseConversionSymbol, pQuoteConversionSymbol);
 }
 
-int __stdcall C_getCurrencyInfo(char* pCurrencyCode, char* pCurrencyNumber, char* pDigitsAfterDecimal, char* pCurrencyName, char* pCurrencyLocations)
+int C_getCurrencyInfo(char* pCurrencyCode, char* pCurrencyNumber, char* pDigitsAfterDecimal, char* pCurrencyName, char* pCurrencyLocations)
 {
 	/*if(pCurrencyNumber->length < cMinStringLength
 	|| pDigitsAfterDecimal->length < cMinStringLength
@@ -88,7 +88,7 @@ int __stdcall C_getCurrencyInfo(char* pCurrencyCode, char* pCurrencyNumber, char
 	return getCurrencyInfo(pCurrencyCode, pCurrencyNumber, pDigitsAfterDecimal, pCurrencyName, pCurrencyLocations);
 }
 
-int __stdcall C_getCurrencyPairPrefix(char* pSymbol, char* pPrefix)
+int C_getCurrencyPairPrefix(char* pSymbol, char* pPrefix)
 {
 	/*if(pPrefix->length < cMinStringLength)
 	return 0;*/
@@ -96,7 +96,7 @@ int __stdcall C_getCurrencyPairPrefix(char* pSymbol, char* pPrefix)
 	return getCurrencyPairPrefix(pSymbol, pPrefix);
 }
 
-int __stdcall C_getBaseCurrency(char* pSymbol, char* pBaseCurrency)
+int C_getBaseCurrency(char* pSymbol, char* pBaseCurrency)
 {
 	/*if(pBaseCurrency->length < cMinStringLength)
 	return 0;*/
@@ -104,7 +104,7 @@ int __stdcall C_getBaseCurrency(char* pSymbol, char* pBaseCurrency)
 	return getBaseCurrency(pSymbol, pBaseCurrency);
 }
 
-int __stdcall C_getCurrencyPairSeparator(char* pSymbol, char* pSeparator)
+int C_getCurrencyPairSeparator(char* pSymbol, char* pSeparator)
 {
 	/*if(pSeparator->length < cMinStringLength)
 	return 0;*/
@@ -112,7 +112,7 @@ int __stdcall C_getCurrencyPairSeparator(char* pSymbol, char* pSeparator)
 	return getCurrencyPairSeparator(pSymbol, pSeparator);
 }
 
-int __stdcall C_getQuoteCurrency(char* pSymbol, char* pQuoteCurrency)
+int C_getQuoteCurrency(char* pSymbol, char* pQuoteCurrency)
 {
 	/*if(pQuoteCurrency->length < cMinStringLength)
 	return 0;*/
@@ -120,7 +120,7 @@ int __stdcall C_getQuoteCurrency(char* pSymbol, char* pQuoteCurrency)
 	return getQuoteCurrency(pSymbol, pQuoteCurrency);
 }
 
-int __stdcall C_getCurrencyPairSuffix(char* pSymbol, char* pSuffix)
+int C_getCurrencyPairSuffix(char* pSymbol, char* pSuffix)
 {
 	/*if(pSuffix->length < cMinStringLength)
 	return 0;*/
@@ -128,7 +128,7 @@ int __stdcall C_getCurrencyPairSuffix(char* pSymbol, char* pSuffix)
 	return getCurrencyPairSuffix(pSymbol, pSuffix);
 }
 
-int __stdcall C_getCurrencyNumber(char* pCurrencyCode, char* pCurrencyNumber)
+int C_getCurrencyNumber(char* pCurrencyCode, char* pCurrencyNumber)
 {
 	/*if(pCurrencyNumber->length < cMinStringLength)
 	return 0;*/
@@ -136,7 +136,7 @@ int __stdcall C_getCurrencyNumber(char* pCurrencyCode, char* pCurrencyNumber)
 	return getCurrencyNumber(pCurrencyCode, pCurrencyNumber);
 }
 
-int __stdcall C_getNumDigitsAfterDecimal(char* pCurrencyCode, char* pDigitsAfterDecimal)
+int C_getNumDigitsAfterDecimal(char* pCurrencyCode, char* pDigitsAfterDecimal)
 {
 	/*if(pDigitsAfterDecimal->length < cMinStringLength)
 	return 0;*/
@@ -144,7 +144,7 @@ int __stdcall C_getNumDigitsAfterDecimal(char* pCurrencyCode, char* pDigitsAfter
 	return getNumDigitsAfterDecimal(pCurrencyCode, pDigitsAfterDecimal);
 }
 
-int __stdcall C_getCurrencyName(char* pCurrencyCode, char* pCurrencyName)
+int C_getCurrencyName(char* pCurrencyCode, char* pCurrencyName)
 {
 	/*if(pCurrencyName->length < cMinStringLengthNameLoc)
 	return 0;*/
@@ -152,7 +152,7 @@ int __stdcall C_getCurrencyName(char* pCurrencyCode, char* pCurrencyName)
 	return getCurrencyName(pCurrencyCode, pCurrencyName);
 }
 
-int __stdcall C_getCurrencyLocations(char* pCurrencyCode, char* pCurrencyLocations)
+int C_getCurrencyLocations(char* pCurrencyCode, char* pCurrencyLocations)
 {
 	/*if(pCurrencyLocations->length < cMinStringLengthNameLoc)
 	return 0;*/
@@ -163,3 +163,4 @@ int __stdcall C_getCurrencyLocations(char* pCurrencyCode, char* pCurrencyLocatio
 #ifdef __cplusplus
 } /* extern "C" */
 #endif
+

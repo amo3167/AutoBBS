@@ -29,18 +29,29 @@ project "AsirikuyFrameworkAPI"
 	  -- "curl", -- Not available on Windows
 	  "TALib_common", 
 	  "TALib_abstract", 
-	  "TALib_func",
-	  -- Boost 1.84 libraries with static runtime (rebuilt with runtime-link=static)
-	  "libboost_system-vc143-mt-s-x64-1_84",
-	  "libboost_thread-vc143-mt-s-x64-1_84",
-	  "libboost_chrono-vc143-mt-s-x64-1_84"
+	  "TALib_func"
     }
     libdirs{
       "../../vendor/boost_1_84_0/stage/lib"
     }
+  configuration{"windows", "x32"}
+    -- Link TradingStrategies explicitly from bin directory
+    linkoptions{"../../../bin/" .. _ACTION .. "/x32/Release/TradingStrategies.lib"}
+    -- Boost 1.84 libraries with static runtime (x86 32-bit)
+    links{
+      "libboost_system-vc143-mt-s-x32-1_84",
+      "libboost_thread-vc143-mt-s-x32-1_84",
+      "libboost_chrono-vc143-mt-s-x32-1_84"
+    }
   configuration{"windows", "x64"}
     -- Link TradingStrategies explicitly from bin directory
     linkoptions{"../../../bin/" .. _ACTION .. "/x64/Release/TradingStrategies.lib"}
+    -- Boost 1.84 libraries with static runtime (x64 64-bit)
+    links{
+      "libboost_system-vc143-mt-s-x64-1_84",
+      "libboost_thread-vc143-mt-s-x64-1_84",
+      "libboost_chrono-vc143-mt-s-x64-1_84"
+    }
   -- Determine boost directory for non-Windows prebuild commands
   if os.isdir("../../vendor/boost_1_84_0") then
     boostdir = "../../vendor/boost_1_84_0"

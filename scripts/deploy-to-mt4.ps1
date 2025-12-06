@@ -128,11 +128,21 @@ function Copy-DLLs {
         [bool]$IsDryRun
     )
     
+    # MT4 is 32-bit, so we only deploy x32 DLLs
     $binFolder = Join-Path $SourcePath "bin"
+    $binX32Folder = Join-Path $binFolder "x32"
     
-    if (-not (Test-Path $binFolder)) {
+    # Check if we have the new structure with x32 subfolder
+    if (Test-Path $binX32Folder) {
+        $binFolder = $binX32Folder
+        Write-Info "Using x32 DLLs from: $binFolder"
+    }
+    elseif (-not (Test-Path $binFolder)) {
         Write-Error "Release bin folder not found: $binFolder"
         exit 1
+    }
+    else {
+        Write-Info "Using DLLs from: $binFolder"
     }
     
     $dlls = Get-ChildItem -Path $binFolder -Filter "*.dll"
@@ -146,7 +156,7 @@ function Copy-DLLs {
     $timestamp = Get-Date -Format "yyyyMMdd-HHmmss"
     $backupFolder = Join-Path $DestPath "backup_$timestamp"
     
-    Write-Host "`nDLLs to deploy:"
+    Write-Host "`nDLLs to deploy (x32 - 32-bit):"
     $hasExistingFiles = $false
     foreach ($dll in $dlls) {
         $destFile = Join-Path $DestPath $dll.Name
@@ -212,6 +222,8 @@ function Copy-DLLs {
 
 # Main
 Write-Host "`n=== Asirikuy MT4 Deployment ===" -ForegroundColor Blue
+Write-Info "MT4 is 32-bit - deploying x32 DLLs only"
+Write-Host ""
 
 # Get release path
 if ($ReleasePath -eq "") {
@@ -234,15 +246,26 @@ if ($MT4Path -eq "") {
     }
     
     # Fall back to auto-detection if config didn't work
-    if ($null -eq $MT4Path) {
+    if ($null -eq $MT4Path -or $MT4Path -eq "") {
         $MT4Path = Get-DefaultMT4Path
     }
     
-    if ($null -eq $MT4Path) {
+    if ($null -eq $MT4Path -or $MT4Path -eq "") {
         Write-Warning "MT4 not found automatically"
         Write-Host "Enter MT4 MQL4\Libraries path:"
         $MT4Path = Read-Host "Path"
+        
+        # Validate user input
+        if ([string]::IsNullOrWhiteSpace($MT4Path)) {
+            Write-Error "No MT4 path provided. Deployment cancelled."
+            exit 1
+        }
     }
+}
+
+if ([string]::IsNullOrWhiteSpace($MT4Path)) {
+    Write-Error "MT4 path is empty. Deployment cancelled."
+    exit 1
 }
 
 if (-not (Test-Path $MT4Path)) {
