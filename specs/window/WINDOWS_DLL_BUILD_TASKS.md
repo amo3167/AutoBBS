@@ -554,6 +554,78 @@ if not exist "bin\vs2010\x64\Release\CTesterFrameworkAPI.dll" (
 
 ---
 
+### TASK-7.5: Create MT4 Deployment Automation
+**Status:** ✅ COMPLETED - 2025-12-06  
+**Effort:** 30 minutes  
+**Blocking:** MT4 Integration Testing
+
+**Description:**
+Create automated deployment script to copy DLLs from releases folder to MT4 MQL4/Libraries folder.
+
+**Location:** `scripts/deploy-to-mt4.ps1`
+
+**Completion Notes:**
+Created PowerShell script that automatically deploys the latest release to MT4. Supports auto-detection of MT4 installation or manual path specification. Includes dry-run mode for testing.
+
+**Features:**
+- Auto-detects latest release from `releases/` folder
+- Auto-discovers MT4 installation in common locations
+- Manual path override supported
+- Dry-run mode to preview changes
+- Color-coded console output for better UX
+- Validates paths and file sizes before deployment
+- Warns about existing files being overwritten
+
+**Usage:**
+```powershell
+# Deploy latest release to auto-detected MT4
+.\scripts\deploy-to-mt4.ps1
+
+# Deploy to specific MT4 path
+.\scripts\deploy-to-mt4.ps1 -MT4Path "C:\Users\...\MQL4\Libraries"
+
+# Dry run (preview only)
+.\scripts\deploy-to-mt4.ps1 -DryRun
+
+# Deploy specific release
+.\scripts\deploy-to-mt4.ps1 -ReleasePath "E:\AutoBBS\releases\AsirikuyFramework-20251206-162407"
+```
+
+**Testing Results:**
+```
+Tested deployment to: C:\Users\amo31\AppData\Roaming\MetaQuotes\Terminal\E5D34929BCBAC87916D356DECB463DE3\MQL4\Libraries
+
+DLLs deployed:
+✓ AsirikuyFrameworkAPI.dll (776.50 KB)
+✓ CTesterFrameworkAPI.dll (272.00 KB)
+
+Deployment successful!
+```
+
+**Deliverable:**
+- [x] `deploy-to-mt4.ps1` script created
+- [x] Auto-detection of MT4 path working
+- [x] Auto-detection of latest release working
+- [x] Dry-run mode tested
+- [x] Real deployment tested and verified
+- [x] User-friendly output with colors
+
+**Acceptance Criteria:**
+- ✅ Script deploys both DLLs correctly
+- ✅ Auto-detects common MT4 installation paths
+- ✅ Finds latest release automatically
+- ✅ Dry-run mode works without copying files
+- ✅ Clear error messages and warnings
+- ✅ Successfully deployed to actual MT4 installation
+
+**Next Steps:**
+Script ready for integration testing with MT4. User needs to:
+1. Restart MT4 if running
+2. Enable "Allow DLL imports" in Tools - Options - Expert Advisors
+3. Optionally add Libraries path to trusted paths
+
+---
+
 ## Phase 8: Documentation & Finalization
 
 ### TASK-8.1: Update Build Documentation
@@ -800,6 +872,7 @@ TASK-8.1 (Docs) → TASK-8.2 (Commit)              ↓
 - ✅ TASK-7.2: Fix POSIX directory scanning (2 hours)
 - ✅ TASK-7.3: Build CTesterFrameworkAPI (30 min)
 - ✅ TASK-7.4: Update build scripts (15 min)
+- ✅ TASK-7.5: Create MT4 deployment automation (30 min)
 - ✅ TASK-8.1: Update documentation (30 min)
 - ✅ TASK-8.2: Commit all changes (15 min)
 
