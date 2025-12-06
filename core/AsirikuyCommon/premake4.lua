@@ -13,6 +13,7 @@ project "AsirikuyCommon"
     "src",
     "include"
   }
+  defines{"_CRT_SECURE_NO_WARNINGS"}
   -- Enable C++11 for Boost compatibility (Unix/Linux only)
   -- Since language is "C++", .cpp files need C++11 for Boost scoped_ptr (noexcept)
   -- C files (.c) will be compiled as C without C++11 flag

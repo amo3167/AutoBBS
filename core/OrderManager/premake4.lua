@@ -11,6 +11,7 @@ project "OrderManager"
     "src",
     "../SymbolAnalyzer/include"
   }
+  defines{"_CRT_SECURE_NO_WARNINGS"}
   
   -- Target directory configurations (all libraries go to root bin/ directory)
   -- Use relative path from premake4.lua location (core/OrderManager/) to workspace root: ../../

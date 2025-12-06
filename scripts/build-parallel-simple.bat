@@ -102,7 +102,7 @@ if not exist "bin\vs2010\x64\Release\lib\TALib_func.lib" (
 REM Phase 2: Build independent core libs in parallel
 echo Building independent libraries in parallel...
 "%MSBUILD%" build\vs2010\AsirikuyFramework.sln ^
-    /t:AsirikuyCommon;Log;SymbolAnalyzer;AsirikuyTechnicalAnalysis ^
+    /t:AsirikuyCommon;Log;SymbolAnalyzer;AsirikuyTechnicalAnalysis;NTPClient ^
     /p:Configuration=Release /p:Platform=x64 /p:BuildProjectReferences=false /m /v:minimal /nologo
 if !ERRORLEVEL! NEQ 0 (
     echo ERROR: Phase 1 build failed

@@ -32,6 +32,7 @@ project "TradingStrategies"
     "../AsirikuyTechnicalAnalysis/include",
     "../AsirikuyEasyTrade/include"
   }
+  defines{"_CRT_SECURE_NO_WARNINGS"}
   
   -- Dependencies (premake4 uses links instead of uses)
   links{
