@@ -444,7 +444,7 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
 
 	for(i = 0; i < TOTAL_CURRENCIES; i++)
 	{
-		offset = strstr(pSymbol, g_currencies[i][CURRENCY_CODE]) - pSymbol; 
+		offset = (int)(strstr(pSymbol, g_currencies[i][CURRENCY_CODE]) - pSymbol); 
 
 		if(offset >= 0 && offset < (int)strlen(pSymbol))
 		{
@@ -491,8 +491,8 @@ AsirikuyReturnCode parseSymbol(const char* pSymbol, char* pPrefix, char* pBaseCu
   }
 
 	prefixLength    = baseCurrencyOffset;
-	suffixLength    = strlen(pSymbol) - strlen(pQuoteCurrency) - quoteCurrencyOffset;
-	separatorLength = quoteCurrencyOffset - strlen(pBaseCurrency) - baseCurrencyOffset;
+	suffixLength    = (int)strlen(pSymbol) - (int)strlen(pQuoteCurrency) - quoteCurrencyOffset;
+	separatorLength = quoteCurrencyOffset - (int)strlen(pBaseCurrency) - baseCurrencyOffset;
 
   /* If any of these values are below 0 it means pSymbol is too short. Exit now to avoid a potential memory access violation */
   if(prefixLength < 0 || suffixLength < 0 || separatorLength < 0)

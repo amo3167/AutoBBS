@@ -923,8 +923,6 @@ void save_openorder_to_file(){
 	
 	FILE* openOrderFile;	
 	char   timeString[MAX_TIME_STRING_SIZE] = "";
-	int orderIndex;
-	int index;
 	
 	openOrderFile = fopen("results.open", "w");
 	if (openOrderFile == NULL)
@@ -992,8 +990,6 @@ void calculate_trade_by_trade_statistics(StatisticItem *statistics,
     double sumBalanceTime = 0;
     double timeSqrSum = 0;
     double tradeReturn = 0;
-    double previousBalance;
-    double  profit;
     double totalWin = 0;
     double totalLose = 0;
     double avgTime=0;
@@ -1242,7 +1238,6 @@ TestResult __stdcall runPortfolioTest (
 	StatisticItem *statistics;	
 	int statisticsSize;
 	int totalOrders = 0;
-	int lastTradeIndex;
 	int *numSignals;
 	
 	TradeSignal lastSignal = {0};
@@ -2203,7 +2198,7 @@ TestResult __stdcall runPortfolioTest (
     calculate_trade_by_trade_statistics(statistics, 
                                         statisticsSize, 
                                         initialBalance, 
-                                        pInSettings[0][DISABLE_COMPOUNDING],
+                                        (int)pInSettings[0][DISABLE_COMPOUNDING],
                                         totalTrades,
                                         &testResult, 
                                         numSystems,
@@ -2212,7 +2207,7 @@ TestResult __stdcall runPortfolioTest (
     calculate_weekly_statistics(statistics, 
                                 statisticsSize, 
                                 initialBalance,
-                                pInSettings[0][DISABLE_COMPOUNDING],
+                                (int)pInSettings[0][DISABLE_COMPOUNDING],
                                 lastDate,
                                 &testResult);
     

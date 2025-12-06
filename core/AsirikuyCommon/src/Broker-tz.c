@@ -79,7 +79,7 @@ AsirikuyReturnCode getTimezoneInfo(const char* pName, TimezoneInfo** pTimezoneIn
   if(nameLen > 0) {
     char hexBuffer[256] = "";
     char *p = hexBuffer;
-    int maxBytes = (nameLen < 10 ? nameLen : 10);
+    int maxBytes = (int)(nameLen < 10 ? nameLen : 10);
     for(i = 0; i < maxBytes && (p - hexBuffer) < (sizeof(hexBuffer) - 20); i++) {
       p += snprintf(p, sizeof(hexBuffer) - (p - hexBuffer), "0x%02x('%c') ", 
                      (unsigned char)pName[i], (pName[i] >= 32 && pName[i] < 127) ? pName[i] : '?');
