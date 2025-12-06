@@ -41,12 +41,59 @@
 #include "EasyTradeCWrapper.hpp"
 #include "AsirikuyTime.h"
 #include <stdio.h>
-#if !defined _WIN32 && !defined _WIN64
-#include <curl/curl.h> /* added for curl_getdate prototype (fix C4013) */
-#endif
 
 #include "Logging.h"
 #include "AsirikuyLogger.h"
+
+/* Simple date parser to replace curl_getdate - supports ISO 8601 and common formats */
+static time_t parse_date_string(const char *dateStr) {
+    struct tm tm_time;
+    int year, month, day, hour = 0, min = 0, sec = 0;
+    
+    if (dateStr == NULL || dateStr[0] == '\0') {
+        return (time_t)-1;
+    }
+    
+    /* Skip leading whitespace */
+    while (*dateStr == ' ' || *dateStr == '\t' || *dateStr == '\r' || *dateStr == '\n') {
+        dateStr++;
+    }
+    
+    /* Initialize tm structure */
+    memset(&tm_time, 0, sizeof(struct tm));
+    
+    /* Try ISO 8601 format: YYYY-MM-DD HH:MM:SS or YYYY-MM-DD */
+    if (sscanf(dateStr, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &min, &sec) >= 3) {
+        tm_time.tm_year = year - 1900;
+        tm_time.tm_mon = month - 1;
+        tm_time.tm_mday = day;
+        tm_time.tm_hour = hour;
+        tm_time.tm_min = min;
+        tm_time.tm_sec = sec;
+        tm_time.tm_isdst = 0;
+        return mktime(&tm_time);
+    }
+    
+    /* Try slash format: MM/DD/YYYY HH:MM:SS or MM/DD/YYYY */
+    if (sscanf(dateStr, "%d/%d/%d %d:%d:%d", &month, &day, &year, &hour, &min, &sec) >= 3) {
+        tm_time.tm_year = year - 1900;
+        tm_time.tm_mon = month - 1;
+        tm_time.tm_mday = day;
+        tm_time.tm_hour = hour;
+        tm_time.tm_min = min;
+        tm_time.tm_sec = sec;
+        tm_time.tm_isdst = 0;
+        return mktime(&tm_time);
+    }
+    
+    /* Try Unix timestamp (seconds since epoch) */
+    if (sscanf(dateStr, "%ld", (long*)&sec) == 1 && sec > 0) {
+        return (time_t)sec;
+    }
+    
+    /* Failed to parse */
+    return (time_t)-1;
+}
 
 static char tempFilePath[MAX_FILE_PATH_CHARS] ;
 
@@ -383,10 +430,14 @@ int readXAUUSDKeyNewsDateFile(time_t *pKeyDates)
 
 	while (fgets(line, 1024, fp)) {
 		
-		*(pKeyDates+i) = curl_getdate(line, &now);
+		*(pKeyDates+i) = parse_date_string(line);
+		if (*(pKeyDates+i) == (time_t)-1) {
+			logWarning("readXAUUSDKeyNewsDateFile() Failed to parse date: %s", line);
+			continue;
+		}
 		safe_gmtime(&timeInfo1, *(pKeyDates + i));
 		safe_timeString(timeString, *(pKeyDates + i));
-		logDebug("readXAUUSDKeyNewsDateFile() KeyDate= %d", timeString);
+		logDebug("readXAUUSDKeyNewsDateFile() KeyDate= %s", timeString);
 
 		i++;		
 	}
