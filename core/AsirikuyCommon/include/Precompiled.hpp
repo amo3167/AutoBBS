@@ -40,6 +40,9 @@
 #define PRECOMPILED_HPP_
 #pragma once
 
+// Disable Boost auto-linking - we manage libraries explicitly via premake4
+#define BOOST_ALL_NO_LIB
+
 #if defined _WIN32 || defined _WIN64
   #pragma warning(disable: 4996) /* Warning about not using some Microsoft secure versions of c functions */
   #define WIN32_LEAN_AND_MEAN
