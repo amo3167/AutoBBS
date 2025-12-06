@@ -963,6 +963,7 @@ AsirikuyReturnCode workoutExecutionTrend_Auto_Extended(StrategyParams* pParams, 
 
 	dailyBaseLine = iMA(3, B_DAILY_RATES, 50, startShift);
 
+	shift1Index_Daily = pParams->ratesBuffers->rates[B_DAILY_RATES].info.arraySize - 2;
 	iSRLevels(pParams, pBase_Indicators, B_DAILY_RATES, shift1Index_Daily, 26, &dailyHigh, &dailyLow);
 	daily_baseline = (dailyHigh + dailyLow) / 2;
 
